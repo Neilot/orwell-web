@@ -1,4 +1,4 @@
-import type { ChatEvent, EventKind, Reaction } from '../../core';
+import type { ChatEvent, EventKind, Participant, Reaction } from '../../core';
 import type { TelegramMessage } from './export-schema';
 
 const UNKNOWN_AUTHOR = 'unknown';
@@ -19,42 +19,52 @@ function plainText(text: TelegramMessage['text']): string {
 }
 
 /** People mentioned by a link to their account. Plain `@username` mentions carry no id. */
-function mentions(m: TelegramMessage): string[] {
+function mentions(m: TelegramMessage): Participant[] {
   return m.text_entities.flatMap((e) =>
-    e.type === 'mention_name' && e.user_id !== undefined ? [`user${String(e.user_id)}`] : [],
-  );
-}
-
-function kindOf(m: TelegramMessage): EventKind {
-  const media = m.media_type === undefined ? undefined : MEDIA_KINDS[m.media_type];
-  if (media) return media;
-  if (m.sticker_emoji !== undefined) return 'sticker';
-  if (m.photo !== undefined) return 'photo';
-  if (m.poll !== undefined) return 'poll';
-  if (m.location_information !== undefined) return 'location';
-  if (m.contact_information !== undefined) return 'contact';
-  if (m.file !== undefined) return 'file';
-  return 'text';
-}
-
-/** Emoji reactions only; custom and paid reactions have no emoji to show. */
-function reactions(m: TelegramMessage): Reaction[] {
-  return m.reactions.flatMap((r) =>
-    r.type === 'emoji' && r.emoji !== undefined
-      ? [
-          {
-            emoji: r.emoji,
-            count: r.count,
-            by: r.recent.flatMap((x) => (x.from_id === undefined ? [] : [x.from_id])),
-          },
-        ]
+    e.type === 'mention_name' && e.user_id
+      ? [{ id: `user${String(e.user_id)}`, displayName: e.text || null }]
       : [],
   );
 }
 
+/** Media type first, then attachments; a message with none of them is text. */
+function kindOf(m: TelegramMessage): EventKind {
+  const media = m.media_type === undefined ? undefined : MEDIA_KINDS[m.media_type];
+  if (media) return media;
+  if (m.photo) return 'photo';
+  if (m.poll) return 'poll';
+  if (m.file) return 'file';
+  if (m.location_information) return 'location';
+  if (m.contact_information) return 'contact';
+  return 'text';
+}
+
+/** Every reaction, including custom emoji, which have no emoji character to show. */
+function reactions(m: TelegramMessage): Reaction[] {
+  return m.reactions.map((r) => ({
+    emoji: r.emoji ?? null,
+    count: r.count,
+    by: r.recent.flatMap((x) =>
+      x.from_id === undefined ? [] : [{ id: x.from_id, displayName: x.from }],
+    ),
+  }));
+}
+
+/** The sticker's file, when the export includes it ("(File not included…)" otherwise). */
+function stickerId(m: TelegramMessage): string | undefined {
+  return m.media_type === 'sticker' && typeof m.file === 'string' && !m.file.startsWith('(')
+    ? m.file
+    : undefined;
+}
+
+function editedAt(m: TelegramMessage): number | undefined {
+  if (m.edited_unixtime !== undefined) return Number(m.edited_unixtime) * 1000;
+  return m.edited ? Number(m.date_unixtime) * 1000 : undefined;
+}
+
 /** Maps one validated Telegram message to a neutral event. */
 export function mapMessage(m: TelegramMessage): ChatEvent {
-  return {
+  const event: ChatEvent = {
     id: String(m.id),
     author: {
       id: m.from_id ?? UNKNOWN_AUTHOR,
@@ -70,6 +80,13 @@ export function mapMessage(m: TelegramMessage): ChatEvent {
     }),
     mentions: mentions(m),
     reactions: reactions(m),
+  };
+  const sticker = stickerId(m);
+  const edited = editedAt(m);
+  return {
+    ...event,
     ...(m.sticker_emoji !== undefined && { stickerEmoji: m.sticker_emoji }),
+    ...(sticker !== undefined && { stickerId: sticker }),
+    ...(edited !== undefined && { editedAt: edited }),
   };
 }

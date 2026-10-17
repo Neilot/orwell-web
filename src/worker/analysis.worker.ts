@@ -1,10 +1,12 @@
 // Worker composition root: the only place where sources and analyzers are wired together.
 import {
+  Interactions,
   MessagesPerDay,
-  ParticipantNames,
-  ParticipantsPerMonth,
   PeopleActivity,
+  PersonHabitsAnalyzer,
   ResponseTimes,
+  StickerUsage,
+  Vocabulary,
   WeeklyRhythm,
 } from '../analytics';
 import type { AnalyzeRequest, AnalyzeResponse, AnalysisErrorCode } from '../app';
@@ -45,19 +47,23 @@ function inputFile(file: File): InputFile {
 
 async function analyze(file: InputFile): Promise<AnalyzeResponse> {
   const source = await registry.find(file);
-  const names = new ParticipantNames();
   const perDay = new MessagesPerDay();
-  const participants = new ParticipantsPerMonth();
   const people = new PeopleActivity();
+  const interactions = new Interactions();
   const rhythm = new WeeklyRhythm();
   const responseTimes = new ResponseTimes();
+  const habits = new PersonHabitsAnalyzer();
+  const vocabulary = new Vocabulary();
+  const stickers = new StickerUsage();
   const report = await new AnalysisPipeline([
-    names,
     perDay,
-    participants,
     people,
+    interactions,
     rhythm,
     responseTimes,
+    habits,
+    vocabulary,
+    stickers,
   ]).run(source, file);
   // The pipeline stores each result under its analyzer's id; this reads it back typed.
   const resultOf = <T>(analyzer: Analyzer<T>): T => report.results[analyzer.id] as T;
@@ -67,12 +73,14 @@ async function analyze(file: InputFile): Promise<AnalyzeResponse> {
       title: report.chat.title,
       messageCount: report.eventCount,
       skippedMessages: report.chat.skippedEntries,
-      names: resultOf(names),
       messagesPerDay: resultOf(perDay),
-      participantsPerMonth: resultOf(participants),
       peoplePerMonth: resultOf(people),
+      interactionsPerMonth: resultOf(interactions),
       rhythmPerMonth: resultOf(rhythm),
       responseTimesPerMonth: resultOf(responseTimes),
+      habitsPerMonth: resultOf(habits),
+      vocabularyPerMonth: resultOf(vocabulary),
+      stickersPerMonth: resultOf(stickers),
     },
   };
 }

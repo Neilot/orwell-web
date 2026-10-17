@@ -12,10 +12,16 @@ export interface MonthResponseTimes {
   readonly histogram: number[];
   /** Median delay in ms, or `null` without replies. */
   readonly median: number | null;
+  /** Median delay of each person who replied, in ms. */
+  readonly byPerson: Readonly<Record<ParticipantId, number>>;
 }
 
 /** Per month (`YYYY-MM`) of the reply. */
 export type ResponseTimesResult = Record<string, MonthResponseTimes>;
+
+function sortedCopy(values: readonly number[]): number[] {
+  return [...values].sort((a, b) => a - b);
+}
 
 function median(sorted: readonly number[]): number | null {
   if (sorted.length === 0) return null;
@@ -32,7 +38,10 @@ function median(sorted: readonly number[]): number | null {
 export class ResponseTimes implements Analyzer<ResponseTimesResult> {
   readonly id = 'response-times';
   private readonly sent = new Map<EventId, { author: ParticipantId; at: number }>();
-  private readonly delays = new Map<string, number[]>();
+  private readonly delays = new Map<
+    string,
+    { all: number[]; byPerson: Map<ParticipantId, number[]> }
+  >();
 
   consume(event: ChatEvent): void {
     if (event.kind === 'service') return;
@@ -42,20 +51,28 @@ export class ResponseTimes implements Analyzer<ResponseTimesResult> {
     if (!original || original.author === event.author.id) return;
     const delay = event.at - original.at;
     if (delay > 0 && delay < 24 * HOUR) {
-      getOrCreate(this.delays, monthOf(event.localTime), () => []).push(delay);
+      const month = getOrCreate(this.delays, monthOf(event.localTime), () => ({
+        all: [],
+        byPerson: new Map<ParticipantId, number[]>(),
+      }));
+      month.all.push(delay);
+      getOrCreate(month.byPerson, event.author.id, () => []).push(delay);
     }
   }
 
   result(): ResponseTimesResult {
     return Object.fromEntries(
       [...this.delays].map(([month, delays]) => {
-        const sorted = [...delays].sort((a, b) => a - b);
+        const sorted = sortedCopy(delays.all);
         const histogram = RESPONSE_TIME_BANDS.map(() => 0);
         for (const delay of sorted) {
           const band = RESPONSE_TIME_BANDS.findIndex((limit) => delay < limit);
           increment(histogram, band);
         }
-        return [month, { histogram, median: median(sorted) }];
+        const byPerson = Object.fromEntries(
+          [...delays.byPerson].map(([id, list]) => [id, median(sortedCopy(list)) ?? 0]),
+        );
+        return [month, { histogram, median: median(sorted), byPerson }];
       }),
     );
   }

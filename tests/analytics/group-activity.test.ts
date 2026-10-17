@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { ParticipantNames } from '../../src/analytics/participant-names';
-import { ParticipantsPerMonth } from '../../src/analytics/participants-per-month';
 import { ResponseTimes } from '../../src/analytics/response-times';
 import { WeeklyRhythm } from '../../src/analytics/weekly-rhythm';
 import { chatEvent } from '../helpers';
@@ -49,7 +47,7 @@ describe('ResponseTimes', () => {
     analyzer.consume(reply('8', 0)); // no delay: ignored
 
     expect(analyzer.result()).toEqual({
-      '2026-04': { histogram: [1, 1, 0, 0, 1, 0], median: 3 * MIN },
+      '2026-04': { histogram: [1, 1, 0, 0, 1, 0], median: 3 * MIN, byPerson: { u2: 3 * MIN } },
     });
   });
 
@@ -59,33 +57,5 @@ describe('ResponseTimes', () => {
     analyzer.consume(chatEvent({ id: '2', author: beto, at: 10 * MIN, replyTo: { eventId: '1' } }));
     analyzer.consume(chatEvent({ id: '3', author: beto, at: 20 * MIN, replyTo: { eventId: '1' } }));
     expect(analyzer.result()['2026-01']?.median).toBe(15 * MIN);
-  });
-});
-
-describe('ParticipantNames', () => {
-  it('keeps the first name, filling in a missing one later', () => {
-    const analyzer = new ParticipantNames();
-    analyzer.consume(chatEvent({ author: { id: 'u1', displayName: 'Ana' } }));
-    analyzer.consume(chatEvent({ author: { id: 'u1', displayName: 'Ana María' } }));
-    analyzer.consume(chatEvent({ author: { id: 'u3', displayName: null } }));
-    analyzer.consume(chatEvent({ author: { id: 'u4', displayName: null } }));
-    analyzer.consume(chatEvent({ author: { id: 'u4', displayName: 'Dani' } }));
-    expect(analyzer.result()).toEqual({ u1: 'Ana', u3: null, u4: 'Dani' });
-  });
-});
-
-describe('ParticipantsPerMonth with replies', () => {
-  it('counts the author of a replied-to message, even from an earlier month', () => {
-    const analyzer = new ParticipantsPerMonth();
-    analyzer.consume(chatEvent({ id: '1', author: ana, localTime: '2026-03-31T10:00:00' }));
-    analyzer.consume(
-      chatEvent({
-        id: '2',
-        author: beto,
-        localTime: '2026-04-01T10:00:00',
-        replyTo: { eventId: '1' },
-      }),
-    );
-    expect(analyzer.result()).toEqual({ '2026-03': 1, '2026-04': 2 });
   });
 });

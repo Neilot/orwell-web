@@ -35,7 +35,15 @@ const ReactionSchema = v.looseObject({
   count: v.number(),
   emoji: v.optional(v.string()),
   recent: v.fallback(
-    v.optional(v.array(v.looseObject({ from_id: v.optional(v.string()) })), []),
+    v.optional(
+      v.array(
+        v.looseObject({
+          from: v.fallback(v.optional(v.nullable(v.string()), null), null),
+          from_id: v.optional(v.string()),
+        }),
+      ),
+      [],
+    ),
     [],
   ),
 });
@@ -56,6 +64,8 @@ export const MessageSchema = v.looseObject({
   reply_to_message_id: v.fallback(v.optional(v.number()), undefined),
   media_type: v.fallback(v.optional(v.string()), undefined),
   sticker_emoji: v.fallback(v.optional(v.string()), undefined),
+  edited: v.optional(v.unknown()),
+  edited_unixtime: v.fallback(v.optional(v.pipe(v.string(), v.regex(/^\d+$/))), undefined),
   photo: v.optional(v.unknown()),
   file: v.optional(v.unknown()),
   poll: v.optional(v.unknown()),

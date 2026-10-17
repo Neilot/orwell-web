@@ -77,8 +77,10 @@ describe('TelegramSource', () => {
     const reply = events.find((e) => e.id === '3');
     expect(reply?.text).toBe('Buenas Ana, mira https://example.org');
     expect(reply?.replyTo).toEqual({ eventId: '2' });
-    expect(reply?.mentions).toEqual(['user101']);
-    expect(reply?.reactions).toEqual([{ emoji: '👍', count: 2, by: ['user101'] }]);
+    expect(reply?.mentions).toEqual([{ id: 'user101', displayName: 'Ana' }]);
+    expect(reply?.reactions).toEqual([
+      { emoji: '👍', count: 2, by: [{ id: 'user101', displayName: 'Ana Prueba' }] },
+    ]);
   });
 
   it('keeps deleted accounts by id, without a name', async () => {
@@ -126,7 +128,43 @@ describe('TelegramSource', () => {
     expect(chat.info.skippedEntries).toBe(0);
     expect(event?.text).toBe('hola');
     expect(event?.mentions).toEqual([]);
-    expect(event?.reactions).toEqual([]);
+    // A custom emoji is kept as a reaction without an emoji character.
+    expect(event?.reactions).toEqual([{ emoji: null, count: 1, by: [] }]);
+  });
+
+  it('keeps edits and sticker files', async () => {
+    const base = {
+      type: 'message',
+      date: '2026-04-01T09:00:00',
+      date_unixtime: '1775034000',
+      from: 'Ana Prueba',
+      from_id: 'user101',
+      text: '',
+    };
+    const messages = [
+      {
+        ...base,
+        id: 1,
+        text: 'hola',
+        edited: '2026-04-01T09:05:00',
+        edited_unixtime: '1775034300',
+      },
+      { ...base, id: 2, media_type: 'sticker', sticker_emoji: '😀', file: 'stickers/sticker.webp' },
+      {
+        ...base,
+        id: 3,
+        media_type: 'sticker',
+        sticker_emoji: '😀',
+        file: '(File not included. Change data exporting settings to download.)',
+      },
+    ];
+    const chat = await source.open(inputFile('result.json', exportWith({ messages })));
+    const [edited, withFile, withoutFile] = await collect(chat.events);
+    expect(edited?.editedAt).toBe(1775034300_000);
+    expect(withFile?.editedAt).toBeUndefined();
+    expect(withFile?.stickerId).toBe('stickers/sticker.webp');
+    expect(withoutFile?.stickerId).toBeUndefined();
+    expect(withoutFile?.kind).toBe('sticker');
   });
 
   it('accepts personal chats', async () => {

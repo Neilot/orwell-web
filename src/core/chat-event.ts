@@ -26,10 +26,11 @@ export interface Participant {
 }
 
 export interface Reaction {
-  readonly emoji: string;
+  /** The emoji, or `null` for a reaction without one (a custom emoji, for instance). */
+  readonly emoji: string | null;
   readonly count: number;
   /** Who reacted, when the source exposes it. May be shorter than `count`. */
-  readonly by: readonly ParticipantId[];
+  readonly by: readonly Participant[];
 }
 
 export interface ReplyRef {
@@ -53,8 +54,13 @@ export interface ChatEvent {
   /** Plain text of the event, empty when there is none. Never leaves the browser. */
   readonly text: string;
   readonly replyTo?: ReplyRef;
-  readonly mentions: readonly ParticipantId[];
+  /** People mentioned by a link to their account, named as the text shows them. */
+  readonly mentions: readonly Participant[];
   readonly reactions: readonly Reaction[];
   /** Emoji attached to a sticker, when `kind` is `'sticker'`. */
   readonly stickerEmoji?: string;
+  /** Identifies the sticker itself (e.g. its file), when the source exposes it. */
+  readonly stickerId?: string;
+  /** When the event was last edited, in ms since the Unix epoch; absent if never edited. */
+  readonly editedAt?: number;
 }
