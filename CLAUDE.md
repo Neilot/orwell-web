@@ -6,6 +6,7 @@ Static site (Vite + TypeScript strict, no UI framework) that analyses a Telegram
 
 - English for code, identifiers, comments, commits and PRs. All user-facing text goes in `src/i18n/es.ts` (Spanish first); never hard-code UI strings in components.
 - Conventional Commits (`feat:`, `fix:`, `chore:`…).
+- Commit messages, PR titles/descriptions and code comments must be self-contained. Never reference private planning notes (an Obsidian vault, its note titles, `[[wiki-links]]` or decision-log entries kept there); state the reason in the message itself, since readers of this repo don't have those notes.
 - Respect the layer rules in CONTRIBUTING.md. Do not silence `boundaries/*` lint errors; fix the import instead.
 - `core` has no dependencies: no packages and no browser globals.
 - The UI is ported 1:1 from the vanilla-JS prototype, so keep it as plain DOM + d3 modules. Do not add a UI framework.

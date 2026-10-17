@@ -10,6 +10,7 @@ Thanks for helping. This file covers the few rules that keep the project consist
 ## Commits and pull requests
 
 - Commit messages and PR titles follow [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`, `ci:`, optionally with a scope (`feat(analytics): add activity by hour`).
+- Commit messages, PR titles and descriptions, and code comments must be **self-contained**: someone with only this repository must be able to understand them. Do not reference private planning notes such as the maintainer's Obsidian vault, its note titles, `[[wiki-links]]` or decision-log entries that only exist there. If a change follows a decision, explain the decision and its reason in the message itself.
 - Keep pull requests small and focused. CI runs lint, type-check and tests on every PR.
 
 ## Layers
