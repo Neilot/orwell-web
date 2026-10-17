@@ -34,7 +34,7 @@ const M = { t: 22, r: 12, b: 44, l: 42 };
 
 /** "Mensajes por día del mes": one bar per day plus the trailing 7-day average. */
 export class DailyMessagesSection {
-  readonly element = el('section', 'card');
+  readonly element = el('section', 'card span2');
   private readonly svg = svgEl('svg', {
     id: 'time',
     viewBox: `0 0 ${String(W)} ${String(H)}`,

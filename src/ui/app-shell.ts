@@ -1,9 +1,14 @@
-import { AnalysisFailure, type Dashboard } from '../app';
+import { AnalysisFailure, monthsOf, monthView, type Dashboard } from '../app';
 import type { Messages } from '../i18n';
 import { Tooltip } from './components/tooltip';
 import { el, svgEl } from './dom';
 import { formatInt } from './format';
 import { DailyMessagesSection } from './sections/daily-messages';
+import { GroupRhythmSection } from './sections/group-rhythm';
+import { HourHeatmapSection } from './sections/hour-heatmap';
+import { KpisSection } from './sections/kpis';
+import { RankingSection } from './sections/ranking';
+import { WeekdayHeatmapSection } from './sections/weekday-heatmap';
 
 export type Analyze = (file: File) => Promise<Dashboard>;
 
@@ -39,10 +44,6 @@ function uploadIcon(): SVGSVGElement {
     }),
   );
   return icon;
-}
-
-function daysInMonth(month: string): number {
-  return new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0)).getUTCDate();
 }
 
 /** Builds the page: header with month picker and upload, then the dashboard sections. */
@@ -110,42 +111,59 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   // Body: an empty state until a file is analysed, then the sections.
   const empty = el('section', 'card');
   empty.append(el('h2', undefined, t.empty.heading), el('p', 'desc', t.empty.body));
+  const kpis = new KpisSection(t);
   const daily = new DailyMessagesSection(t, tooltip);
+  const ranking = new RankingSection(t);
+  const hours = new HourHeatmapSection(t, tooltip);
+  const weekdays = new WeekdayHeatmapSection(t, tooltip);
+  const rhythm = new GroupRhythmSection(t, tooltip);
+  // Same order and two-column grid as the prototype; later sections slot in between.
+  const grid = el('div', 'grid2');
+  grid.append(daily.element, ranking.element, hours.element, weekdays.element, rhythm.element);
+  const dashboardParts = [kpis.element, grid];
 
   const wrap = el('div', 'wrap');
-  wrap.append(header, empty, daily.element);
+  wrap.append(header, empty, ...dashboardParts);
   root.replaceChildren(wrap, tooltip.element);
 
   let dashboard: Dashboard | null = null;
 
+  function setDashboardVisible(visible: boolean): void {
+    controls.hidden = !visible;
+    empty.hidden = visible;
+    for (const part of dashboardParts) part.hidden = !visible;
+  }
+
   function showEmpty(): void {
     title.textContent = t.empty.title;
     subtitle.textContent = t.empty.subtitle;
-    controls.hidden = true;
-    empty.hidden = false;
-    daily.element.hidden = true;
+    setDashboardVisible(false);
   }
 
   function showMonth(month: string): void {
     if (!dashboard) return;
-    const days = Object.keys(dashboard.messagesPerDay);
-    const lastKey = days[days.length - 1] ?? '';
-    const dim = daysInMonth(month);
-    const lastDay = lastKey.startsWith(month) ? Number(lastKey.slice(8, 10)) : dim;
-    const year = month.slice(0, 4);
-    const monthName = t.dates.months[Number(month.slice(5)) - 1] ?? '';
-    const participants = formatInt(dashboard.participantsPerMonth[month] ?? 0);
-
+    const view = monthView(dashboard, month);
+    const monthName = t.dates.months[view.monthIndex] ?? '';
     title.textContent = dashboard.title ?? t.header.defaultGroupName;
     subtitle.textContent =
-      t.header.subtitle(monthName, year, participants) +
-      (lastDay < dim ? t.header.partialMonth(String(lastDay)) : '');
-    daily.render({ month, daysInMonth: dim, lastDay, counts: dashboard.messagesPerDay });
+      t.header.subtitle(monthName, String(view.year), formatInt(view.totals.participants)) +
+      (view.partial ? t.header.partialMonth(String(view.lastDay)) : '');
+    kpis.render(view);
+    daily.render({
+      month,
+      daysInMonth: view.daysInMonth,
+      lastDay: view.lastDay,
+      counts: dashboard.messagesPerDay,
+    });
+    ranking.render(view);
+    hours.render(view);
+    weekdays.render(view);
+    rhythm.render(view);
   }
 
   /** Returns the number of months shown, or 0 when the file had no messages. */
   function showDashboard(next: Dashboard): number {
-    const months = [...new Set(Object.keys(next.messagesPerDay).map((d) => d.slice(0, 7)))];
+    const months = monthsOf(next);
     if (months.length === 0) return 0;
     dashboard = next;
     // Newest first, as in the month picker of the prototype.
@@ -162,9 +180,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
       months.length > 1 ? t.header.monthsInFile(formatInt(months.length)) : '';
     const latest = months[months.length - 1] ?? '';
     monthSelect.value = latest;
-    controls.hidden = false;
-    empty.hidden = true;
-    daily.element.hidden = false;
+    setDashboardVisible(true);
     showMonth(latest);
     return months.length;
   }
