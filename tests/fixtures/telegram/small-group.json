@@ -1,0 +1,87 @@
+{
+  "name": "Club de Ajedrez Ficticio",
+  "type": "private_supergroup",
+  "id": 1000000001,
+  "messages": [
+    {
+      "id": 1,
+      "type": "service",
+      "date": "2026-03-01T09:00:00",
+      "date_unixtime": "1772355600",
+      "actor": "Ana Prueba",
+      "actor_id": "user101",
+      "action": "create_group",
+      "title": "Club de Ajedrez Ficticio",
+      "text": "",
+      "text_entities": []
+    },
+    {
+      "id": 2,
+      "type": "message",
+      "date": "2026-03-01T09:05:00",
+      "date_unixtime": "1772355900",
+      "from": "Ana Prueba",
+      "from_id": "user101",
+      "text": "Hola a todos",
+      "text_entities": [{ "type": "plain", "text": "Hola a todos" }]
+    },
+    {
+      "id": 3,
+      "type": "message",
+      "date": "2026-03-01T23:59:30",
+      "date_unixtime": "1772409570",
+      "from": "Beto Ejemplo",
+      "from_id": "user102",
+      "reply_to_message_id": 2,
+      "text": [
+        "Buenas ",
+        { "type": "mention_name", "text": "Ana", "user_id": 101 },
+        ", mira ",
+        { "type": "link", "text": "https://example.org" }
+      ],
+      "text_entities": [],
+      "reactions": [
+        {
+          "type": "emoji",
+          "count": 2,
+          "emoji": "👍",
+          "recent": [{ "from": "Ana Prueba", "from_id": "user101", "date": "2026-03-02T00:01:00" }]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "message",
+      "date": "2026-03-02T00:00:10",
+      "date_unixtime": "1772409610",
+      "from": null,
+      "from_id": "user103",
+      "text": "",
+      "text_entities": [],
+      "file": "(File not included. Change data exporting settings to download.)",
+      "media_type": "sticker",
+      "sticker_emoji": "😀"
+    },
+    {
+      "id": 5,
+      "type": "message",
+      "date": "2026-03-02T10:00:00",
+      "date_unixtime": "1772445600",
+      "from": "Ana Prueba",
+      "from_id": "user101",
+      "photo": "(File not included. Change data exporting settings to download.)",
+      "text": "",
+      "text_entities": []
+    },
+    {
+      "id": 6,
+      "type": "message",
+      "date": "2026-04-01T08:00:00",
+      "date_unixtime": "1775030400",
+      "from": "Beto Ejemplo",
+      "from_id": "user102",
+      "text": "Nuevo mes",
+      "text_entities": [{ "type": "plain", "text": "Nuevo mes" }]
+    }
+  ]
+}
