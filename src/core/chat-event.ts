@@ -21,7 +21,8 @@ export type EventKind =
 
 export interface Participant {
   readonly id: ParticipantId;
-  readonly displayName: string;
+  /** Name as the source shows it, or `null` when it has none (e.g. a deleted account). */
+  readonly displayName: string | null;
 }
 
 export interface Reaction {
@@ -43,6 +44,11 @@ export interface ChatEvent {
   readonly author: Participant;
   /** UTC instant in milliseconds since the Unix epoch. */
   readonly at: number;
+  /**
+   * Wall-clock time where the export was made, as `YYYY-MM-DDTHH:mm:ss` without offset.
+   * Day and hour statistics use it so they match the clock the participants saw.
+   */
+  readonly localTime: string;
   readonly kind: EventKind;
   /** Plain text of the event, empty when there is none. Never leaves the browser. */
   readonly text: string;

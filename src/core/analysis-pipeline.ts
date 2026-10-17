@@ -7,12 +7,13 @@ export class AnalysisPipeline {
   constructor(private readonly analyzers: readonly Analyzer<unknown>[]) {}
 
   async run(source: ChatSource, file: InputFile): Promise<Report> {
+    const chat = await source.open(file);
     let eventCount = 0;
-    for await (const event of source.read(file)) {
+    for await (const event of chat.events) {
       eventCount++;
       for (const analyzer of this.analyzers) analyzer.consume(event);
     }
     const results = Object.fromEntries(this.analyzers.map((a) => [a.id, a.result()]));
-    return { source: source.id, eventCount, results };
+    return { source: source.id, chat: chat.info, eventCount, results };
   }
 }
