@@ -6,13 +6,18 @@ export type SourceId = string;
 export interface InputFile {
   readonly name: string;
   readonly size: number;
+  /** The whole file at once. */
   bytes(): Promise<Uint8Array>;
+  /** The file in consecutive pieces, for formats that can be read without loading it all. */
+  chunks(): AsyncIterable<Uint8Array>;
 }
 
 /** What a source knows about the chat as a whole, apart from its events. */
 export interface ChatInfo {
   /** Name of the group or chat, or `null` when the export has none. */
   readonly title: string | null;
+  /** Entries the source could not read and left out. */
+  readonly skippedEntries: number;
 }
 
 /** A chat that a source has opened: its metadata and a single pass over its events. */
@@ -26,6 +31,6 @@ export interface OpenedChat {
 export interface ChatSource {
   readonly id: SourceId;
   canHandle(file: InputFile): Promise<boolean>;
-  /** Rejects with `InvalidExportError` when the file is recognised but malformed. */
+  /** Rejects with an `OrwellError` when the file is recognised but cannot be read. */
   open(file: InputFile): Promise<OpenedChat>;
 }

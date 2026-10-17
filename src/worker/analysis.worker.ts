@@ -7,11 +7,26 @@ import { TelegramSource } from '../sources/telegram';
 const registry = new SourceRegistry([new TelegramSource()]);
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
+// Reads with a reader rather than `for await` over the stream, which Safari does not support.
+async function* streamChunks(file: File): AsyncGenerator<Uint8Array> {
+  const reader = file.stream().getReader();
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return;
+      yield value;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 function inputFile(file: File): InputFile {
   return {
     name: file.name,
     size: file.size,
     bytes: async () => new Uint8Array(await file.arrayBuffer()),
+    chunks: () => streamChunks(file),
   };
 }
 
@@ -25,6 +40,7 @@ async function analyze(file: InputFile): Promise<AnalyzeResponse> {
     dashboard: {
       title: report.chat.title,
       messageCount: report.eventCount,
+      skippedMessages: report.chat.skippedEntries,
       messagesPerDay: perDay.result(),
       participantsPerMonth: participants.result(),
     },

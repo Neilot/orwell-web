@@ -5,6 +5,8 @@ export interface Dashboard {
   /** Group name from the export, or `null` when it has none. */
   readonly title: string | null;
   readonly messageCount: number;
+  /** Messages the source could not read and left out. */
+  readonly skippedMessages: number;
   /** Messages per local day, keyed `YYYY-MM-DD`. */
   readonly messagesPerDay: Readonly<Record<string, number>>;
   /** Distinct authors per local month, keyed `YYYY-MM`. */

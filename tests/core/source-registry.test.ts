@@ -8,7 +8,7 @@ function source(id: string, extension: string): ChatSource {
   return {
     id,
     canHandle: (file) => Promise.resolve(file.name.endsWith(extension)),
-    open: () => Promise.resolve({ info: { title: null }, events: [] }),
+    open: () => Promise.resolve({ info: { title: null, skippedEntries: 0 }, events: [] }),
   };
 }
 

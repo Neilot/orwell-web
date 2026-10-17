@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { InvalidExportError } from '../../../src/core/errors';
 import { TelegramSource } from '../../../src/sources/telegram';
 import fixture from '../../fixtures/telegram/small-group.json';
 import { collect, inputFile } from '../../helpers';
@@ -7,17 +6,30 @@ import { collect, inputFile } from '../../helpers';
 const source = new TelegramSource();
 const exportFile = inputFile('result.json', JSON.stringify(fixture));
 
+function exportWith(changes: Record<string, unknown>): string {
+  return JSON.stringify({ ...fixture, ...changes });
+}
+
+async function openError(content: string, name = 'result.json'): Promise<unknown> {
+  return source.open(inputFile(name, content)).then(
+    () => null,
+    (error: unknown) => error,
+  );
+}
+
 describe('TelegramSource', () => {
-  it('handles .json files only', async () => {
-    expect(await source.canHandle(inputFile('result.json', ''))).toBe(true);
-    expect(await source.canHandle(inputFile('RESULT.JSON', ''))).toBe(true);
-    expect(await source.canHandle(inputFile('export.zip', ''))).toBe(false);
-    expect(await source.canHandle(inputFile('messages.html', ''))).toBe(false);
+  it('handles .json, .zip and .html files', async () => {
+    for (const name of ['result.json', 'RESULT.JSON', 'export.zip', 'messages.html']) {
+      expect(await source.canHandle(inputFile(name, ''))).toBe(true);
+    }
+    for (const name of ['notes.txt', 'photo.jpg', 'result']) {
+      expect(await source.canHandle(inputFile(name, ''))).toBe(false);
+    }
   });
 
   it('reads the chat title', async () => {
     const chat = await source.open(exportFile);
-    expect(chat.info).toEqual({ title: 'Club de Ajedrez Ficticio' });
+    expect(chat.info).toEqual({ title: 'Club de Ajedrez Ficticio', skippedEntries: 0 });
   });
 
   it('maps messages and skips service entries', async () => {
@@ -61,17 +73,93 @@ describe('TelegramSource', () => {
     expect(events.find((e) => e.id === '5')?.kind).toBe('photo');
   });
 
-  it('rejects files that are not JSON', async () => {
-    await expect(source.open(inputFile('result.json', '<html></html>'))).rejects.toBeInstanceOf(
-      InvalidExportError,
-    );
+  it('skips and counts invalid messages', async () => {
+    const messages = [
+      ...fixture.messages,
+      { id: 7, type: 'message', date: 'yesterday', date_unixtime: '1775030400', text: 'x' },
+      { id: 'eight', type: 'message', date: '2026-04-01T09:00:00', date_unixtime: '1775034000' },
+      'not an object',
+    ];
+    const chat = await source.open(inputFile('result.json', exportWith({ messages })));
+    expect(chat.info.skippedEntries).toBe(3);
+    expect(await collect(chat.events)).toHaveLength(5);
   });
 
-  it('rejects JSON without a messages list', async () => {
-    for (const content of ['{"name":"x"}', '[]', '{"messages":{}}']) {
-      await expect(source.open(inputFile('result.json', content))).rejects.toBeInstanceOf(
-        InvalidExportError,
-      );
+  it('tolerates unknown fields and odd secondary fields', async () => {
+    const messages = [
+      {
+        id: 1,
+        type: 'message',
+        date: '2026-04-01T09:00:00',
+        date_unixtime: '1775034000',
+        from: 'Ana Prueba',
+        from_id: 'user101',
+        text: 'hola',
+        text_entities: 'not a list',
+        reactions: [{ type: 'custom_emoji', count: 1, document_id: 'x' }],
+        future_field: { anything: true },
+      },
+    ];
+    const chat = await source.open(inputFile('result.json', exportWith({ messages })));
+    const [event] = await collect(chat.events);
+    expect(chat.info.skippedEntries).toBe(0);
+    expect(event?.text).toBe('hola');
+    expect(event?.mentions).toEqual([]);
+    expect(event?.reactions).toEqual([]);
+  });
+
+  it('accepts personal chats', async () => {
+    const chat = await source.open(
+      inputFile('result.json', exportWith({ type: 'personal_chat', name: 'Ana Prueba' })),
+    );
+    expect(chat.info.title).toBe('Ana Prueba');
+  });
+
+  it('rejects broken JSON', async () => {
+    expect(await openError('{"messages": [')).toMatchObject({ code: 'invalid-export' });
+  });
+
+  it('rejects JSON that is not a chat export', async () => {
+    for (const content of ['{"name":"x"}', '[]', '{"messages":{}}', '42']) {
+      expect(await openError(content)).toMatchObject({ code: 'invalid-export' });
     }
+  });
+
+  it('explains a whole-account export', async () => {
+    const account = JSON.stringify({ about: 'x', chats: { about: 'y', list: [fixture] } });
+    expect(await openError(account)).toMatchObject({ code: 'account-export' });
+  });
+
+  it('rejects channels', async () => {
+    for (const type of ['public_channel', 'private_channel']) {
+      expect(await openError(exportWith({ type }))).toMatchObject({
+        code: 'unsupported-chat-type',
+      });
+    }
+  });
+
+  it('rejects a chat without messages', async () => {
+    const onlyService = fixture.messages.filter((m) => m.type === 'service');
+    expect(await openError(exportWith({ messages: [] }))).toMatchObject({ code: 'empty-chat' });
+    expect(await openError(exportWith({ messages: onlyService }))).toMatchObject({
+      code: 'empty-chat',
+    });
+  });
+
+  it('rejects an export where no message is readable', async () => {
+    expect(await openError(exportWith({ messages: [{ type: 'message' }] }))).toMatchObject({
+      code: 'invalid-export',
+    });
+  });
+
+  it('explains that HTML exports cannot be read', async () => {
+    expect(await openError('<html></html>', 'messages.html')).toMatchObject({
+      code: 'wrong-export-format',
+    });
+  });
+
+  it('rejects a JSON file over the size cap', async () => {
+    const small = new TelegramSource({ maxExportBytes: 100 });
+    await expect(small.open(exportFile)).rejects.toMatchObject({ code: 'too-large' });
   });
 });

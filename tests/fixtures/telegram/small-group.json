@@ -39,7 +39,12 @@
         ", mira ",
         { "type": "link", "text": "https://example.org" }
       ],
-      "text_entities": [],
+      "text_entities": [
+        { "type": "plain", "text": "Buenas " },
+        { "type": "mention_name", "text": "Ana", "user_id": 101 },
+        { "type": "plain", "text": ", mira " },
+        { "type": "link", "text": "https://example.org" }
+      ],
       "reactions": [
         {
           "type": "emoji",

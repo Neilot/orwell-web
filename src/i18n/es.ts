@@ -1,3 +1,6 @@
+const HOW_TO_EXPORT =
+  'En Telegram Desktop: abre el chat, pulsa ⋮ → Exportar historial del chat, desmarca fotos y videos y elige el formato «JSON legible por máquina».';
+
 export const es = {
   app: {
     title: 'Orwell',
@@ -35,7 +38,7 @@ export const es = {
     title: 'Tu grupo de Telegram',
     subtitle: 'Sube la exportación del chat para ver su actividad.',
     heading: 'Todavía no hay ningún chat',
-    body: 'Pulsa «Analizar mi chat» y elige el result.json que guarda Telegram Desktop al exportar el historial del grupo en formato JSON.',
+    body: 'Pulsa «Analizar mi chat» y elige el result.json que guarda Telegram Desktop al exportar el historial del grupo en formato JSON, o un .zip de la carpeta de la exportación.',
   },
   upload: {
     pick: 'Analizar mi chat',
@@ -48,12 +51,22 @@ export const es = {
     showing: (name: string, months: number, messages: string) =>
       `Mostrando ${name}: ${String(months)} ${months === 1 ? 'mes' : 'meses'}, ${messages} mensajes en total.`,
     noMessages: 'El archivo no tiene ningún mensaje que analizar.',
+    skipped: (count: number, formatted: string) =>
+      ` Se omitieron ${formatted} ${count === 1 ? 'mensaje no válido' : 'mensajes no válidos'}.`,
   },
   errors: {
-    'unsupported-file':
-      'Por ahora solo se puede leer el result.json (en formato JSON) que exporta Telegram Desktop.',
-    'invalid-export':
-      'Ese archivo no parece una exportación de Telegram: no es JSON o no tiene la lista de mensajes.',
+    'unsupported-file': `Ese tipo de archivo no se puede leer. Sube el result.json o un .zip con la carpeta de la exportación. ${HOW_TO_EXPORT}`,
+    'invalid-export': `El archivo no es un JSON válido o no es la exportación de un chat de Telegram. ${HOW_TO_EXPORT}`,
+    'invalid-archive':
+      'No se pudo abrir el .zip: puede estar dañado o incompleto. Vuelve a comprimir la carpeta de la exportación o sube directamente el result.json que hay dentro.',
+    'export-not-found': `El .zip no contiene ningún result.json. Comprime la carpeta que crea Telegram Desktop al exportar (la que empieza por «ChatExport»). ${HOW_TO_EXPORT}`,
+    'wrong-export-format': `Esa es la exportación en HTML, que no se puede analizar. Vuelve a exportar el chat en formato JSON. ${HOW_TO_EXPORT}`,
+    'account-export': `Ese archivo es la exportación de toda la cuenta, no la de un chat. Exporta solo el grupo que quieres ver. ${HOW_TO_EXPORT}`,
+    'unsupported-chat-type':
+      'Ese archivo es la exportación de un canal. Por ahora solo se pueden analizar grupos y chats.',
+    'empty-chat':
+      'La exportación no tiene ningún mensaje. Comprueba que exportaste el chat correcto y el periodo de fechas que querías.',
+    'too-large': `El archivo es demasiado grande para analizarlo en el navegador. Exporta un periodo más corto. ${HOW_TO_EXPORT}`,
     unknown: 'No se ha podido analizar el archivo.',
   },
   people: {

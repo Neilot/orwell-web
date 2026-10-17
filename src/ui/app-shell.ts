@@ -176,7 +176,10 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
       const result = await analyze(file);
       const months = showDashboard(result);
       status.textContent = months
-        ? t.upload.showing(file.name, months, formatInt(result.messageCount))
+        ? t.upload.showing(file.name, months, formatInt(result.messageCount)) +
+          (result.skippedMessages
+            ? t.upload.skipped(result.skippedMessages, formatInt(result.skippedMessages))
+            : '')
         : t.upload.noMessages;
     } catch (error) {
       const code = error instanceof AnalysisFailure ? error.code : 'unknown';

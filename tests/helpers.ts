@@ -1,10 +1,22 @@
 import type { ChatEvent } from '../src/core/chat-event';
 import type { InputFile } from '../src/core/chat-source';
 
-/** An in-memory upload with the given name and text content. */
-export function inputFile(name: string, content: string): InputFile {
-  const bytes = new TextEncoder().encode(content);
-  return { name, size: bytes.length, bytes: () => Promise.resolve(bytes) };
+/**
+ * An in-memory upload with the given name and content. `chunks()` hands it out in small
+ * pieces, like a browser stream, so readers that stream are exercised across boundaries.
+ */
+export function inputFile(name: string, content: string | Uint8Array, chunkSize = 1024): InputFile {
+  const bytes = typeof content === 'string' ? new TextEncoder().encode(content) : content;
+  return {
+    name,
+    size: bytes.length,
+    bytes: () => Promise.resolve(bytes),
+    async *chunks() {
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        yield await Promise.resolve(bytes.subarray(i, i + chunkSize));
+      }
+    },
+  };
 }
 
 /** A text event with sensible defaults; override any field. */

@@ -9,7 +9,7 @@ const source: ChatSource = {
   canHandle: () => Promise.resolve(true),
   open: () =>
     Promise.resolve({
-      info: { title: 'Grupo falso' },
+      info: { title: 'Grupo falso', skippedEntries: 0 },
       events: [chatEvent({ id: '1' }), chatEvent({ id: '2' }), chatEvent({ id: '3' })],
     }),
 };
@@ -42,7 +42,7 @@ describe('AnalysisPipeline', () => {
     const report = await pipeline.run(source, inputFile('x.json', '{}'));
     expect(report).toEqual({
       source: 'fake',
-      chat: { title: 'Grupo falso' },
+      chat: { title: 'Grupo falso', skippedEntries: 0 },
       eventCount: 3,
       results: { count: 3, ids: ['1', '2', '3'] },
     });
@@ -53,7 +53,7 @@ describe('AnalysisPipeline', () => {
       ...source,
       open: () =>
         Promise.resolve({
-          info: { title: null },
+          info: { title: null, skippedEntries: 0 },
           events: (async function* () {
             yield* await Promise.resolve([chatEvent()]);
           })(),
