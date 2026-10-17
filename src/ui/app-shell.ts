@@ -5,6 +5,11 @@ import { el, svgEl } from './dom';
 import { formatInt } from './format';
 import { ConnectionsWheelSection } from './sections/connections-wheel';
 import { DailyMessagesSection } from './sections/daily-messages';
+import { EmojisSection } from './sections/emojis';
+import { AwardsSection } from './sections/awards';
+import { StickersSection } from './sections/stickers';
+import { WordCloudSection } from './sections/word-cloud';
+import { WordsScatterSection } from './sections/words-scatter';
 import { GroupRhythmSection } from './sections/group-rhythm';
 import { HourHeatmapSection } from './sections/hour-heatmap';
 import { KpisSection } from './sections/kpis';
@@ -124,10 +129,28 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   const hours = new HourHeatmapSection(t, tooltip, select);
   const weekdays = new WeekdayHeatmapSection(t, tooltip, select);
   const rhythm = new GroupRhythmSection(t, tooltip);
+  const scatter = new WordsScatterSection(t, tooltip, select);
+  const wordCloud = new WordCloudSection(t, tooltip);
+  const stickers = new StickersSection(t, tooltip, select);
+  const awards = new AwardsSection(t, select);
+  const emojis = new EmojisSection(t);
+  const footNote = el('p', 'foot', t.footNote);
+  footNote.id = 'footNote';
   // Same order and two-column grid as the prototype; later sections slot in between.
   const grid = el('div', 'grid2');
-  grid.append(daily.element, ranking.element, hours.element, weekdays.element, rhythm.element);
-  const dashboardParts = [kpis.element, wheel.element, person.element, grid];
+  grid.append(
+    daily.element,
+    ranking.element,
+    scatter.element,
+    wordCloud.element,
+    hours.element,
+    weekdays.element,
+    rhythm.element,
+    stickers.element,
+    awards.element,
+    emojis.element,
+  );
+  const dashboardParts = [kpis.element, wheel.element, person.element, grid, footNote];
 
   const wrap = el('div', 'wrap');
   wrap.append(header, empty, ...dashboardParts);
@@ -146,6 +169,8 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     wheel.render(view, id);
     hours.render(view, id);
     weekdays.render(view, id);
+    scatter.render(view, id);
+    wordCloud.render(view, id);
     if (scroll) {
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
       person.element.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
@@ -181,6 +206,9 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
       counts: dashboard.messagesPerDay,
     });
     rhythm.render(view);
+    stickers.render(view);
+    awards.render(view);
+    emojis.render(view);
     if (selected) selectPerson(selected, false);
   }
 
