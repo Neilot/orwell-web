@@ -16,12 +16,7 @@ export {
   type PeopleActivityResult,
   type PersonMonthActivity,
 } from './people-activity';
-export {
-  LONGEST_PREVIEW,
-  PersonHabitsAnalyzer,
-  type PersonHabits,
-  type PersonHabitsResult,
-} from './person-habits';
+export { PersonHabitsAnalyzer, type PersonHabits, type PersonHabitsResult } from './person-habits';
 export {
   RESPONSE_TIME_BANDS,
   ResponseTimes,

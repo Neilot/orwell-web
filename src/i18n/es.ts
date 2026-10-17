@@ -53,7 +53,7 @@ export const es = {
     audio: 'Audio',
     video: 'Video',
     gif: 'GIF',
-    'video-note': 'Video nota',
+    'video-note': 'Videonota',
     file: 'Archivo',
     poll: 'Encuesta',
     other: 'Otro',
@@ -97,7 +97,7 @@ export const es = {
     nobody: (unit: string) => `Nadie envió ${unit}.`,
     halfPeople: (n: string) => `${n} personas`,
     halfRest: (unit: string, top: string) =>
-      ` escriben la mitad de los ${unit} del grupo. El 10% más activo (${top}) escribe el `,
+      ` escriben la mitad de los ${unit} del grupo. El 10\u00a0% más activo (${top}) escribe el `,
     comparedTo: (month: string) => ` Las flechas comparan su puesto con ${month}.`,
     newEntry: 'nuevo',
     newEntryTitle: 'No aparecía el mes anterior',
@@ -111,7 +111,11 @@ export const es = {
     order: 'Orden',
     byPeak: 'Por hora pico',
     mostActive: 'Más activos primero',
-    desc: 'Arriba, el total del grupo por hora. Abajo, las 30 personas más activas: cada fila muestra cómo se reparten sus mensajes en el día (de amarillo a vino tinto, mayor proporción).',
+    descBefore: 'Arriba, el total del grupo por hora. Abajo, ',
+    descTop: (n: string) => `las ${n} personas más activas`,
+    descAll: (n: string) => `las ${n} personas que escribieron este mes`,
+    descAfter:
+      ': cada fila muestra cómo se reparten sus mensajes en el día (de amarillo a vino tinto, de menor a mayor proporción).',
     legendHigh: 'Su hora pico',
     legendNote: '· cada fila se compara con la hora en que esa persona más escribe',
     chartLabel: 'Mensajes por hora y por persona',
@@ -124,6 +128,10 @@ export const es = {
     share: 'Proporción',
     messages: 'Mensajes',
     ofTotal: 'De su total',
+  },
+  rows: {
+    showAll: (n: string) => `Mostrar a las ${n} personas que escribieron`,
+    showTop: (n: string) => `Mostrar solo las ${n} más activas`,
   },
   weekdays: {
     title: 'Días de la semana por persona',
@@ -152,7 +160,7 @@ export const es = {
   header: {
     defaultGroupName: 'Grupo de Telegram',
     month: 'Mes',
-    monthOption: (month: string, year: string) => `${month} ${year}`,
+    monthOption: (month: string, year: string) => `${month} de ${year}`,
     monthsInFile: (count: string) => `${count} meses en el archivo`,
     subtitle: (month: string, year: string, participants: string) =>
       `${month} de ${year} · ${participants} participantes`,
@@ -213,7 +221,7 @@ export const es = {
     chartLabel: 'Rueda de conexiones agrupadas por comunidad',
     readTitle: 'Cómo leerla',
     readText:
-      'Cada nombre es una persona, agrupada con quienes más interactúa. Las líneas son respuestas, menciones y reacciones; se juntan en "cables" cuando muchas van en la misma dirección.',
+      'Cada nombre es una persona, agrupada con quienes más interactúa. Las líneas son respuestas, menciones y reacciones; se juntan en «cables» cuando muchas van en la misma dirección.',
     communitiesTitle: 'Comunidades detectadas',
     communityPeople: (n: string) => ` · ${n} personas`,
     internal: (percent: string) => `${percent} interna`,
@@ -224,7 +232,7 @@ export const es = {
     tipMessages: 'Mensajes',
     tipSent: 'Interacciones enviadas',
     tipReceived: 'Interacciones recibidas',
-    tipClick: 'Clic para ver su ficha',
+    tipClick: 'Haz clic para ver su ficha',
   },
   person: {
     defaultTitle: 'Persona',
@@ -263,6 +271,10 @@ export const es = {
     sent: 'Enviadas',
     received: 'Recibidas',
     noInteractions: 'Sin interacciones registradas.',
+    interactionsShown: (shown: string, total: string) =>
+      `Se muestran ${shown} de ${total} personas con las que interactúa.`,
+    showMore: 'Ver más',
+    showLess: 'Ver menos',
     words: 'Palabras que más usa',
     noWords: 'No escribe texto.',
     emojis: 'Emojis favoritos (en el texto)',
@@ -300,7 +312,7 @@ export const es = {
       `Récord: ${count} el ${weekday} ${day}`,
     tipTitle: (weekday: string, day: string, month: string) => `${weekday} ${day} de ${month}`,
     tipMessages: 'Mensajes',
-    tipAverage: 'Promedio 7 días',
+    tipAverage: 'Promedio de 7 días',
     noValue: '—',
   },
 };

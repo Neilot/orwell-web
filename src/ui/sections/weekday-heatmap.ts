@@ -3,9 +3,11 @@ import { scaleLinear } from 'd3-scale';
 import { select } from 'd3-selection';
 import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
+import { fitNames } from '../charts/fit-names';
 import { heatFill } from '../charts/heat';
 import { heatLegend } from '../components/heat-legend';
 import { Segmented } from '../components/segmented';
+import { ShowAllButton } from '../components/show-all';
 import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatInt, formatPercent } from '../format';
@@ -18,7 +20,6 @@ const LEFT = 130;
 const TOP = 104;
 const ROW = 19;
 const CELL = (W - LEFT - 56) / 7;
-const MAX_PEOPLE = 30;
 
 function weekendShare(person: PersonView): number {
   return ((person.weekdays[5] ?? 0) + (person.weekdays[6] ?? 0)) / person.messages;
@@ -29,6 +30,7 @@ export class WeekdayHeatmapSection {
   readonly element = el('section', 'card');
   private readonly segment: Segmented<Order>;
   private readonly svg = svgEl('svg', { id: 'wd', viewBox: '0 0 600 700', role: 'img' });
+  private readonly showAll: ShowAllButton;
   private view: MonthView | null = null;
   private selected: string | null = null;
 
@@ -55,10 +57,15 @@ export class WeekdayHeatmapSection {
     const head = el('div', 'head');
     head.append(title, this.segment.element);
     this.svg.setAttribute('aria-label', tw.chartLabel);
+    this.showAll = new ShowAllButton(t, 'wd', () => {
+      this.draw();
+    });
+    this.showAll.element.id = 'wdAll';
     this.element.append(
       head,
       heatLegend(t, tw.legendHigh, tw.legendNote, { width: '18px', height: '10px', radius: '2px' }),
       this.svg,
+      this.showAll.element,
     );
   }
 
@@ -73,10 +80,11 @@ export class WeekdayHeatmapSection {
     if (!view) return;
     const tw = t.weekdays;
     const th = t.hours;
-    let people = view.people
-      .filter((p) => p.messages > 0)
+    const writers = view.people.filter((p) => p.messages > 0);
+    this.showAll.update(writers.length);
+    let people = writers
       .sort((a, b) => b.messages - a.messages)
-      .slice(0, MAX_PEOPLE);
+      .slice(0, this.showAll.limit(writers.length));
     if (this.segment.value === 'weekend') {
       people = people.sort((a, b) => weekendShare(b) - weekendShare(a));
     }
@@ -154,7 +162,8 @@ export class WeekdayHeatmapSection {
       .style('cursor', 'pointer')
       .on('click', (_, p) => {
         this.onSelect(p.id);
-      });
+      })
+      .call(fitNames, LEFT - 16);
     rows.each(function (person: PersonView) {
       const row = select(this);
       const top = Math.max(1, max(person.weekdays) ?? 0);

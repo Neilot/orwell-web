@@ -11,7 +11,13 @@ import { communityColor, initials, personName, styleAvatar } from '../people';
 import { kindsBar } from './kinds-bar';
 import { PersonPicker } from './person-picker';
 
-const MAX_PARTNERS = 7;
+/** Partners drawn at most; the list is then trimmed to the height of the left column. */
+const MAX_PARTNERS = 60;
+/** Partners always shown, also when the two columns stack on narrow screens. */
+const MIN_PARTNERS = 7;
+/** A longest message over this many characters is cut, with "Ver más" to open it. */
+const LONGEST_PREVIEW = 280;
+const ONE_COLUMN = '(max-width:1000px)';
 const MAX_WORDS = 12;
 const MAX_CHIPS = 8;
 
@@ -40,6 +46,11 @@ export class PersonCardSection {
   private readonly kindsLegend = el('div', 'legend');
   private readonly facts = el('dl', 'facts');
   private readonly ego = el('div', 'ego');
+  private readonly egoNote = el('p', 'ego-note');
+  private egoTotal = 0;
+  private readonly oneColumn = matchMedia(ONE_COLUMN);
+  private readonly left: HTMLDivElement;
+  private readonly right: HTMLDivElement;
   private readonly wordChips = el('div', 'chips');
   private readonly emojiChips = el('div', 'chips');
   private readonly stickerChips = el('div', 'chips');
@@ -71,6 +82,8 @@ export class PersonCardSection {
     this.kindsLegend.style.marginTop = '6px';
     this.facts.id = 'pFacts';
     this.ego.id = 'pEgo';
+    this.egoNote.id = 'pEgoNote';
+    this.egoNote.hidden = true;
     this.wordChips.id = 'pWords';
     this.emojiChips.id = 'pEmo';
     this.stickerChips.id = 'pStk';
@@ -96,6 +109,8 @@ export class PersonCardSection {
       block(subHeading(tp.weekdays), this.weekdaysChart),
     );
     const left = column();
+    left.id = 'pColL';
+    this.left = left;
     left.append(
       this.tiles,
       charts,
@@ -116,8 +131,10 @@ export class PersonCardSection {
       egoLegend.append(item);
     }
     const right = column();
+    right.id = 'pColR';
+    this.right = right;
     right.append(
-      block(subHeading(tp.interactions), egoLegend, this.ego),
+      block(subHeading(tp.interactions), egoLegend, this.ego, this.egoNote),
       block(subHeading(tp.words), this.wordChips),
       block(subHeading(tp.emojis), this.emojiChips),
       block(subHeading(tp.stickers), this.stickerChips),
@@ -126,6 +143,21 @@ export class PersonCardSection {
     const body = el('div', 'persona');
     body.append(left, right);
     this.element.append(head, body);
+
+    // Column heights change with the layout and once the web fonts are in.
+    this.oneColumn.addEventListener('change', () => {
+      this.fitEgo();
+    });
+    let resizeTimer = 0;
+    addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        this.fitEgo();
+      }, 120);
+    });
+    void document.fonts.ready.then(() => {
+      this.fitEgo();
+    });
   }
 
   render(view: MonthView, selectedId: string): void {
@@ -150,6 +182,7 @@ export class PersonCardSection {
     this.drawEgo(view, person);
     this.drawChips(view, person);
     this.drawFacts(view, person);
+    this.fitEgo();
   }
 
   private drawHeader(view: MonthView, person: PersonView): void {
@@ -316,7 +349,7 @@ export class PersonCardSection {
       .text((d) => label(d.i));
   }
 
-  /** The seven people they interact with most: sent to the left, received to the right. */
+  /** The people they interact with most: sent to the left, received to the right. */
   private drawEgo(view: MonthView, p: PersonView): void {
     const { t } = this;
     const X = view.graph.matrices.all;
@@ -327,8 +360,9 @@ export class PersonCardSection {
         : range(view.graph.people.length)
             .filter((j) => j !== k && (X[k]?.[j] ?? 0) + (X[j]?.[k] ?? 0) > 0)
             .map((j) => ({ j, out: X[k]?.[j] ?? 0, in: X[j]?.[k] ?? 0 }))
-            .sort((a, b) => b.out + b.in - (a.out + a.in))
-            .slice(0, MAX_PARTNERS);
+            .sort((a, b) => b.out + b.in - (a.out + a.in));
+    this.egoTotal = partners.length;
+    partners.splice(MAX_PARTNERS);
     if (partners.length === 0) {
       const empty = el('p', undefined, t.person.noInteractions);
       empty.style.color = 'var(--muted)';
@@ -365,6 +399,40 @@ export class PersonCardSection {
         row.append(sent, who, received);
         return row;
       }),
+    );
+  }
+
+  /**
+   * Shows as many partners as fit beside the left column (at least seven), so the right column
+   * never ends up taller than the left one. On narrow screens the columns stack: seven then.
+   */
+  private fitEgo(): void {
+    const rows = [...this.ego.querySelectorAll<HTMLElement>('.row')];
+    if (rows.length === 0) {
+      this.egoNote.hidden = true;
+      return;
+    }
+    for (const row of rows) row.hidden = false;
+    // The note takes room too, so it is measured as shown.
+    this.egoNote.hidden = false;
+    this.egoNote.textContent = this.t.person.interactionsShown('0', '0');
+    let shown = rows.length;
+    if (this.oneColumn.matches) {
+      shown = Math.min(shown, MIN_PARTNERS);
+    } else {
+      while (shown > MIN_PARTNERS && this.right.offsetHeight > this.left.offsetHeight) {
+        shown--;
+        const row = rows[shown];
+        if (row) row.hidden = true;
+      }
+    }
+    rows.forEach((row, i) => {
+      row.hidden = i >= shown;
+    });
+    this.egoNote.hidden = shown >= this.egoTotal;
+    this.egoNote.textContent = this.t.person.interactionsShown(
+      formatInt(shown),
+      formatInt(this.egoTotal),
     );
   }
 
@@ -420,15 +488,32 @@ export class PersonCardSection {
     const longest = habits?.longest;
     let longestValue: Node | string = '—';
     if (longest?.length) {
-      const preview =
-        longest.preview.length > 140 ? `${longest.preview.slice(0, 140)}…` : longest.preview;
-      const quote = el('span', undefined, `“${preview}”`);
-      quote.style.color = 'var(--fg2)';
+      const quote = el('span', 'longq');
+      quote.id = 'pLongT';
+      const more = el('button', 'more');
+      more.id = 'pLongMore';
+      more.type = 'button';
+      const show = (open: boolean): void => {
+        const cut = longest.text.length > LONGEST_PREVIEW;
+        const text =
+          cut && !open ? `${longest.text.slice(0, LONGEST_PREVIEW).trimEnd()}…` : longest.text;
+        quote.textContent = `“${text}”`;
+        more.hidden = !cut;
+        more.textContent = open ? t.person.showLess : t.person.showMore;
+        more.setAttribute('aria-expanded', String(open));
+      };
+      let open = false;
+      more.addEventListener('click', () => {
+        open = !open;
+        show(open);
+        this.fitEgo();
+      });
+      show(false);
       const count = el('span', 'num', t.person.facts.longestCharacters(formatInt(longest.length)));
       count.style.color = 'var(--muted)';
       count.style.fontSize = '12px';
       const value = document.createDocumentFragment();
-      value.append(quote, ' ', count);
+      value.append(quote, more, ' ', count);
       longestValue = value;
     }
     const facts: [string, Node | string][] = [

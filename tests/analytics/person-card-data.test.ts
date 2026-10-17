@@ -38,7 +38,7 @@ describe('PersonHabitsAnalyzer', () => {
       laughs: 3,
     });
     expect(result?.longest?.length).toBe(200);
-    expect(result?.longest?.preview).toHaveLength(141);
+    expect(result?.longest?.text).toBe('x'.repeat(200));
   });
 
   it('counts conversations started after three hours of silence in the group', () => {

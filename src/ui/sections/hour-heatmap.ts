@@ -3,9 +3,11 @@ import { scaleLinear } from 'd3-scale';
 import { select } from 'd3-selection';
 import { maxIndex, type MonthView, type PersonView } from '../../app';
 import type { Messages } from '../../i18n';
+import { fitNames } from '../charts/fit-names';
 import { heatFill } from '../charts/heat';
 import { heatLegend } from '../components/heat-legend';
 import { Segmented } from '../components/segmented';
+import { ShowAllButton } from '../components/show-all';
 import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatInt, formatPercent, pad2 } from '../format';
@@ -18,7 +20,6 @@ const LEFT = 150;
 const TOP = 118;
 const ROW = 17;
 const CELL = (W - LEFT - 60) / 24;
-const MAX_PEOPLE = 30;
 
 /**
  * Hour of a person's busiest three-hour stretch, shifted so the day starts at 5 a.m.; sorting
@@ -42,6 +43,8 @@ export class HourHeatmapSection {
   readonly element = el('section', 'card span2');
   private readonly segment: Segmented<Order>;
   private readonly svg = svgEl('svg', { id: 'hour', viewBox: '0 0 1200 640', role: 'img' });
+  private readonly who = el('span');
+  private readonly showAll: ShowAllButton;
   private view: MonthView | null = null;
   private selected: string | null = null;
 
@@ -71,11 +74,19 @@ export class HourHeatmapSection {
     this.svg.style.minWidth = '760px';
     const scroll = el('div', 'scrollx');
     scroll.append(this.svg);
+    this.who.id = 'hourWho';
+    const desc = el('p', 'desc');
+    desc.append(th.descBefore, this.who, th.descAfter);
+    this.showAll = new ShowAllButton(t, 'hour', () => {
+      this.draw();
+    });
+    this.showAll.element.id = 'hourAll';
     this.element.append(
       head,
-      el('p', 'desc', th.desc),
+      desc,
       heatLegend(t, th.legendHigh, th.legendNote, { width: '22px', height: '12px', radius: '3px' }),
       scroll,
+      this.showAll.element,
     );
   }
 
@@ -89,10 +100,14 @@ export class HourHeatmapSection {
     const { t, tooltip, view } = this;
     if (!view) return;
     const th = t.hours;
-    let people = view.people
-      .filter((p) => p.messages > 0)
+    const writers = view.people.filter((p) => p.messages > 0);
+    this.showAll.update(writers.length);
+    this.who.textContent = this.showAll.showingAll
+      ? th.descAll(formatInt(writers.length))
+      : th.descTop(String(this.showAll.limit(writers.length)));
+    let people = writers
       .sort((a, b) => b.messages - a.messages)
-      .slice(0, MAX_PEOPLE);
+      .slice(0, this.showAll.limit(writers.length));
     if (this.segment.value === 'peak') {
       people = people.sort((a, b) => peakKey(a.hours) - peakKey(b.hours));
     }
@@ -164,7 +179,8 @@ export class HourHeatmapSection {
       .style('cursor', 'pointer')
       .on('click', (_, p) => {
         this.onSelect(p.id);
-      });
+      })
+      .call(fitNames, LEFT - 16);
     rows.each(function (person: PersonView) {
       const row = select(this);
       const top = Math.max(1, max(person.hours) ?? 0);

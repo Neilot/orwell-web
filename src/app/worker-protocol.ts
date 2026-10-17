@@ -84,8 +84,8 @@ export interface PersonHabits {
   readonly conversationsStarted: number;
   readonly questions: number;
   readonly laughs: number;
-  /** Length of the longest message and its first characters. */
-  readonly longest: { readonly length: number; readonly preview: string } | null;
+  /** Their longest message and its length. */
+  readonly longest: { readonly length: number; readonly text: string } | null;
 }
 
 /** `[item, count]`, most frequent first. */

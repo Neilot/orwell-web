@@ -4,8 +4,6 @@ import { words } from './text';
 
 /** Silence after which the next message counts as starting a conversation. */
 export const CONVERSATION_GAP = 3 * 3600_000;
-/** Longest messages are kept up to this many characters (plus one, to know they were cut). */
-export const LONGEST_PREVIEW = 140;
 const LAUGH = /^(j[aeiou]){2,}j?$/;
 const DAY = 86_400_000;
 
@@ -24,8 +22,8 @@ export interface PersonHabits {
   readonly questions: number;
   /** Words like "jaja", "jejeje" or "jajaj". */
   readonly laughs: number;
-  /** Their longest message: its length and its start (`LONGEST_PREVIEW` + 1 characters). */
-  readonly longest: { readonly length: number; readonly preview: string } | null;
+  /** Their longest message. */
+  readonly longest: { readonly length: number; readonly text: string } | null;
 }
 
 /** Per month (`YYYY-MM`) and person. */
@@ -39,7 +37,7 @@ interface HabitsState {
   conversationsStarted: number;
   questions: number;
   laughs: number;
-  longest: { length: number; preview: string } | null;
+  longest: { length: number; text: string } | null;
 }
 
 function streak(days: Iterable<string>): number {
@@ -89,7 +87,7 @@ export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
     if (!text) return;
     if (text.includes('?')) p.questions++;
     if (text.length > (p.longest?.length ?? 0)) {
-      p.longest = { length: text.length, preview: text.slice(0, LONGEST_PREVIEW + 1) };
+      p.longest = { length: text.length, text };
     }
     for (const word of words(text)) if (LAUGH.test(word)) p.laughs++;
   }
