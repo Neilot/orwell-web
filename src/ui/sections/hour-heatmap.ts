@@ -1,11 +1,12 @@
 import { max, range } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 import { select } from 'd3-selection';
-import { maxIndex, type MonthView, type PersonView } from '../../app';
+import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { fitNames } from '../charts/fit-names';
 import { heatFill } from '../charts/heat';
 import { heatLegend } from '../components/heat-legend';
+import { HelpButton } from '../components/help';
 import { Segmented } from '../components/segmented';
 import { ShowAllButton } from '../components/show-all';
 import type { Tooltip } from '../components/tooltip';
@@ -22,10 +23,10 @@ const ROW = 17;
 const CELL = (W - LEFT - 60) / 24;
 
 /**
- * Hour of a person's busiest three-hour stretch, shifted so the day starts at 5 a.m.; sorting
- * by it lists early birds first and night owls last.
+ * Centre of a person's busiest three-hour stretch (the hour counts double), so one stray
+ * message does not decide it. It orders the rows and is what the "pico" column shows.
  */
-function peakKey(hours: readonly number[]): number {
+function peakHour(hours: readonly number[]): number {
   let best = 0;
   let bestValue = -1;
   for (let k = 0; k < 24; k++) {
@@ -35,7 +36,12 @@ function peakKey(hours: readonly number[]): number {
       best = k;
     }
   }
-  return (best + 19) % 24;
+  return best;
+}
+
+/** Peak hour with the day starting at 5 a.m.: early birds sort first, night owls last. */
+function peakKey(hours: readonly number[]): number {
+  return (peakHour(hours) + 19) % 24;
 }
 
 /** "¿A qué hora escribe cada quien?": the group's hours, then one heat row per active person. */
@@ -68,8 +74,9 @@ export class HourHeatmapSection {
     );
     const title = el('h2', undefined, th.title);
     title.id = 'h-hour';
+    const help = new HelpButton(title, th.helpLabel, th.helpTitle, th.helpParagraphs);
     const head = el('div', 'head');
-    head.append(title, this.segment.element);
+    head.append(help.element, this.segment.element);
     this.svg.setAttribute('aria-label', th.chartLabel);
     this.svg.style.minWidth = '760px';
     const scroll = el('div', 'scrollx');
@@ -212,7 +219,7 @@ export class HourHeatmapSection {
         .attr('font-size', 11)
         .style('font-family', 'var(--mono)')
         .style('fill', 'var(--muted)')
-        .text(th.peakHour(pad2(maxIndex(person.hours))));
+        .text(th.peakHour(pad2(peakHour(person.hours))));
     });
     s.append('text')
       .attr('x', W - 52)

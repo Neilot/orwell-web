@@ -115,7 +115,16 @@ export const es = {
     descTop: (n: string) => `las ${n} personas más activas`,
     descAll: (n: string) => `las ${n} personas que escribieron este mes`,
     descAfter:
-      ': cada fila muestra cómo se reparten sus mensajes en el día (de amarillo a vino tinto, de menor a mayor proporción).',
+      ': cada fila muestra cómo se reparten sus mensajes a lo largo del día, con los colores de la leyenda.',
+    helpLabel: 'Cómo funciona esta tabla',
+    helpTitle: 'Cómo leer esta tabla',
+    helpParagraphs: [
+      'Cada fila es una persona y cada cuadro, una hora del día.',
+      'El color sigue la leyenda: va de «Muy poco» a «Su hora pico», que es la hora en la que esa persona más escribe.',
+      'Con «Por hora pico», arriba salen quienes escriben más temprano y abajo, quienes escriben más tarde o de noche. Por eso las horas pico bajan en diagonal.',
+      'Con «Más activos primero», arriba salen quienes más mensajes enviaron.',
+      'La columna «pico» dice a qué hora escribe más cada persona.',
+    ],
     legendHigh: 'Su hora pico',
     legendNote: '· cada fila se compara con la hora en que esa persona más escribe',
     chartLabel: 'Mensajes por hora y por persona',
