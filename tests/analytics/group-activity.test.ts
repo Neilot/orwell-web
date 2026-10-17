@@ -47,7 +47,11 @@ describe('ResponseTimes', () => {
     analyzer.consume(reply('8', 0)); // no delay: ignored
 
     expect(analyzer.result()).toEqual({
-      '2026-04': { histogram: [1, 1, 0, 0, 1, 0], median: 3 * MIN, byPerson: { u2: 3 * MIN } },
+      '2026-04': {
+        histogram: [1, 1, 0, 0, 1, 0],
+        median: 3 * MIN,
+        byPerson: { u2: { median: 3 * MIN, count: 3 } },
+      },
     });
   });
 

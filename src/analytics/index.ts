@@ -1,5 +1,6 @@
 export { OTHER_COMMUNITY } from './communities';
 export {
+  CUSTOM_REACTION,
   Interactions,
   MAX_GRAPH_PEOPLE,
   type Edge,
@@ -23,7 +24,13 @@ export {
   type MonthResponseTimes,
   type ResponseTimesResult,
 } from './response-times';
-export { StickerUsage, type StickerCounts, type StickerUsageResult } from './sticker-usage';
+export {
+  StickerUsage,
+  type MonthStickers,
+  type StickerCounts,
+  type StickerUsageResult,
+  type TopSticker,
+} from './sticker-usage';
 export {
   Vocabulary,
   type PersonVocabulary,

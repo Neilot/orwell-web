@@ -4,6 +4,9 @@ import { detectCommunities } from './communities';
 
 /** At most this many people (the most active) take part in the interaction graph. */
 export const MAX_GRAPH_PEOPLE = 400;
+/** Stands for a reaction without an emoji character (a custom emoji). */
+export const CUSTOM_REACTION = '★';
+const TOP_REACTIONS = 10;
 
 export type InteractionType = 'reply' | 'mention' | 'reaction';
 const TYPES: readonly InteractionType[] = ['reply', 'mention', 'reaction'];
@@ -39,6 +42,8 @@ export interface MonthInteractions {
   readonly people: readonly MonthParticipant[];
   /** Reactions received by all messages of the month, `count` included. */
   readonly reactions: number;
+  /** The ten most used reactions, `[emoji, count]`; "★" stands for custom emoji. */
+  readonly reactionEmojis: readonly (readonly [string, number])[];
   readonly graph: InteractionGraph;
 }
 
@@ -70,6 +75,7 @@ class MonthState {
     reaction: new Map(),
   };
   reactions = 0;
+  readonly reactionEmojis = new Map<string, number>();
 
   person(phase: NamePhase, who: Participant): PersonState {
     const known = phase.get(who.id);
@@ -147,6 +153,7 @@ class MonthState {
     return {
       people,
       reactions: this.reactions,
+      reactionEmojis: [...this.reactionEmojis].sort((a, b) => b[1] - a[1]).slice(0, TOP_REACTIONS),
       graph: { nodes, edges, communities: detectCommunities(total) },
     };
   }
@@ -171,6 +178,8 @@ export class Interactions implements Analyzer<InteractionsResult> {
 
     for (const reaction of event.reactions) {
       month.reactions += reaction.count;
+      const emoji = reaction.emoji ?? CUSTOM_REACTION;
+      month.reactionEmojis.set(emoji, (month.reactionEmojis.get(emoji) ?? 0) + reaction.count);
       month.person(month.writers, event.author).reactionsReceived += reaction.count;
       for (const reactor of reaction.by) {
         month.person(month.reactors, reactor).reactionsSent++;

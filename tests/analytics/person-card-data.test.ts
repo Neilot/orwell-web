@@ -69,7 +69,9 @@ describe('Vocabulary', () => {
         text: 'Hola hola amigos, jajaja jejeje que bien 2026 http://x.com la 👍👍 ❤️ 👨‍👩‍👧',
       }),
     );
-    const words = analyzer.result()['2026-01']?.u1;
+    const month = analyzer.result()['2026-01'];
+    expect(month?.group).toEqual(month?.people.u1);
+    const words = month?.people.u1;
     // Ties keep first-use order; "com" survives from the link, as in the prototype.
     expect(words?.words).toEqual([
       ['hola', 2],
@@ -106,7 +108,25 @@ describe('StickerUsage', () => {
     sticker('😀');
     sticker(undefined);
     analyzer.consume(chatEvent({ author: ana, kind: 'text' }));
-    expect(analyzer.result()['2026-01']?.u1).toEqual([
+    analyzer.consume(
+      chatEvent({
+        author: { id: 'u2', displayName: 'Beto' },
+        kind: 'sticker',
+        text: '',
+        stickerEmoji: '😀',
+        localTime: '2026-01-02T10:00:00',
+      }),
+    );
+    const month = analyzer.result()['2026-01'];
+    expect(month?.top).toEqual([
+      { emoji: '😀', count: 4, fan: 'u1', fanCount: 3 },
+      { emoji: '😀', count: 2, fan: 'u1', fanCount: 2 },
+      { emoji: '🏷️', count: 1, fan: 'u1', fanCount: 1 },
+    ]);
+    expect(month?.distinct).toBe(3);
+    expect(month?.byEmojiOnly).toBe(false);
+    expect(month?.perDay).toEqual({ '2026-01-01': 6, '2026-01-02': 1 });
+    expect(month?.people.u1).toEqual([
       ['😀', 3],
       ['😀', 2],
       ['🏷️', 1],

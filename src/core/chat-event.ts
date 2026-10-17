@@ -61,6 +61,8 @@ export interface ChatEvent {
   readonly stickerEmoji?: string;
   /** Identifies the sticker itself (e.g. its file), when the source exposes it. */
   readonly stickerId?: string;
+  /** Length of a voice note, audio or video, in seconds, when the source gives it. */
+  readonly durationSeconds?: number;
   /** When the event was last edited, in ms since the Unix epoch; absent if never edited. */
   readonly editedAt?: number;
 }

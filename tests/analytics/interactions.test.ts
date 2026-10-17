@@ -37,6 +37,7 @@ describe('Interactions', () => {
       ['u9', 'Nueve'],
     ]);
     expect(april?.reactions).toBe(3);
+    expect(april?.reactionEmojis).toEqual([['👍', 3]]);
   });
 
   it('counts replies, mentions and reactions between people', () => {
@@ -65,6 +66,8 @@ describe('Interactions', () => {
       mentioned: 1,
     });
     expect(byId.get('u3')).toMatchObject({ messages: 0, reactionsSent: 1 });
+    // Custom emoji have no character, so they are counted as a star.
+    expect(april?.reactionEmojis).toEqual([['★', 2]]);
 
     const graph = april?.graph;
     // Nodes follow the most messages, ties in listing order: Ana, Beto, Caro.

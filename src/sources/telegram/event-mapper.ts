@@ -88,5 +88,6 @@ export function mapMessage(m: TelegramMessage): ChatEvent {
     ...(m.sticker_emoji !== undefined && { stickerEmoji: m.sticker_emoji }),
     ...(sticker !== undefined && { stickerId: sticker }),
     ...(edited !== undefined && { editedAt: edited }),
+    ...(m.duration_seconds !== undefined && { durationSeconds: m.duration_seconds }),
   };
 }

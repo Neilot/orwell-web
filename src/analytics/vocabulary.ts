@@ -26,8 +26,11 @@ export interface PersonVocabulary {
   readonly emojis: Ranked;
 }
 
-/** Per month (`YYYY-MM`) and person. */
-export type VocabularyResult = Record<string, Record<ParticipantId, PersonVocabulary>>;
+/** Per month (`YYYY-MM`): the whole group and each person. */
+export type VocabularyResult = Record<
+  string,
+  { readonly group: PersonVocabulary; readonly people: Record<ParticipantId, PersonVocabulary> }
+>;
 
 interface Counts {
   readonly words: Map<string, number>;
@@ -46,14 +49,16 @@ function bump(counts: Map<string, number>, key: string): void {
 export class Vocabulary implements Analyzer<VocabularyResult> {
   readonly id = 'vocabulary';
   private readonly months = new Map<string, Map<ParticipantId, Counts>>();
+  private readonly groups = new Map<string, Counts>();
 
   consume(event: ChatEvent): void {
     if (event.kind === 'service' || !event.text) return;
-    const people = getOrCreate(
-      this.months,
-      monthOf(event.localTime),
-      () => new Map<ParticipantId, Counts>(),
-    );
+    const month = monthOf(event.localTime);
+    const people = getOrCreate(this.months, month, () => new Map<ParticipantId, Counts>());
+    const group = getOrCreate(this.groups, month, () => ({
+      words: new Map<string, number>(),
+      emojis: new Map<string, number>(),
+    }));
     const p = getOrCreate(people, event.author.id, () => ({
       words: new Map<string, number>(),
       emojis: new Map<string, number>(),
@@ -69,21 +74,30 @@ export class Vocabulary implements Analyzer<VocabularyResult> {
         continue;
       }
       bump(p.words, word);
+      bump(group.words, word);
     }
-    for (const emoji of event.text.match(EMOJI) ?? []) bump(p.emojis, emoji);
+    for (const emoji of event.text.match(EMOJI) ?? []) {
+      bump(p.emojis, emoji);
+      bump(group.emojis, emoji);
+    }
   }
 
   result(): VocabularyResult {
+    const summary = (c: Counts): PersonVocabulary => ({
+      words: top(c.words, TOP_WORDS),
+      emojis: top(c.emojis, TOP_EMOJIS),
+    });
     return Object.fromEntries(
-      [...this.months].map(([month, people]) => [
-        month,
-        Object.fromEntries(
-          [...people].map(([id, p]) => [
-            id,
-            { words: top(p.words, TOP_WORDS), emojis: top(p.emojis, TOP_EMOJIS) },
-          ]),
-        ),
-      ]),
+      [...this.months].map(([month, people]) => {
+        const group = this.groups.get(month);
+        return [
+          month,
+          {
+            group: group ? summary(group) : { words: [], emojis: [] },
+            people: Object.fromEntries([...people].map(([id, p]) => [id, summary(p)])),
+          },
+        ];
+      }),
     );
   }
 }

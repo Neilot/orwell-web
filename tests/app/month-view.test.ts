@@ -21,6 +21,7 @@ function activity(id: string, messages: number): PersonMonthActivity {
     words: messages * 3,
     characters: messages * 15,
     stickers: 0,
+    voiceSeconds: 0,
     hours,
     weekdays,
     kinds: { ...kinds, text: messages },
@@ -59,6 +60,7 @@ const dashboard: Dashboard = {
     '2026-03': {
       people: [participant('u1', 'Ana', 4), participant('u2', null, 2)],
       reactions: 0,
+      reactionEmojis: [],
       graph: {
         nodes: [0, 1],
         edges: { reply: [], mention: [], reaction: [] },
@@ -72,6 +74,7 @@ const dashboard: Dashboard = {
         participant('u4', 'Dani', 0),
       ],
       reactions: 6,
+      reactionEmojis: [['👍', 6]],
       graph: {
         nodes: [1, 0, 2],
         edges: {
@@ -88,10 +91,19 @@ const dashboard: Dashboard = {
   },
   rhythmPerMonth: {},
   responseTimesPerMonth: {
-    '2026-04': { histogram: [1, 0, 0, 0, 0, 0], median: 30_000, byPerson: { u3: 30_000 } },
+    '2026-04': {
+      histogram: [1, 0, 0, 0, 0, 0],
+      median: 30_000,
+      byPerson: { u3: { median: 30_000, count: 1 } },
+    },
   },
   habitsPerMonth: {},
-  vocabularyPerMonth: { '2026-04': { u3: { words: [['hola', 2]], emojis: [] } } },
+  vocabularyPerMonth: {
+    '2026-04': {
+      group: { words: [['hola', 2]], emojis: [['😀', 1]] },
+      people: { u3: { words: [['hola', 2]], emojis: [] } },
+    },
+  },
   stickersPerMonth: {},
 };
 
@@ -168,7 +180,11 @@ describe('monthView', () => {
       vocabulary: { words: [['hola', 2]], emojis: [] },
       stickers: [],
       replyMedian: 30_000,
+      replyCount: 1,
     });
+    expect(view.vocabulary.emojis).toEqual([['😀', 1]]);
+    expect(view.reactionEmojis).toEqual([['👍', 6]]);
+    expect(view.stickers).toEqual({ top: [], distinct: 0, byEmojiOnly: false, perDay: {} });
     expect(view.details('u2').replyMedian).toBeNull();
   });
 

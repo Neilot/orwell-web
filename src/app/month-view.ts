@@ -8,6 +8,7 @@ import {
   type PersonHabits,
   type PersonMonthActivity,
   type PersonVocabulary,
+  type MonthStickers,
   type Ranked,
 } from './worker-protocol';
 
@@ -29,6 +30,8 @@ export interface PersonDetails {
   readonly stickers: Ranked;
   /** Median reply delay in ms, or `null` if they did not reply to anyone. */
   readonly replyMedian: number | null;
+  /** Replies whose delay was measured. */
+  readonly replyCount: number;
 }
 
 export interface MonthTotals {
@@ -77,6 +80,11 @@ export interface MonthView {
   readonly responseTimes: MonthResponseTimes | null;
   /** Reactions received by the month's messages. */
   readonly reactions: number;
+  /** The ten most used reactions; "★" stands for custom emoji. */
+  readonly reactionEmojis: Ranked;
+  /** The group's most used words (up to 110) and written emojis (up to 10). */
+  readonly vocabulary: PersonVocabulary;
+  readonly stickers: Omit<MonthStickers, 'people'>;
   readonly graph: GraphView;
   details(id: string): PersonDetails;
   /** The previous month in the export, for comparisons, or `null` for the first one. */
@@ -116,6 +124,7 @@ const NO_ACTIVITY: Omit<PersonMonthActivity, 'id'> = {
   words: 0,
   characters: 0,
   stickers: 0,
+  voiceSeconds: 0,
   hours: new Array<number>(24).fill(0),
   weekdays: new Array<number>(7).fill(0),
   kinds: Object.fromEntries(MESSAGE_KINDS.map((k) => [k, 0])) as Record<MessageKind, number>,
@@ -250,12 +259,21 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
     rhythm: dashboard.rhythmPerMonth[month] ?? [],
     responseTimes,
     reactions: dashboard.interactionsPerMonth[month]?.reactions ?? 0,
+    reactionEmojis: dashboard.interactionsPerMonth[month]?.reactionEmojis ?? [],
+    vocabulary: dashboard.vocabularyPerMonth[month]?.group ?? { words: [], emojis: [] },
+    stickers: {
+      top: dashboard.stickersPerMonth[month]?.top ?? [],
+      distinct: dashboard.stickersPerMonth[month]?.distinct ?? 0,
+      byEmojiOnly: dashboard.stickersPerMonth[month]?.byEmojiOnly ?? false,
+      perDay: dashboard.stickersPerMonth[month]?.perDay ?? {},
+    },
     graph: graphView(dashboard, month, everyone),
     details: (id) => ({
       habits: dashboard.habitsPerMonth[month]?.[id] ?? null,
-      vocabulary: dashboard.vocabularyPerMonth[month]?.[id] ?? { words: [], emojis: [] },
-      stickers: dashboard.stickersPerMonth[month]?.[id] ?? [],
-      replyMedian: responseTimes?.byPerson[id] ?? null,
+      vocabulary: dashboard.vocabularyPerMonth[month]?.people[id] ?? { words: [], emojis: [] },
+      stickers: dashboard.stickersPerMonth[month]?.people[id] ?? [],
+      replyMedian: responseTimes?.byPerson[id]?.median ?? null,
+      replyCount: responseTimes?.byPerson[id]?.count ?? 0,
     }),
     previous: previousMonth
       ? {

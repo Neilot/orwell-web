@@ -13,6 +13,8 @@ export interface PersonMonthActivity {
   /** UTF-16 code units of text, as `String.length` counts them. */
   characters: number;
   stickers: number;
+  /** Total length of their voice notes and audio files. */
+  voiceSeconds: number;
   /** Messages per hour of the day, 0–23. */
   readonly hours: number[];
   /** Messages per weekday, Monday first. */
@@ -31,6 +33,7 @@ function emptyActivity(id: ParticipantId): PersonMonthActivity {
     words: 0,
     characters: 0,
     stickers: 0,
+    voiceSeconds: 0,
     hours: new Array<number>(24).fill(0),
     weekdays: new Array<number>(7).fill(0),
     kinds: Object.fromEntries(MESSAGE_KINDS.map((k) => [k, 0])) as Record<MessageKind, number>,
@@ -56,6 +59,7 @@ export class PeopleActivity implements Analyzer<PeopleActivityResult> {
     increment(person.weekdays, weekdayOf(event.localTime));
     person.kinds[kind]++;
     if (kind === 'sticker') person.stickers++;
+    if (kind === 'audio') person.voiceSeconds += event.durationSeconds ?? 0;
     if (event.text) {
       person.textMessages++;
       person.words += words(event.text).length;

@@ -24,6 +24,8 @@ export interface PersonMonthActivity {
   readonly words: number;
   readonly characters: number;
   readonly stickers: number;
+  /** Total length of their voice notes and audio files, in seconds. */
+  readonly voiceSeconds: number;
   /** Messages per hour of the day, 0–23. */
   readonly hours: readonly number[];
   /** Messages per weekday, Monday first. */
@@ -36,8 +38,8 @@ export interface MonthResponseTimes {
   readonly histogram: readonly number[];
   /** Median delay in ms, or `null` without replies. */
   readonly median: number | null;
-  /** Median delay of each person who replied, in ms. */
-  readonly byPerson: Readonly<Record<string, number>>;
+  /** Per person who replied: median delay in ms and how many replies were measured. */
+  readonly byPerson: Readonly<Record<string, { readonly median: number; readonly count: number }>>;
 }
 
 /** Someone who took part in a month, with their interaction counts. */
@@ -71,6 +73,8 @@ export interface MonthInteractions {
   readonly people: readonly MonthParticipant[];
   /** Reactions received by the month's messages. */
   readonly reactions: number;
+  /** The ten most used reactions; "★" stands for custom emoji. */
+  readonly reactionEmojis: Ranked;
   readonly graph: InteractionGraph;
 }
 
@@ -96,6 +100,32 @@ export interface PersonVocabulary {
   readonly emojis: Ranked;
 }
 
+export interface MonthVocabulary {
+  readonly group: PersonVocabulary;
+  readonly people: Readonly<Record<string, PersonVocabulary>>;
+}
+
+/** One of the group's most sent stickers. */
+export interface TopSticker {
+  readonly emoji: string;
+  readonly count: number;
+  /** Who sent it most, and how many times. */
+  readonly fan: string;
+  readonly fanCount: number;
+}
+
+export interface MonthStickers {
+  /** Each person's favourite stickers as `[emoji, count]`. */
+  readonly people: Readonly<Record<string, Ranked>>;
+  readonly top: readonly TopSticker[];
+  /** How many different stickers were sent. */
+  readonly distinct: number;
+  /** True when stickers could only be told apart by their emoji. */
+  readonly byEmojiOnly: boolean;
+  /** Stickers per local day, keyed `YYYY-MM-DD`. */
+  readonly perDay: Readonly<Record<string, number>>;
+}
+
 /** What the page needs to draw the dashboard. Plain data, so it survives `postMessage`. */
 export interface Dashboard {
   /** Group name from the export, or `null` when it has none. */
@@ -114,9 +144,8 @@ export interface Dashboard {
   readonly responseTimesPerMonth: Readonly<Record<string, MonthResponseTimes>>;
   /** Per month and person id. */
   readonly habitsPerMonth: Readonly<Record<string, Readonly<Record<string, PersonHabits>>>>;
-  readonly vocabularyPerMonth: Readonly<Record<string, Readonly<Record<string, PersonVocabulary>>>>;
-  /** Favourite stickers as `[emoji, count]`. */
-  readonly stickersPerMonth: Readonly<Record<string, Readonly<Record<string, Ranked>>>>;
+  readonly vocabularyPerMonth: Readonly<Record<string, MonthVocabulary>>;
+  readonly stickersPerMonth: Readonly<Record<string, MonthStickers>>;
 }
 
 export type AnalysisErrorCode = OrwellErrorCode | 'unknown';

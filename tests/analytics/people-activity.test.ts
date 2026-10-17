@@ -62,6 +62,7 @@ describe('PeopleActivity', () => {
       words: 3,
       characters: 12,
       stickers: 1,
+      voiceSeconds: 0,
     });
     expect(b?.hours[9]).toBe(2);
     expect(b?.weekdays[0]).toBe(2);
@@ -70,5 +71,17 @@ describe('PeopleActivity', () => {
     expect(a?.hours[23]).toBe(1);
     expect(a?.weekdays[6]).toBe(1);
     expect(result['2026-04']).toHaveLength(1);
+  });
+
+  it('adds up the length of voice notes and audio files', () => {
+    const analyzer = new PeopleActivity();
+    analyzer.consume(chatEvent({ author: ana, kind: 'voice', text: '', durationSeconds: 40 }));
+    analyzer.consume(chatEvent({ author: ana, kind: 'audio', text: '', durationSeconds: 200 }));
+    analyzer.consume(chatEvent({ author: ana, kind: 'video', text: '', durationSeconds: 99 }));
+    analyzer.consume(chatEvent({ author: ana, kind: 'voice', text: '' }));
+    expect(analyzer.result()['2026-01']?.[0]).toMatchObject({
+      voiceSeconds: 240,
+      kinds: { audio: 3 },
+    });
   });
 });

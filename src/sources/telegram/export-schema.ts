@@ -64,6 +64,7 @@ export const MessageSchema = v.looseObject({
   reply_to_message_id: v.fallback(v.optional(v.number()), undefined),
   media_type: v.fallback(v.optional(v.string()), undefined),
   sticker_emoji: v.fallback(v.optional(v.string()), undefined),
+  duration_seconds: v.fallback(v.optional(v.number()), undefined),
   edited: v.optional(v.unknown()),
   edited_unixtime: v.fallback(v.optional(v.pipe(v.string(), v.regex(/^\d+$/))), undefined),
   photo: v.optional(v.unknown()),

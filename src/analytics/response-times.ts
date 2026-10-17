@@ -12,8 +12,10 @@ export interface MonthResponseTimes {
   readonly histogram: number[];
   /** Median delay in ms, or `null` without replies. */
   readonly median: number | null;
-  /** Median delay of each person who replied, in ms. */
-  readonly byPerson: Readonly<Record<ParticipantId, number>>;
+  /** Per person who replied: their median delay in ms and how many replies were measured. */
+  readonly byPerson: Readonly<
+    Record<ParticipantId, { readonly median: number; readonly count: number }>
+  >;
 }
 
 /** Per month (`YYYY-MM`) of the reply. */
@@ -70,7 +72,10 @@ export class ResponseTimes implements Analyzer<ResponseTimesResult> {
           increment(histogram, band);
         }
         const byPerson = Object.fromEntries(
-          [...delays.byPerson].map(([id, list]) => [id, median(sortedCopy(list)) ?? 0]),
+          [...delays.byPerson].map(([id, list]) => [
+            id,
+            { median: median(sortedCopy(list)) ?? 0, count: list.length },
+          ]),
         );
         return [month, { histogram, median: median(sorted), byPerson }];
       }),
