@@ -39,6 +39,44 @@ describe('TelegramSource with a .zip', () => {
     expect(await collect(chat.events)).toHaveLength(5);
   });
 
+  it('reads a renamed export in a nested folder, from a file without .zip extension', async () => {
+    const archive = zip({
+      Descargas: { 'Mi grupo': { 'historial del grupo.json': exportJson, 'foto.jpg': fakePhoto } },
+    });
+    const file = inputFile('copia de seguridad', archive);
+    expect(await source.canHandle(file)).toBe(true);
+    expect(await collect((await source.open(file)).events)).toHaveLength(5);
+  });
+
+  it('picks the export among other JSON files', async () => {
+    const other = strToU8(JSON.stringify({ settings: { theme: 'dark' }, list: [1, 2, 3] }));
+    const archive = zip({ 'a-settings.json': other, 'z-export.json': exportJson });
+    const chat = await source.open(inputFile('export.zip', archive));
+    expect(chat.info.title).toBe('Club de Ajedrez Ficticio');
+  });
+
+  it('prefers result.json over other exports', async () => {
+    const other = strToU8(JSON.stringify({ ...fixture, name: 'Otro grupo' }));
+    const archive = zip({ 'otro.json': other, ChatExport: { 'result.json': exportJson } });
+    const chat = await source.open(inputFile('export.zip', archive));
+    expect(chat.info.title).toBe('Club de Ajedrez Ficticio');
+  });
+
+  it('drops a large JSON that is not an export without hitting the size cap', async () => {
+    const small = new TelegramSource({ maxExportBytes: 64 * 1024 });
+    const big = strToU8(JSON.stringify({ data: 'x'.repeat(256 * 1024) }));
+    const archive = zip({ 'data.json': big, 'chat.json': exportJson });
+    const chat = await small.open(inputFile('export.zip', archive));
+    expect(await collect(chat.events)).toHaveLength(5);
+  });
+
+  it('reports a zip whose JSON files are not exports', async () => {
+    const archive = zip({ 'settings.json': strToU8('{"theme":"dark"}') });
+    await expect(source.open(inputFile('export.zip', archive))).rejects.toMatchObject({
+      code: 'export-not-found',
+    });
+  });
+
   it('reads result.json at the root of the archive', async () => {
     const chat = await source.open(inputFile('export.zip', zip({ 'result.json': exportJson })));
     expect(await collect(chat.events)).toHaveLength(5);

@@ -15,6 +15,7 @@ import {
   MessageSchema,
   type TelegramMessage,
 } from './export-schema';
+import { detectKind } from './file-kind';
 import { readExportFromZip } from './zip-reader';
 
 /**
@@ -27,20 +28,10 @@ export interface TelegramSourceOptions {
   readonly maxExportBytes?: number;
 }
 
-type FileKind = 'json' | 'zip' | 'html';
-
-function fileKind(file: InputFile): FileKind | null {
-  const name = file.name.toLowerCase();
-  if (name.endsWith('.json')) return 'json';
-  if (name.endsWith('.zip')) return 'zip';
-  if (name.endsWith('.html') || name.endsWith('.htm')) return 'html';
-  return null;
-}
-
 /**
  * Reads what Telegram Desktop writes when exporting one chat as JSON: the `result.json` itself
- * or a .zip of the export folder. It also recognises the HTML export and a whole-account export
- * so it can say how to export the right thing.
+ * (under any name) or a .zip of the export folder. It also recognises the HTML export and a
+ * whole-account export so it can say how to export the right thing.
  */
 export class TelegramSource implements ChatSource {
   readonly id = 'telegram';
@@ -50,12 +41,12 @@ export class TelegramSource implements ChatSource {
     this.maxBytes = options.maxExportBytes ?? MAX_EXPORT_BYTES;
   }
 
-  canHandle(file: InputFile): Promise<boolean> {
-    return Promise.resolve(fileKind(file) !== null);
+  async canHandle(file: InputFile): Promise<boolean> {
+    return (await detectKind(file)) !== null;
   }
 
   async open(file: InputFile): Promise<OpenedChat> {
-    const kind = fileKind(file);
+    const kind = await detectKind(file);
     if (kind === 'html') {
       throw new OrwellError('wrong-export-format', 'HTML exports cannot be analysed');
     }

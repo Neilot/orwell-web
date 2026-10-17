@@ -38,7 +38,7 @@ export const es = {
     title: 'Tu grupo de Telegram',
     subtitle: 'Sube la exportación del chat para ver su actividad.',
     heading: 'Todavía no hay ningún chat',
-    body: 'Pulsa «Analizar mi chat» y elige el result.json que guarda Telegram Desktop al exportar el historial del grupo en formato JSON, o un .zip de la carpeta de la exportación.',
+    body: 'Pulsa «Analizar mi chat» y elige el archivo JSON (normalmente result.json) que guarda Telegram Desktop al exportar el historial del grupo en formato JSON, o un .zip de la carpeta de la exportación.',
   },
   upload: {
     pick: 'Analizar mi chat',
@@ -55,11 +55,11 @@ export const es = {
       ` Se omitieron ${formatted} ${count === 1 ? 'mensaje no válido' : 'mensajes no válidos'}.`,
   },
   errors: {
-    'unsupported-file': `Ese tipo de archivo no se puede leer. Sube el result.json o un .zip con la carpeta de la exportación. ${HOW_TO_EXPORT}`,
+    'unsupported-file': `Ese tipo de archivo no se puede leer. Sube el archivo JSON de la exportación (se llame como se llame) o un .zip con su carpeta. ${HOW_TO_EXPORT}`,
     'invalid-export': `El archivo no es un JSON válido o no es la exportación de un chat de Telegram. ${HOW_TO_EXPORT}`,
     'invalid-archive':
-      'No se pudo abrir el .zip: puede estar dañado o incompleto. Vuelve a comprimir la carpeta de la exportación o sube directamente el result.json que hay dentro.',
-    'export-not-found': `El .zip no contiene ningún result.json. Comprime la carpeta que crea Telegram Desktop al exportar (la que empieza por «ChatExport»). ${HOW_TO_EXPORT}`,
+      'No se pudo abrir el .zip: puede estar dañado o incompleto. Vuelve a comprimir la carpeta de la exportación o sube directamente el archivo JSON que hay dentro.',
+    'export-not-found': `El .zip no contiene ninguna exportación en JSON. Comprime la carpeta que crea Telegram Desktop al exportar (la que empieza por «ChatExport»). ${HOW_TO_EXPORT}`,
     'wrong-export-format': `Esa es la exportación en HTML, que no se puede analizar. Vuelve a exportar el chat en formato JSON. ${HOW_TO_EXPORT}`,
     'account-export': `Ese archivo es la exportación de toda la cuenta, no la de un chat. Exporta solo el grupo que quieres ver. ${HOW_TO_EXPORT}`,
     'unsupported-chat-type':

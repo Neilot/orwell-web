@@ -27,6 +27,27 @@ describe('TelegramSource', () => {
     }
   });
 
+  it('recognises an export by its content, whatever its name', async () => {
+    const content = JSON.stringify(fixture);
+    for (const name of ['mi-chat.json', 'chat.txt', 'export', 'RESULT (1).JSON']) {
+      const file = inputFile(name, content);
+      expect(await source.canHandle(file)).toBe(true);
+      expect(await collect((await source.open(file)).events)).toHaveLength(5);
+    }
+  });
+
+  it('tolerates a byte order mark and leading whitespace', async () => {
+    const bom = String.fromCharCode(0xfeff);
+    const file = inputFile('chat', `${bom} \n\t${JSON.stringify(fixture)}`);
+    expect(await collect((await source.open(file)).events)).toHaveLength(5);
+  });
+
+  it('recognises HTML by its content', async () => {
+    expect(await openError('<!DOCTYPE html><html></html>', 'chat.json')).toMatchObject({
+      code: 'wrong-export-format',
+    });
+  });
+
   it('reads the chat title', async () => {
     const chat = await source.open(exportFile);
     expect(chat.info).toEqual({ title: 'Club de Ajedrez Ficticio', skippedEntries: 0 });
