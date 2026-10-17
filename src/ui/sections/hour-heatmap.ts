@@ -43,10 +43,12 @@ export class HourHeatmapSection {
   private readonly segment: Segmented<Order>;
   private readonly svg = svgEl('svg', { id: 'hour', viewBox: '0 0 1200 640', role: 'img' });
   private view: MonthView | null = null;
+  private selected: string | null = null;
 
   constructor(
     private readonly t: Messages,
     private readonly tooltip: Tooltip,
+    private readonly onSelect: (id: string) => void,
   ) {
     const th = t.hours;
     this.element.setAttribute('aria-labelledby', 'h-hour');
@@ -77,8 +79,9 @@ export class HourHeatmapSection {
     );
   }
 
-  render(view: MonthView): void {
+  render(view: MonthView, selected: string | null): void {
     this.view = view;
+    this.selected = selected;
     this.draw();
   }
 
@@ -156,8 +159,12 @@ export class HourHeatmapSection {
       .attr('text-anchor', 'end')
       .attr('font-size', 12)
       .text((p) => personName(p, t))
-      .style('fill', (p) => (p.id === view.topWriter ? 'var(--fg)' : 'var(--fg2)'))
-      .attr('font-weight', (p) => (p.id === view.topWriter ? 700 : 400));
+      .style('fill', (p) => (p.id === this.selected ? 'var(--fg)' : 'var(--fg2)'))
+      .attr('font-weight', (p) => (p.id === this.selected ? 700 : 400))
+      .style('cursor', 'pointer')
+      .on('click', (_, p) => {
+        this.onSelect(p.id);
+      });
     rows.each(function (person: PersonView) {
       const row = select(this);
       const top = Math.max(1, max(person.hours) ?? 0);

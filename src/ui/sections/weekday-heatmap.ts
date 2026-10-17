@@ -30,10 +30,12 @@ export class WeekdayHeatmapSection {
   private readonly segment: Segmented<Order>;
   private readonly svg = svgEl('svg', { id: 'wd', viewBox: '0 0 600 700', role: 'img' });
   private view: MonthView | null = null;
+  private selected: string | null = null;
 
   constructor(
     private readonly t: Messages,
     private readonly tooltip: Tooltip,
+    private readonly onSelect: (id: string) => void,
   ) {
     const tw = t.weekdays;
     this.element.setAttribute('aria-labelledby', 'h-wd');
@@ -60,8 +62,9 @@ export class WeekdayHeatmapSection {
     );
   }
 
-  render(view: MonthView): void {
+  render(view: MonthView, selected: string | null): void {
     this.view = view;
+    this.selected = selected;
     this.draw();
   }
 
@@ -146,8 +149,12 @@ export class WeekdayHeatmapSection {
       .attr('text-anchor', 'end')
       .attr('font-size', 12)
       .text((p) => personName(p, t))
-      .style('fill', (p) => (p.id === view.topWriter ? 'var(--fg)' : 'var(--fg2)'))
-      .attr('font-weight', (p) => (p.id === view.topWriter ? 700 : 400));
+      .style('fill', (p) => (p.id === this.selected ? 'var(--fg)' : 'var(--fg2)'))
+      .attr('font-weight', (p) => (p.id === this.selected ? 700 : 400))
+      .style('cursor', 'pointer')
+      .on('click', (_, p) => {
+        this.onSelect(p.id);
+      });
     rows.each(function (person: PersonView) {
       const row = select(this);
       const top = Math.max(1, max(person.weekdays) ?? 0);

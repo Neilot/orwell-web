@@ -1,29 +1,20 @@
 import { max, range } from 'd3-array';
 import { scaleBand, scaleLinear, scaleSqrt } from 'd3-scale';
 import { select } from 'd3-selection';
-import { MESSAGE_KINDS, type MessageKind, type MonthView } from '../../app';
+import { MESSAGE_KINDS, type MonthView } from '../../app';
 import type { Messages } from '../../i18n';
 import { heatFill } from '../charts/heat';
 import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
-import { formatDecimal, formatInt, formatPercent, pad2 } from '../format';
+import { durationText } from '../duration';
+import { formatInt, formatPercent, pad2 } from '../format';
 import { personName } from '../people';
+import { kindColor, kindsBar } from './kinds-bar';
 
 const PUNCH_W = 600;
 const PUNCH_H = 300;
 const PUNCH_LEFT = 40;
 const PUNCH_TOP = 10;
-
-function duration(ms: number | null, t: Messages): string {
-  if (ms === null) return '—';
-  if (ms < 60_000) return t.dates.seconds(String(Math.round(ms / 1000)));
-  if (ms < 3_600_000) return t.dates.minutes(String(Math.round(ms / 60_000)));
-  return t.dates.hours(formatDecimal(ms / 3_600_000));
-}
-
-function kindColor(kind: MessageKind): string {
-  return `var(--k${String(MESSAGE_KINDS.indexOf(kind))})`;
-}
 
 /** "El ritmo del grupo": weekly punch card, message types and reply delays. */
 export class GroupRhythmSection {
@@ -124,30 +115,9 @@ export class GroupRhythmSection {
 
   private drawKinds(view: MonthView): void {
     const { t } = this;
+    kindsBar(t, this.kindsBar, this.kindsLegend, view.kinds);
     const total = MESSAGE_KINDS.reduce((sum, k) => sum + view.kinds[k], 0) || 1;
     const present = MESSAGE_KINDS.filter((k) => view.kinds[k] > 0);
-
-    this.kindsBar.replaceChildren(
-      ...present.map((kind) => {
-        const part = el('span');
-        part.title = `${t.kinds[kind]}: ${formatInt(view.kinds[kind])}`;
-        part.style.width = `${String((view.kinds[kind] / total) * 100)}%`;
-        part.style.background = kindColor(kind);
-        return part;
-      }),
-    );
-    this.kindsLegend.replaceChildren(
-      ...present.map((kind) => {
-        const swatch = el('i');
-        swatch.style.background = kindColor(kind);
-        swatch.style.borderRadius = '2px';
-        const share = el('span', 'num', formatPercent(view.kinds[kind] / total));
-        share.style.color = 'var(--muted)';
-        const item = el('span');
-        item.append(swatch, `${t.kinds[kind]} `, share);
-        return item;
-      }),
-    );
     this.kindsTable.replaceChildren(
       ...present
         .filter((kind) => kind !== 'other')
@@ -228,6 +198,6 @@ export class GroupRhythmSection {
       .attr('y', 168)
       .attr('font-size', 12)
       .style('fill', 'var(--fg2)')
-      .text(t.rhythm.median(duration(view.responseTimes?.median ?? null, t)));
+      .text(t.rhythm.median(durationText(view.responseTimes?.median ?? null, t)));
   }
 }

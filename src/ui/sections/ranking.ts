@@ -22,8 +22,12 @@ export class RankingSection {
   private readonly callout = el('p', 'callout');
   private readonly list = el('div', 'rank');
   private view: MonthView | null = null;
+  private selected: string | null = null;
 
-  constructor(private readonly t: Messages) {
+  constructor(
+    private readonly t: Messages,
+    onSelect: (id: string) => void,
+  ) {
     const tr = t.ranking;
     this.element.setAttribute('aria-labelledby', 'h-rank');
     this.segment = new Segmented(
@@ -41,11 +45,27 @@ export class RankingSection {
     this.callout.id = 'rankCall';
     this.list.id = 'rank';
     this.list.setAttribute('role', 'list');
+    const rowId = (ev: Event): string | undefined =>
+      ev.target instanceof Element
+        ? (ev.target.closest<HTMLElement>('.rank-row')?.dataset.id ?? undefined)
+        : undefined;
+    this.list.addEventListener('click', (ev) => {
+      const id = rowId(ev);
+      if (id !== undefined) onSelect(id);
+    });
+    this.list.addEventListener('keydown', (ev) => {
+      const id = rowId(ev);
+      if (id !== undefined && (ev.key === 'Enter' || ev.key === ' ')) {
+        ev.preventDefault();
+        onSelect(id);
+      }
+    });
     this.element.append(head, this.callout, this.list);
   }
 
-  render(view: MonthView): void {
+  render(view: MonthView, selected: string | null): void {
     this.view = view;
+    this.selected = selected;
     this.draw();
   }
 
@@ -106,7 +126,7 @@ export class RankingSection {
 
     this.list.replaceChildren(
       ...order.map((person, i) => {
-        const row = el('div', person.id === view.topWriter ? 'rank-row sel' : 'rank-row');
+        const row = el('div', person.id === this.selected ? 'rank-row sel' : 'rank-row');
         row.setAttribute('role', 'listitem');
         row.tabIndex = 0;
         row.dataset.id = person.id;

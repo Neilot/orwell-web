@@ -1,12 +1,14 @@
-import { AnalysisFailure, monthsOf, monthView, type Dashboard } from '../app';
+import { AnalysisFailure, monthsOf, monthView, type Dashboard, type MonthView } from '../app';
 import type { Messages } from '../i18n';
 import { Tooltip } from './components/tooltip';
 import { el, svgEl } from './dom';
 import { formatInt } from './format';
+import { ConnectionsWheelSection } from './sections/connections-wheel';
 import { DailyMessagesSection } from './sections/daily-messages';
 import { GroupRhythmSection } from './sections/group-rhythm';
 import { HourHeatmapSection } from './sections/hour-heatmap';
 import { KpisSection } from './sections/kpis';
+import { PersonCardSection } from './sections/person-card';
 import { RankingSection } from './sections/ranking';
 import { WeekdayHeatmapSection } from './sections/weekday-heatmap';
 
@@ -111,22 +113,44 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   // Body: an empty state until a file is analysed, then the sections.
   const empty = el('section', 'card');
   empty.append(el('h2', undefined, t.empty.heading), el('p', 'desc', t.empty.body));
+  const select = (id: string): void => {
+    selectPerson(id, true);
+  };
   const kpis = new KpisSection(t);
+  const wheel = new ConnectionsWheelSection(t, tooltip, select);
+  const person = new PersonCardSection(t, tooltip, select);
   const daily = new DailyMessagesSection(t, tooltip);
-  const ranking = new RankingSection(t);
-  const hours = new HourHeatmapSection(t, tooltip);
-  const weekdays = new WeekdayHeatmapSection(t, tooltip);
+  const ranking = new RankingSection(t, select);
+  const hours = new HourHeatmapSection(t, tooltip, select);
+  const weekdays = new WeekdayHeatmapSection(t, tooltip, select);
   const rhythm = new GroupRhythmSection(t, tooltip);
   // Same order and two-column grid as the prototype; later sections slot in between.
   const grid = el('div', 'grid2');
   grid.append(daily.element, ranking.element, hours.element, weekdays.element, rhythm.element);
-  const dashboardParts = [kpis.element, grid];
+  const dashboardParts = [kpis.element, wheel.element, person.element, grid];
 
   const wrap = el('div', 'wrap');
   wrap.append(header, empty, ...dashboardParts);
   root.replaceChildren(wrap, tooltip.element);
 
   let dashboard: Dashboard | null = null;
+  let view: MonthView | null = null;
+  let selected: string | null = null;
+
+  /** Shows a person in the card and highlights them everywhere, as the prototype does. */
+  function selectPerson(id: string, scroll: boolean): void {
+    if (!view) return;
+    selected = id;
+    person.render(view, id);
+    ranking.render(view, id);
+    wheel.render(view, id);
+    hours.render(view, id);
+    weekdays.render(view, id);
+    if (scroll) {
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      person.element.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    }
+  }
 
   function setDashboardVisible(visible: boolean): void {
     controls.hidden = !visible;
@@ -142,7 +166,8 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
 
   function showMonth(month: string): void {
     if (!dashboard) return;
-    const view = monthView(dashboard, month);
+    view = monthView(dashboard, month);
+    selected = view.topWriter;
     const monthName = t.dates.months[view.monthIndex] ?? '';
     title.textContent = dashboard.title ?? t.header.defaultGroupName;
     subtitle.textContent =
@@ -155,10 +180,8 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
       lastDay: view.lastDay,
       counts: dashboard.messagesPerDay,
     });
-    ranking.render(view);
-    hours.render(view);
-    weekdays.render(view);
     rhythm.render(view);
+    if (selected) selectPerson(selected, false);
   }
 
   /** Returns the number of months shown, or 0 when the file had no messages. */
