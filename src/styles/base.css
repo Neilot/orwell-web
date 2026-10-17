@@ -1,31 +1,43 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+/* Layout and component styles, copied from the prototype. */
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px 64px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h2{font-size:19px;font-weight:700;letter-spacing:-.01em}
+p{margin:0}
+.top{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:flex-end;justify-content:space-between}
+.brand{display:flex;flex-direction:column;gap:4px}
+.brand .logo{font:800 15px var(--display);letter-spacing:.18em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px}
+.brand .logo svg{width:20px;height:20px}
+.brand h1{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.025em}
+.brand .sub{color:var(--fg2)}
+.upl{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.btn{font:700 14px var(--body);background:var(--accent-fill);color:#fff;border:0;border-radius:9px;padding:9px 16px;cursor:pointer;white-space:nowrap;display:inline-flex;gap:8px;align-items:center}
+.btn.ghost{background:transparent;color:var(--fg2);border:1px solid var(--line)}
+.btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.upl small{color:var(--muted);font-size:12.5px;text-align:right;max-width:44ch}
+#msg{font-size:13px;color:var(--fg2)}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;color:var(--fg2)}
+select{font:14px var(--body);background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 8px;max-width:100%}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card .head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 16px}
+.card .desc{color:var(--fg2);font-size:14px;max-width:80ch}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--body);fill:var(--fg2)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--fg2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.legend i.ln{width:18px;height:3px;border-radius:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+#tip{position:fixed;pointer-events:none;z-index:30;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.35;box-shadow:0 6px 24px rgba(0,0,0,.18);max-width:280px}
+#tip b{font-family:var(--display)}
+#tip .r{display:flex;justify-content:space-between;gap:14px;color:var(--fg2)}
+#tip .r span:last-child{font-family:var(--mono);color:var(--fg)}
+.foot{color:var(--muted);font-size:13px;max-width:90ch}
+html{accent-color:var(--accent)}
+::selection{background:color-mix(in srgb,var(--accent) 32%,transparent)}
+@media (pointer:coarse){select{padding:9px 10px}.btn{padding:12px 18px}}
+@media (max-width:560px){.upl{align-items:flex-start}.upl small{text-align:left}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
-body {
-  margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-body);
-  line-height: 1.5;
-}
-
-.app-header {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.app-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 2rem;
-}
-
-.app-tagline {
-  margin: 0.25rem 0 0;
-  color: var(--color-text-muted);
-}
+/* Not in the prototype: `.btn` sets `display`, which would otherwise override `hidden`. */
+[hidden]{display:none!important}
