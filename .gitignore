@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Never commit real chat exports.
+result.json
+*.zip
+samples/
