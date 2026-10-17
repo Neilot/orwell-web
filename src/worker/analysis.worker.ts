@@ -1,7 +1,20 @@
 // Worker composition root: the only place where sources and analyzers are wired together.
-import { MessagesPerDay, ParticipantsPerMonth } from '../analytics';
+import {
+  MessagesPerDay,
+  ParticipantNames,
+  ParticipantsPerMonth,
+  PeopleActivity,
+  ResponseTimes,
+  WeeklyRhythm,
+} from '../analytics';
 import type { AnalyzeRequest, AnalyzeResponse, AnalysisErrorCode } from '../app';
-import { AnalysisPipeline, OrwellError, SourceRegistry, type InputFile } from '../core';
+import {
+  AnalysisPipeline,
+  OrwellError,
+  SourceRegistry,
+  type Analyzer,
+  type InputFile,
+} from '../core';
 import { TelegramSource } from '../sources/telegram';
 
 const registry = new SourceRegistry([new TelegramSource()]);
@@ -32,17 +45,34 @@ function inputFile(file: File): InputFile {
 
 async function analyze(file: InputFile): Promise<AnalyzeResponse> {
   const source = await registry.find(file);
+  const names = new ParticipantNames();
   const perDay = new MessagesPerDay();
   const participants = new ParticipantsPerMonth();
-  const report = await new AnalysisPipeline([perDay, participants]).run(source, file);
+  const people = new PeopleActivity();
+  const rhythm = new WeeklyRhythm();
+  const responseTimes = new ResponseTimes();
+  const report = await new AnalysisPipeline([
+    names,
+    perDay,
+    participants,
+    people,
+    rhythm,
+    responseTimes,
+  ]).run(source, file);
+  // The pipeline stores each result under its analyzer's id; this reads it back typed.
+  const resultOf = <T>(analyzer: Analyzer<T>): T => report.results[analyzer.id] as T;
   return {
     type: 'done',
     dashboard: {
       title: report.chat.title,
       messageCount: report.eventCount,
       skippedMessages: report.chat.skippedEntries,
-      messagesPerDay: perDay.result(),
-      participantsPerMonth: participants.result(),
+      names: resultOf(names),
+      messagesPerDay: resultOf(perDay),
+      participantsPerMonth: resultOf(participants),
+      peoplePerMonth: resultOf(people),
+      rhythmPerMonth: resultOf(rhythm),
+      responseTimesPerMonth: resultOf(responseTimes),
     },
   };
 }
