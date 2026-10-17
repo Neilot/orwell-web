@@ -136,7 +136,7 @@ svg text{font-family:var(--body);fill:var(--fg2)}
 @media (max-width:560px){.picker{width:100%;flex-wrap:wrap}.pk-btn{width:100%}.pk-pop{left:0;right:auto;width:100%}.pk-foot{display:none}}
 /* ranking */
 .rank{max-height:560px;overflow-y:auto;border-top:1px solid var(--line);padding-top:6px;padding-right:4px}
-.rank-row{display:grid;grid-template-columns:28px minmax(90px,150px) minmax(0,1fr) 92px;gap:8px;align-items:center;font-size:13px;padding:3px 4px;border-radius:6px;cursor:pointer}
+.rank-row{display:grid;grid-template-columns:28px minmax(90px,150px) minmax(0,1fr) 116px;gap:8px;align-items:center;font-size:13px;padding:3px 4px;border-radius:6px;cursor:pointer}
 .rank-row:hover{background:var(--panel2)}
 .rank-row.sel{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .rank-row .pos{font:11.5px var(--mono);color:var(--muted);text-align:right}
@@ -146,7 +146,7 @@ svg text{font-family:var(--body);fill:var(--fg2)}
 .rank-row .dl{font:600 10.5px var(--mono);margin-left:6px;color:var(--muted)}
 .rank-row .dl.up{color:var(--good-ink)}
 .rank-row .dl.down{color:var(--in-ink)}
-.rank-row .val{font:12px var(--mono);text-align:right;color:var(--fg2)}
+.rank-row .val{font:12px var(--mono);text-align:right;color:var(--fg2);white-space:nowrap}
 .callout{font-size:14px;color:var(--fg2)}
 .callout b{color:var(--fg);font-family:var(--display)}
 /* awards and lists */
@@ -164,12 +164,12 @@ svg text{font-family:var(--body);fill:var(--fg2)}
 .blist .e{font-size:19px;text-align:center}
 .blist .track{height:10px;background:var(--grid);border-radius:2px;overflow:hidden}
 .blist .track span{display:block;height:100%;background:var(--accent)}
-.blist .val{font:12px var(--mono);text-align:right;color:var(--fg2)}
+.blist .val{font:12px var(--mono);text-align:right;color:var(--fg2);white-space:nowrap}
 .foot{color:var(--muted);font-size:13px;max-width:90ch}
 .scrollx{overflow-x:auto}
 @media (max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.awards{grid-template-columns:repeat(2,minmax(0,1fr))}.persona{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:860px){.grid2,.lists{grid-template-columns:minmax(0,1fr)}.hero{grid-template-columns:minmax(0,1fr)}.hero .main{border-right:0;border-bottom:1px solid var(--line)}}
-@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.awards{grid-template-columns:minmax(0,1fr)}.upl{align-items:flex-start}.upl small{text-align:left}.rank-row{grid-template-columns:24px minmax(70px,110px) minmax(0,1fr) 70px}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.awards{grid-template-columns:minmax(0,1fr)}.upl{align-items:flex-start}.upl small{text-align:left}.rank-row{grid-template-columns:24px minmax(70px,110px) minmax(0,1fr) 100px}.rank-row .val{font-size:11px}}
 html{accent-color:var(--accent)}
 ::selection{background:color-mix(in srgb,var(--accent) 32%,transparent)}
 .rank,.pk-list,.scrollx,.wheel-scroll{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
