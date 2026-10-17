@@ -1,5 +1,5 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
-import { dayOf, getOrCreate, monthOf } from './calendar';
+import { dayOf, getOrCreate, periodsOf } from './calendar';
 
 /** Shown for a sticker the export gives no emoji for. */
 export const UNKNOWN_STICKER = '🏷️';
@@ -60,8 +60,12 @@ export class StickerUsage implements Analyzer<StickerUsageResult> {
   private readonly months = new Map<string, MonthState>();
 
   consume(event: ChatEvent): void {
+    for (const period of periodsOf(event.localTime)) this.consumeIn(period, event);
+  }
+
+  private consumeIn(period: string, event: ChatEvent): void {
     if (event.kind !== 'sticker') return;
-    const month = getOrCreate(this.months, monthOf(event.localTime), () => ({
+    const month = getOrCreate(this.months, period, () => ({
       stickers: new Map<string, StickerState>(),
       people: new Map<ParticipantId, Map<string, number>>(),
       perDay: new Map<string, number>(),

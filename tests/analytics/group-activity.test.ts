@@ -46,13 +46,13 @@ describe('ResponseTimes', () => {
     analyzer.consume(reply('7', 5, beto, '404')); // unknown message: ignored
     analyzer.consume(reply('8', 0)); // no delay: ignored
 
-    expect(analyzer.result()).toEqual({
-      '2026-04': {
-        histogram: [1, 1, 0, 0, 1, 0],
-        median: 3 * MIN,
-        byPerson: { u2: { median: 3 * MIN, count: 3 } },
-      },
-    });
+    const april = {
+      histogram: [1, 1, 0, 0, 1, 0],
+      median: 3 * MIN,
+      byPerson: { u2: { median: 3 * MIN, count: 3 } },
+    };
+    // The whole export holds the same replies, as they all fall in April.
+    expect(analyzer.result()).toEqual({ '2026-04': april, all: april });
   });
 
   it('averages the two middle delays for an even count', () => {

@@ -199,7 +199,9 @@ export class PersonCardSection {
         formatInt(view.people.length),
       ) +
       (person.messages
-        ? t.person.metaShare(formatPercent(person.messages / view.totals.messages))
+        ? (view.wholeFile ? t.person.metaShareWholeFile : t.person.metaShare)(
+            formatPercent(person.messages / view.totals.messages),
+          )
         : '');
   }
 

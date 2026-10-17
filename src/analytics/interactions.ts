@@ -1,5 +1,5 @@
 import type { Analyzer, ChatEvent, EventId, Participant, ParticipantId } from '../core';
-import { getOrCreate, monthOf } from './calendar';
+import { getOrCreate, periodsOf } from './calendar';
 import { detectCommunities } from './communities';
 
 /** At most this many people (the most active) take part in the interaction graph. */
@@ -170,9 +170,13 @@ export class Interactions implements Analyzer<InteractionsResult> {
   private readonly authors = new Map<EventId, Participant>();
 
   consume(event: ChatEvent): void {
+    for (const period of periodsOf(event.localTime)) this.consumeIn(period, event);
+  }
+
+  private consumeIn(period: string, event: ChatEvent): void {
     if (event.kind === 'service') return;
     this.authors.set(event.id, event.author);
-    const month = getOrCreate(this.months, monthOf(event.localTime), () => new MonthState());
+    const month = getOrCreate(this.months, period, () => new MonthState());
     const author = event.author.id;
     month.person(month.writers, event.author).messages++;
 

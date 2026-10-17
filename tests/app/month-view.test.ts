@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { maxIndex, monthsOf, monthView } from '../../src/app/month-view';
 import {
   MESSAGE_KINDS,
+  WHOLE_FILE,
   type Dashboard,
   type MessageKind,
   type MonthParticipant,
@@ -186,6 +187,30 @@ describe('monthView', () => {
     expect(view.reactionEmojis).toEqual([['👍', 6]]);
     expect(view.stickers).toEqual({ top: [], distinct: 0, byEmojiOnly: false, perDay: {} });
     expect(view.details('u2').replyMedian).toBeNull();
+  });
+
+  it('covers the whole export, from its first to its last day', () => {
+    const view = monthView(dashboard, WHOLE_FILE);
+    expect(view).toMatchObject({
+      wholeFile: true,
+      firstDayKey: '2026-03-05',
+      lastDayKey: '2026-04-10',
+      daysInMonth: 37,
+      lastDay: 37,
+      partial: false,
+      previous: null,
+      recordDay: { day: '2026-04-03', messages: 7 },
+    });
+    expect(view.dailyCounts.size).toBe(5);
+    expect(view.days[0]).toMatchObject({ key: '2026-03-05', day: 5, monthIndex: 2, weekday: 3 });
+    expect(view.days.at(-1)).toMatchObject({ key: '2026-04-10', future: false });
+  });
+
+  it('lists every day of a month, marking those after the export ends', () => {
+    const view = monthView(dashboard, '2026-04');
+    expect(view.days).toHaveLength(30);
+    expect(view.days[9]).toMatchObject({ key: '2026-04-10', future: false });
+    expect(view.days[10]).toMatchObject({ key: '2026-04-11', future: true });
   });
 
   it('treats earlier months as complete and has no previous month for the first', () => {

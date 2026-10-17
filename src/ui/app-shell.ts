@@ -1,4 +1,11 @@
-import { AnalysisFailure, monthsOf, monthView, type Dashboard, type MonthView } from '../app';
+import {
+  AnalysisFailure,
+  monthsOf,
+  monthView,
+  WHOLE_FILE,
+  type Dashboard,
+  type MonthView,
+} from '../app';
 import type { Messages } from '../i18n';
 import { Tooltip } from './components/tooltip';
 import { el, svgEl } from './dom';
@@ -195,16 +202,24 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     selected = view.topWriter;
     const monthName = t.dates.months[view.monthIndex] ?? '';
     title.textContent = dashboard.title ?? t.header.defaultGroupName;
-    subtitle.textContent =
-      t.header.subtitle(monthName, String(view.year), formatInt(view.totals.participants)) +
-      (view.partial ? t.header.partialMonth(String(view.lastDay)) : '');
+    const participants = formatInt(view.totals.participants);
+    // '2026-04-01' as '1 abr 2026'.
+    const longDay = (key: string): string =>
+      t.person.date(
+        String(Number(key.slice(8, 10))),
+        t.dates.monthsShort[Number(key.slice(5, 7)) - 1] ?? '',
+        key.slice(0, 4),
+      );
+    subtitle.textContent = view.wholeFile
+      ? t.header.wholeFileSubtitle(
+          longDay(view.firstDayKey),
+          longDay(view.lastDayKey),
+          participants,
+        )
+      : t.header.subtitle(monthName, String(view.year), participants) +
+        (view.partial ? t.header.partialMonth(String(view.lastDay)) : '');
     kpis.render(view);
-    daily.render({
-      month,
-      daysInMonth: view.daysInMonth,
-      lastDay: view.lastDay,
-      counts: dashboard.messagesPerDay,
-    });
+    daily.render(view);
     rhythm.render(view);
     stickers.render(view);
     awards.render(view);
@@ -218,7 +233,10 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     if (months.length === 0) return 0;
     dashboard = next;
     // Newest first, as in the month picker of the prototype.
+    const wholeFile = el('option', undefined, t.header.wholeFileOption);
+    wholeFile.value = WHOLE_FILE;
     monthSelect.replaceChildren(
+      wholeFile,
       ...[...months].reverse().map((m) => {
         const name = t.dates.months[Number(m.slice(5)) - 1] ?? m;
         const option = el('option', undefined, t.header.monthOption(name, m.slice(0, 4)));

@@ -1,3 +1,4 @@
+export { WHOLE_FILE } from './calendar';
 export { OTHER_COMMUNITY } from './communities';
 export {
   CUSTOM_REACTION,

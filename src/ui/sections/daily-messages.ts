@@ -1,28 +1,16 @@
-import { max, mean, range } from 'd3-array';
+import { max, mean } from 'd3-array';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { select } from 'd3-selection';
 import { curveMonotoneX, line } from 'd3-shape';
+import type { MonthView } from '../../app';
 import type { Messages } from '../../i18n';
+import { drawDayAxis, placeDays, type PlacedDay } from '../charts/day-axis';
 import type { Tooltip, TooltipRow } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatDecimal, formatInt } from '../format';
 
-export interface DailyMessagesData {
-  /** `YYYY-MM`. */
-  readonly month: string;
-  readonly daysInMonth: number;
-  /** Last day with data; later days are drawn as not yet happened. */
-  readonly lastDay: number;
-  /** Messages per day, keyed `YYYY-MM-DD`. */
-  readonly counts: Readonly<Record<string, number>>;
-}
-
-interface Day {
-  readonly d: number;
-  /** 0 = Monday … 6 = Sunday. */
-  readonly wd: number;
+interface Day extends PlacedDay {
   readonly v: number;
-  readonly future: boolean;
   avg: number | null;
 }
 
@@ -31,10 +19,13 @@ type AveragedDay = Day & { avg: number };
 const W = 1200;
 const H = 270;
 const M = { t: 22, r: 12, b: 44, l: 42 };
+/** Weekends are shaded only while the bars are wide enough for it to read. */
+const MAX_SHADED_DAYS = 62;
 
 /** "Mensajes por día del mes": one bar per day plus the trailing 7-day average. */
 export class DailyMessagesSection {
   readonly element = el('section', 'card span2');
+  private readonly title = el('h2');
   private readonly svg = svgEl('svg', {
     id: 'time',
     viewBox: `0 0 ${String(W)} ${String(H)}`,
@@ -49,8 +40,8 @@ export class DailyMessagesSection {
     this.element.setAttribute('aria-labelledby', 'h-time');
     this.svg.setAttribute('aria-label', td.chartLabel);
 
-    const title = el('h2', undefined, td.title);
-    title.id = 'h-time';
+    this.title.textContent = td.title;
+    this.title.id = 'h-time';
     const bars = el('i');
     bars.style.background = 'var(--accent)';
     bars.style.borderRadius = '2px';
@@ -63,56 +54,58 @@ export class DailyMessagesSection {
     const legend = el('div', 'legend');
     legend.append(barsItem, avgItem);
     const head = el('div', 'head');
-    head.append(title, legend);
+    head.append(this.title, legend);
     this.element.append(head, this.svg);
   }
 
-  render(data: DailyMessagesData): void {
+  render(view: MonthView): void {
     const { t, tooltip } = this;
-    const year = Number(data.month.slice(0, 4));
-    const monthIndex = Number(data.month.slice(5)) - 1;
+    const whole = view.wholeFile;
+    this.title.textContent = whole ? t.daily.titleWholeFile : t.daily.title;
     const s = select(this.svg);
     s.selectAll('*').remove();
 
-    const all: Day[] = range(1, data.daysInMonth + 1).map((d) => {
-      const key = `${data.month}-${String(d).padStart(2, '0')}`;
-      const wd = (new Date(Date.UTC(year, monthIndex, d)).getUTCDay() + 6) % 7;
-      return { d, wd, v: data.counts[key] ?? 0, future: d > data.lastDay, avg: null };
-    });
+    const all: Day[] = placeDays(view.days).map((d) => ({
+      ...d,
+      v: view.dailyCounts.get(d.key) ?? 0,
+      avg: null,
+    }));
     all.forEach((day, i) => {
       const week = all.slice(Math.max(0, i - 6), i + 1).filter((x) => !x.future);
       day.avg = week.length && !day.future ? (mean(week, (x) => x.v) ?? null) : null;
     });
 
     const x = scaleBand<number>()
-      .domain(all.map((d) => d.d))
+      .domain(all.map((d) => d.i))
       .range([M.l, W - M.r])
       .paddingInner(0.18);
     const y = scaleLinear()
       .domain([0, Math.max(1, max(all, (d) => d.v) ?? 0)])
       .nice()
       .range([H - M.b, M.t]);
-    const bx = (d: Day): number => x(d.d) ?? 0;
+    const bx = (d: Day): number => x(d.i) ?? 0;
     const cx = (d: Day): number => bx(d) + x.bandwidth() / 2;
 
-    s.append('g')
-      .selectAll('rect')
-      .data(all.filter((d) => d.wd >= 5))
-      .join('rect')
-      .attr('x', (d) => bx(d) - x.step() * 0.09)
-      .attr('width', x.step())
-      .attr('y', M.t - 14)
-      .attr('height', H - M.b - M.t + 14)
-      .style('fill', 'var(--grid)')
-      .attr('fill-opacity', 0.7);
+    if (!whole || all.length <= MAX_SHADED_DAYS) {
+      s.append('g')
+        .selectAll('rect')
+        .data(all.filter((d) => d.weekday >= 5))
+        .join('rect')
+        .attr('x', (d) => bx(d) - x.step() * 0.09)
+        .attr('width', x.step())
+        .attr('y', M.t - 14)
+        .attr('height', H - M.b - M.t + 14)
+        .style('fill', 'var(--grid)')
+        .attr('fill-opacity', 0.7);
 
-    s.append('text')
-      .attr('x', W - M.r)
-      .attr('y', 11)
-      .attr('text-anchor', 'end')
-      .attr('font-size', 11)
-      .style('fill', 'var(--muted)')
-      .text(t.daily.weekendNote);
+      s.append('text')
+        .attr('x', W - M.r)
+        .attr('y', 11)
+        .attr('text-anchor', 'end')
+        .attr('font-size', 11)
+        .style('fill', 'var(--muted)')
+        .text(t.daily.weekendNote);
+    }
 
     const ticks = y.ticks(4);
     s.append('g')
@@ -139,28 +132,12 @@ export class DailyMessagesSection {
       .style('fill', 'var(--muted)')
       .text((d) => formatInt(d));
 
-    s.append('g')
-      .selectAll('text')
-      .data(all)
-      .join('text')
-      .attr('x', cx)
-      .attr('y', H - M.b + 16)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', 11.5)
-      .style('font-family', 'var(--mono)')
-      .style('fill', (d) => (d.future ? 'var(--line)' : 'var(--fg2)'))
-      .text((d) => d.d);
-
-    s.append('g')
-      .selectAll('text')
-      .data(all)
-      .join('text')
-      .attr('x', cx)
-      .attr('y', H - M.b + 32)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', 10.5)
-      .style('fill', 'var(--muted)')
-      .text((d) => t.dates.weekdayInitials[d.wd] ?? '');
+    drawDayAxis(s, all, x, whole, t, {
+      y: H - M.b + 16,
+      weekdaysY: H - M.b + 32,
+      fontSize: 11.5,
+      color: (d) => (d.future ? 'var(--line)' : 'var(--fg2)'),
+    });
 
     const rec = all.reduce((a, b) => (b.v > a.v ? b : a));
 
@@ -189,6 +166,8 @@ export class DailyMessagesSection {
 
     if (rec.v) {
       const rx = bx(rec);
+      const weekday = t.dates.weekdays[rec.weekday] ?? '';
+      const month = t.dates.months[rec.monthIndex] ?? '';
       s.append('text')
         .attr('x', cx(rec))
         .attr('y', y(rec.v) - 6)
@@ -196,16 +175,23 @@ export class DailyMessagesSection {
         .attr('font-size', 12)
         .attr('font-weight', 700)
         .style('fill', 'var(--fg)')
-        .text(t.daily.record(formatInt(rec.v), t.dates.weekdays[rec.wd] ?? '', String(rec.d)));
+        .text(
+          whole
+            ? t.daily.recordWholeFile(formatInt(rec.v), weekday, String(rec.day), month)
+            : t.daily.record(formatInt(rec.v), weekday, String(rec.day)),
+        );
     }
 
-    const monthName = t.dates.months[monthIndex] ?? '';
     const show = (ev: PointerEvent, d: Day): void => {
       const rows: TooltipRow[] = [
         [t.daily.tipMessages, d.future ? t.daily.noValue : formatInt(d.v)],
       ];
       if (d.avg !== null) rows.push([t.daily.tipAverage, formatDecimal(d.avg)]);
-      const title = t.daily.tipTitle(t.dates.weekdays[d.wd] ?? '', String(d.d), monthName);
+      const weekday = t.dates.weekdays[d.weekday] ?? '';
+      const month = t.dates.months[d.monthIndex] ?? '';
+      const title = whole
+        ? t.daily.tipTitleWholeFile(weekday, String(d.day), month, String(d.year))
+        : t.daily.tipTitle(weekday, String(d.day), month);
       tooltip.show(ev, title, rows);
     };
 

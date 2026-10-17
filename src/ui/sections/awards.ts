@@ -9,6 +9,7 @@ import { communityColor, personName } from '../people';
 export class AwardsSection {
   readonly element = el('section', 'card span2');
   private readonly grid = el('div', 'awards');
+  private wholeFile = false;
 
   constructor(
     private readonly t: Messages,
@@ -49,7 +50,10 @@ export class AwardsSection {
       case 'voiceFan':
         return [formatInt(award.value), ta.voiceMinutes(formatInt(award.extra ?? 0))];
       case 'streak':
-        return [ta.streakDays(formatInt(award.value)), description];
+        return [
+          ta.streakDays(formatInt(award.value)),
+          this.wholeFile ? ta.streakWholeFile : description,
+        ];
       case 'ghost':
         return [formatInt(award.value), ta.ghosts(String(award.extra ?? 0))];
       default:
@@ -59,6 +63,7 @@ export class AwardsSection {
 
   render(view: MonthView): void {
     const { t } = this;
+    this.wholeFile = view.wholeFile;
     this.grid.replaceChildren(
       ...computeAwards(view).map((award) => {
         const [value, description] = this.describe(award);

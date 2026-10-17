@@ -1,8 +1,9 @@
-import { max, range } from 'd3-array';
+import { max } from 'd3-array';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { select } from 'd3-selection';
 import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
+import { drawDayAxis, placeDays } from '../charts/day-axis';
 import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatInt, formatPercent } from '../format';
@@ -36,6 +37,7 @@ export class StickersSection {
   private readonly who = el('div', 'blist');
   private readonly top = el('div', 'blist');
   private readonly svg = svgEl('svg', { id: 'stkMonth', viewBox: '0 0 1200 200', role: 'img' });
+  private readonly perDayTitle = el('div', 'sub-h');
 
   constructor(
     private readonly t: Messages,
@@ -65,7 +67,8 @@ export class StickersSection {
     lists.append(left, right);
     this.svg.setAttribute('aria-label', ts.perDayLabel);
     const perDay = el('div');
-    perDay.append(el('div', 'sub-h', ts.perDayTitle), this.svg);
+    this.perDayTitle.textContent = ts.perDayTitle;
+    perDay.append(this.perDayTitle, this.svg);
     this.element.append(head, this.kpis, lists, perDay);
 
     const rowId = (ev: Event): string | undefined =>
@@ -136,7 +139,7 @@ export class StickersSection {
       ...senders.map((p: PersonView) => {
         const name = personName(p, t);
         const row = el('div', 'row');
-        row.style.gridTemplateColumns = 'minmax(90px,150px) minmax(0,1fr) 84px';
+        row.style.gridTemplateColumns = 'minmax(90px,150px) minmax(0,1fr) 104px';
         row.style.cursor = 'pointer';
         row.style.borderRadius = '6px';
         row.dataset.id = p.id;
@@ -191,16 +194,14 @@ export class StickersSection {
 
   private drawDays(view: MonthView): void {
     const { t, tooltip } = this;
-    const days = range(1, view.daysInMonth + 1).map((d) => {
-      const key = `${view.month}-${String(d).padStart(2, '0')}`;
-      const weekday = (new Date(Date.UTC(view.year, view.monthIndex, d)).getUTCDay() + 6) % 7;
-      return {
-        d,
-        weekday,
-        stickers: view.stickers.perDay[key] ?? 0,
-        messages: view.dailyCounts.get(key) ?? 0,
-      };
-    });
+    const whole = view.wholeFile;
+    this.perDayTitle.textContent = whole ? t.stickers.perDayTitleWholeFile : t.stickers.perDayTitle;
+    const days = placeDays(view.days).map((d) => ({
+      ...d,
+      d: d.i,
+      stickers: view.stickers.perDay[d.key] ?? 0,
+      messages: view.dailyCounts.get(d.key) ?? 0,
+    }));
     const s = select(this.svg);
     s.selectAll('*').remove();
     const x = scaleBand<number>()
@@ -253,7 +254,11 @@ export class StickersSection {
       .style('fill', 'var(--accent)')
       .attr('fill-opacity', (d) => (top3.has(d.d) ? 1 : 0.6))
       .on('pointerenter pointermove', (ev: PointerEvent, d) => {
-        tooltip.show(ev, t.stickers.tipTitle(t.dates.weekdays[d.weekday] ?? '', String(d.d)), [
+        const weekday = t.dates.weekdays[d.weekday] ?? '';
+        const title = whole
+          ? t.stickers.tipTitleWholeFile(weekday, String(d.day), t.dates.months[d.monthIndex] ?? '')
+          : t.stickers.tipTitle(weekday, String(d.day));
+        tooltip.show(ev, title, [
           [t.stickers.tipStickers, formatInt(d.stickers)],
           [t.stickers.tipShare, d.messages ? formatPercent(d.stickers / d.messages) : '—'],
         ]);
@@ -272,16 +277,10 @@ export class StickersSection {
       .style('font-family', 'var(--mono)')
       .style('fill', 'var(--fg)')
       .text((d) => formatInt(d.stickers));
-    s.append('g')
-      .selectAll('text')
-      .data(days)
-      .join('text')
-      .attr('x', (d) => bx(d) + x.bandwidth() / 2)
-      .attr('y', H - 8)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', 11)
-      .style('font-family', 'var(--mono)')
-      .style('fill', 'var(--muted)')
-      .text((d) => d.d);
+    drawDayAxis(s, days, x, whole, t, {
+      y: H - 8,
+      fontSize: 11,
+      color: () => 'var(--muted)',
+    });
   }
 }

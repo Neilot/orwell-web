@@ -1,5 +1,5 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
-import { getOrCreate, hourOf, increment, monthOf, weekdayOf } from './calendar';
+import { getOrCreate, hourOf, increment, periodsOf, weekdayOf } from './calendar';
 import { MESSAGE_KINDS, messageKind, type MessageKind } from './message-kind';
 import { words } from './text';
 
@@ -46,10 +46,14 @@ export class PeopleActivity implements Analyzer<PeopleActivityResult> {
   private readonly months = new Map<string, Map<ParticipantId, PersonMonthActivity>>();
 
   consume(event: ChatEvent): void {
+    for (const period of periodsOf(event.localTime)) this.consumeIn(period, event);
+  }
+
+  private consumeIn(period: string, event: ChatEvent): void {
     if (event.kind === 'service') return;
     const people = getOrCreate(
       this.months,
-      monthOf(event.localTime),
+      period,
       () => new Map<ParticipantId, PersonMonthActivity>(),
     );
     const person = getOrCreate(people, event.author.id, () => emptyActivity(event.author.id));

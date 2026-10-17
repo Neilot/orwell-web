@@ -1,5 +1,11 @@
 import type { OrwellErrorCode } from '../core';
 
+/**
+ * Key of the whole export in the per-month results, next to the `YYYY-MM` months. It mirrors
+ * the analytics' own constant; the worker's typing keeps both shapes in step.
+ */
+export const WHOLE_FILE = 'all';
+
 /** Message types shown in the dashboard, in display order. */
 export const MESSAGE_KINDS = [
   'text',
@@ -135,7 +141,7 @@ export interface Dashboard {
   readonly skippedMessages: number;
   /** Messages per local day, keyed `YYYY-MM-DD`. */
   readonly messagesPerDay: Readonly<Record<string, number>>;
-  /** The rest is keyed by local month, `YYYY-MM`. */
+  /** The rest is keyed by local month, `YYYY-MM`, plus `WHOLE_FILE` for the whole export. */
   readonly interactionsPerMonth: Readonly<Record<string, MonthInteractions>>;
   /** People who wrote that month, in order of their first message. */
   readonly peoplePerMonth: Readonly<Record<string, readonly PersonMonthActivity[]>>;

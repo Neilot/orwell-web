@@ -110,7 +110,7 @@ export class HourHeatmapSection {
     const writers = view.people.filter((p) => p.messages > 0);
     this.showAll.update(writers.length);
     this.who.textContent = this.showAll.showingAll
-      ? th.descAll(formatInt(writers.length))
+      ? (view.wholeFile ? th.descAllWholeFile : th.descAll)(formatInt(writers.length))
       : th.descTop(String(this.showAll.limit(writers.length)));
     let people = writers
       .sort((a, b) => b.messages - a.messages)

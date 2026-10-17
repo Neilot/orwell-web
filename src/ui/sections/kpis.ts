@@ -50,7 +50,14 @@ export class KpisSection {
         k.perMessage(formatDecimal(totals.words / Math.max(1, totals.textMessages))) +
           delta(totals.words, previous?.totals.words),
       ],
-      [formatInt(view.dailyCounts.size), k.activeDays, k.ofDays(formatInt(span), view.partial)],
+      [
+        formatInt(view.dailyCounts.size),
+        k.activeDays,
+        k.ofDays(
+          formatInt(span),
+          view.wholeFile ? 'wholeFile' : view.partial ? 'partial' : 'month',
+        ),
+      ],
       [recordLabel, k.recordDay, k.recordMessages(formatInt(record?.messages ?? 0))],
       [
         t.dates.hour(pad2(view.peakHour)),

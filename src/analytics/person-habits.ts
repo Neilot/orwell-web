@@ -1,5 +1,5 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
-import { dayOf, getOrCreate, monthOf } from './calendar';
+import { dayOf, getOrCreate, periodsOf } from './calendar';
 import { words } from './text';
 
 /** Silence after which the next message counts as starting a conversation. */
@@ -60,8 +60,12 @@ export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
   private readonly lastMessage = new Map<string, number>();
 
   consume(event: ChatEvent): void {
+    for (const period of periodsOf(event.localTime)) this.consumeIn(period, event);
+  }
+
+  private consumeIn(period: string, event: ChatEvent): void {
     if (event.kind === 'service') return;
-    const month = monthOf(event.localTime);
+    const month = period;
     const people = getOrCreate(this.months, month, () => new Map<ParticipantId, HabitsState>());
     const p = getOrCreate(people, event.author.id, () => ({
       days: new Set<string>(),

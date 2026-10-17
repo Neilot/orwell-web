@@ -1,5 +1,6 @@
 import {
   MESSAGE_KINDS,
+  WHOLE_FILE,
   type Dashboard,
   type InteractionType,
   type MessageKind,
@@ -52,16 +53,40 @@ export interface GraphView {
   readonly matrices: Readonly<Record<MatrixType, readonly (readonly number[])[]>>;
 }
 
-/** Everything the dashboard shows for one month, derived from the worker's data. */
-export interface MonthView {
-  /** `YYYY-MM`. */
-  readonly month: string;
-  readonly year: number;
+/** A calendar day shown in the per-day charts. */
+export interface CalendarDay {
+  /** `YYYY-MM-DD`. */
+  readonly key: string;
+  /** Day of the month, 1–31. */
+  readonly day: number;
   /** 0 = January. */
   readonly monthIndex: number;
+  readonly year: number;
+  /** 0 = Monday … 6 = Sunday. */
+  readonly weekday: number;
+  /** After the export's last day, in its unfinished last month. */
+  readonly future: boolean;
+}
+
+/** Everything the dashboard shows for one month (or the whole export), from the worker's data. */
+export interface MonthView {
+  /** `YYYY-MM`, or `WHOLE_FILE` for the whole export. */
+  readonly month: string;
+  /** True for the whole export rather than one month. */
+  readonly wholeFile: boolean;
+  /** Of the month, or of the export's first day. */
+  readonly year: number;
+  /** 0 = January; of the month, or of the export's first day. */
+  readonly monthIndex: number;
+  /** Days in the month, or from the export's first to its last day. */
   readonly daysInMonth: number;
   /** Last day with data; smaller than `daysInMonth` for the export's unfinished last month. */
   readonly lastDay: number;
+  /** First and last day with messages in the period, `YYYY-MM-DD`. */
+  readonly firstDayKey: string;
+  readonly lastDayKey: string;
+  /** Every day the per-day charts show, in order. */
+  readonly days: readonly CalendarDay[];
   readonly partial: boolean;
   readonly totals: MonthTotals;
   /** Everyone who took part: writers in order of their first message, then the rest. */
@@ -94,6 +119,21 @@ export interface MonthView {
     readonly totals: MonthTotals;
     readonly people: readonly PersonView[];
   } | null;
+}
+
+const DAY_MS = 86_400_000;
+
+function calendarDay(time: number, lastDay: number, month: string | null): CalendarDay {
+  const date = new Date(time);
+  const day = date.getUTCDate();
+  return {
+    key: date.toISOString().slice(0, 10),
+    day,
+    monthIndex: date.getUTCMonth(),
+    year: date.getUTCFullYear(),
+    weekday: (date.getUTCDay() + 6) % 7,
+    future: month !== null && day > lastDay,
+  };
 }
 
 /** Months present in the export, oldest first. */
@@ -199,19 +239,29 @@ function graphView(
 
 export function monthView(dashboard: Dashboard, month: string): MonthView {
   const months = monthsOf(dashboard);
-  const year = Number(month.slice(0, 4));
-  const monthIndex = Number(month.slice(5, 7)) - 1;
-  const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  const wholeFile = month === WHOLE_FILE;
   const allDays = Object.keys(dashboard.messagesPerDay).sort();
+  const periodDays = wholeFile ? allDays : allDays.filter((day) => day.startsWith(month));
+  const firstDayKey = periodDays[0] ?? `${month}-01`;
+  const lastDayKey = periodDays[periodDays.length - 1] ?? firstDayKey;
+  const start = wholeFile ? firstDayKey : `${month}-01`;
+  const year = Number(start.slice(0, 4));
+  const monthIndex = Number(start.slice(5, 7)) - 1;
+  const startTime = Date.UTC(year, monthIndex, Number(start.slice(8, 10)));
+  const daysInMonth = wholeFile
+    ? Math.round((Date.parse(`${lastDayKey}T00:00:00Z`) - startTime) / DAY_MS) + 1
+    : new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
   const lastDayInFile = allDays[allDays.length - 1] ?? '';
-  const lastDay = lastDayInFile.startsWith(month)
-    ? Number(lastDayInFile.slice(8, 10))
-    : daysInMonth;
+  const lastDay =
+    !wholeFile && lastDayInFile.startsWith(month)
+      ? Number(lastDayInFile.slice(8, 10))
+      : daysInMonth;
+  const days = Array.from({ length: daysInMonth }, (_, i) =>
+    calendarDay(startTime + i * DAY_MS, lastDay, wholeFile ? null : month),
+  );
 
   const dailyCounts = new Map(
-    allDays
-      .filter((day) => day.startsWith(month))
-      .map((day) => [day, dashboard.messagesPerDay[day] ?? 0] as const),
+    periodDays.map((day) => [day, dashboard.messagesPerDay[day] ?? 0] as const),
   );
   let recordDay: MonthView['recordDay'] = null;
   for (const [day, messages] of dailyCounts) {
@@ -235,16 +285,20 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
   let topWriter: PersonView | null = null;
   for (const p of everyone) if (!topWriter || p.messages > topWriter.messages) topWriter = p;
 
-  const previousMonth = months[months.indexOf(month) - 1];
+  const previousMonth = wholeFile ? undefined : months[months.indexOf(month) - 1];
   const previousPeople = previousMonth ? people(dashboard, previousMonth) : [];
   const responseTimes = dashboard.responseTimesPerMonth[month] ?? null;
 
   return {
     month,
+    wholeFile,
     year,
     monthIndex,
     daysInMonth,
     lastDay,
+    firstDayKey,
+    lastDayKey,
+    days,
     partial: lastDay < daysInMonth,
     totals: totals(everyone),
     people: everyone,

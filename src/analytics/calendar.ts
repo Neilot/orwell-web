@@ -5,6 +5,14 @@ export function monthOf(localTime: string): string {
   return localTime.slice(0, 7);
 }
 
+/** Key of the whole export, kept next to the `YYYY-MM` months in every per-month result. */
+export const WHOLE_FILE = 'all';
+
+/** The periods an event counts in: its own month and the whole export. */
+export function periodsOf(localTime: string): readonly [string, string] {
+  return [monthOf(localTime), WHOLE_FILE];
+}
+
 /** `YYYY-MM-DD`. */
 export function dayOf(localTime: string): string {
   return localTime.slice(0, 10);

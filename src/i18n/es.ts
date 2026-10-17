@@ -41,6 +41,8 @@ export const es = {
     ],
     /** "29 sep". */
     dayAndMonth: (day: string, month: string) => `${day} ${month}`,
+    /** "abr 2026", under the per-day charts of the whole export. */
+    monthYear: (month: string, year: string) => `${month} ${year}`,
     hour: (hour: string) => `${hour}:00`,
     seconds: (n: string) => `${n} s`,
     minutes: (n: string) => `${n} min`,
@@ -70,8 +72,8 @@ export const es = {
     words: 'Palabras',
     perMessage: (n: string) => `${n} por mensaje`,
     activeDays: 'Días con mensajes',
-    ofDays: (n: string, partial: boolean) =>
-      `de ${n} días${partial ? ' (mes en curso)' : ' del mes'}`,
+    ofDays: (n: string, period: 'month' | 'partial' | 'wholeFile') =>
+      `de ${n} días${period === 'wholeFile' ? ' del periodo' : period === 'partial' ? ' (mes en curso)' : ' del mes'}`,
     recordDay: 'Día récord',
     recordMessages: (n: string) => `${n} mensajes`,
     peakHour: 'Hora más activa',
@@ -114,6 +116,7 @@ export const es = {
     descBefore: 'Arriba, el total del grupo por hora. Abajo, ',
     descTop: (n: string) => `las ${n} personas más activas`,
     descAll: (n: string) => `las ${n} personas que escribieron este mes`,
+    descAllWholeFile: (n: string) => `las ${n} personas que escribieron en el archivo`,
     descAfter:
       ': cada fila muestra cómo se reparten sus mensajes a lo largo del día, con los colores de la leyenda.',
     helpLabel: 'Cómo funciona esta tabla',
@@ -170,6 +173,9 @@ export const es = {
     defaultGroupName: 'Grupo de Telegram',
     month: 'Mes',
     monthOption: (month: string, year: string) => `${month} de ${year}`,
+    wholeFileOption: 'Todo el archivo',
+    wholeFileSubtitle: (first: string, last: string, participants: string) =>
+      `Todo el archivo: del ${first} al ${last} · ${participants} participantes`,
     monthsInFile: (count: string) => `${count} meses en el archivo`,
     subtitle: (month: string, year: string, participants: string) =>
       `${month} de ${year} · ${participants} participantes`,
@@ -258,6 +264,7 @@ export const es = {
     meta: (community: string, rank: string, total: string) =>
       `${community} · #${rank} de ${total} en mensajes`,
     metaShare: (percent: string) => ` · ${percent} de los mensajes del mes`,
+    metaShareWholeFile: (percent: string) => ` · ${percent} de los mensajes del archivo`,
     tiles: {
       messages: 'Mensajes',
       words: 'Palabras',
@@ -313,6 +320,7 @@ export const es = {
   },
   daily: {
     title: 'Mensajes por día del mes',
+    titleWholeFile: 'Mensajes por día',
     legendBars: 'Mensajes por día',
     legendAverage: 'Promedio de 7 días',
     chartLabel: 'Mensajes por día',
@@ -320,6 +328,10 @@ export const es = {
     record: (count: string, weekday: string, day: string) =>
       `Récord: ${count} el ${weekday} ${day}`,
     tipTitle: (weekday: string, day: string, month: string) => `${weekday} ${day} de ${month}`,
+    recordWholeFile: (count: string, weekday: string, day: string, month: string) =>
+      `Récord: ${count} el ${weekday} ${day} de ${month}`,
+    tipTitleWholeFile: (weekday: string, day: string, month: string, year: string) =>
+      `${weekday} ${day} de ${month} de ${year}`,
     tipMessages: 'Mensajes',
     tipAverage: 'Promedio de 7 días',
     noValue: '—',
@@ -362,12 +374,15 @@ export const es = {
     whoNote: '(total · % de sus mensajes)',
     topTitle: 'Stickers más enviados',
     perDayTitle: 'Stickers por día del mes',
+    perDayTitleWholeFile: 'Stickers por día',
     perDayLabel: 'Stickers enviados por día del mes',
     nobody: 'Nadie envió stickers.',
     noStickers: 'Sin stickers en este chat.',
     openCard: (name: string) => `Ver la ficha de ${name}`,
     fan: (name: string, times: string) => `Quien más lo usa: ${name} (${times})`,
     tipTitle: (weekday: string, day: string) => `${weekday} ${day}`,
+    tipTitleWholeFile: (weekday: string, day: string, month: string) =>
+      `${weekday} ${day} de ${month}`,
     tipStickers: 'Stickers',
     tipShare: 'De los mensajes del día',
   },
@@ -388,6 +403,7 @@ export const es = {
     questioner: { title: 'El preguntón', desc: 'de sus mensajes son preguntas' },
     laugher: { title: 'El que más se ríe', desc: '“jajaja” escritos' },
     streak: { title: 'Racha más larga', desc: 'seguidos escribiendo en el grupo este mes' },
+    streakWholeFile: 'seguidos escribiendo en el grupo',
     longest: { title: 'Mensaje más largo', desc: 'caracteres en un solo mensaje' },
     editor: { title: 'El corrector', desc: 'mensajes editados después de enviarlos' },
     writer: { title: 'El escritor', desc: 'palabras por mensaje, el más extenso' },

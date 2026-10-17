@@ -1,5 +1,5 @@
 import type { Analyzer, ChatEvent, EventId, ParticipantId } from '../core';
-import { getOrCreate, increment, monthOf } from './calendar';
+import { getOrCreate, increment, periodsOf } from './calendar';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -46,6 +46,10 @@ export class ResponseTimes implements Analyzer<ResponseTimesResult> {
   >();
 
   consume(event: ChatEvent): void {
+    for (const period of periodsOf(event.localTime)) this.consumeIn(period, event);
+  }
+
+  private consumeIn(period: string, event: ChatEvent): void {
     if (event.kind === 'service') return;
     this.sent.set(event.id, { author: event.author.id, at: event.at });
     if (!event.replyTo) return;
@@ -53,7 +57,7 @@ export class ResponseTimes implements Analyzer<ResponseTimesResult> {
     if (!original || original.author === event.author.id) return;
     const delay = event.at - original.at;
     if (delay > 0 && delay < 24 * HOUR) {
-      const month = getOrCreate(this.delays, monthOf(event.localTime), () => ({
+      const month = getOrCreate(this.delays, period, () => ({
         all: [],
         byPerson: new Map<ParticipantId, number[]>(),
       }));

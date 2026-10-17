@@ -53,7 +53,12 @@ describe('PeopleActivity', () => {
     analyzer.consume(chatEvent({ author: ana, kind: 'service', localTime: '2026-04-01T01:00:00' }));
 
     const result = analyzer.result();
-    expect(Object.keys(result)).toEqual(['2026-03', '2026-04']);
+    // Every month, plus the whole export under 'all'.
+    expect(Object.keys(result)).toEqual(['2026-03', 'all', '2026-04']);
+    expect(result.all?.map((p) => [p.id, p.messages])).toEqual([
+      ['u2', 2],
+      ['u1', 2],
+    ]);
     const [b, a] = result['2026-03'] ?? [];
     expect(b).toMatchObject({
       id: 'u2',

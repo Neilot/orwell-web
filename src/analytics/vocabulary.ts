@@ -1,5 +1,5 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
-import { getOrCreate, monthOf } from './calendar';
+import { getOrCreate, periodsOf } from './calendar';
 import { words } from './text';
 
 /** Spanish (and a few English) words too common to say anything about a person. */
@@ -52,8 +52,12 @@ export class Vocabulary implements Analyzer<VocabularyResult> {
   private readonly groups = new Map<string, Counts>();
 
   consume(event: ChatEvent): void {
+    for (const period of periodsOf(event.localTime)) this.consumeIn(period, event);
+  }
+
+  private consumeIn(period: string, event: ChatEvent): void {
     if (event.kind === 'service' || !event.text) return;
-    const month = monthOf(event.localTime);
+    const month = period;
     const people = getOrCreate(this.months, month, () => new Map<ParticipantId, Counts>());
     const group = getOrCreate(this.groups, month, () => ({
       words: new Map<string, number>(),
