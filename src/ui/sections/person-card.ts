@@ -58,7 +58,8 @@ export class PersonCardSection {
   constructor(
     private readonly t: Messages,
     private readonly tooltip: Tooltip,
-    onSelect: (id: string) => void,
+    /** Called with whoever is chosen in the "Ver otra persona" search. */
+    onPick: (id: string) => void,
   ) {
     const tp = t.person;
     this.element.id = 'persona';
@@ -67,7 +68,7 @@ export class PersonCardSection {
     this.title.id = 'h-persona';
     this.title.textContent = tp.defaultTitle;
     this.meta.id = 'pMeta';
-    this.picker = new PersonPicker(t, onSelect);
+    this.picker = new PersonPicker(t, onPick);
 
     const nameBlock = el('div');
     nameBlock.append(this.title, this.meta);

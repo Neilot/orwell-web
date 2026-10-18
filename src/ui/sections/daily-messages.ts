@@ -6,7 +6,6 @@ import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { drawDayAxis, placeDays, type PlacedDay } from '../charts/day-axis';
 import { HelpButton } from '../components/help';
-import { MarkChip } from '../components/mark-chip';
 import type { Tooltip, TooltipRow } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatDecimal, formatInt, formatShare } from '../format';
@@ -37,12 +36,10 @@ export class DailyMessagesSection {
     viewBox: `0 0 ${String(W)} ${String(H)}`,
     role: 'img',
   });
-  private readonly chip: MarkChip;
 
   constructor(
     private readonly t: Messages,
     private readonly tooltip: Tooltip,
-    onClear: () => void,
   ) {
     const td = t.daily;
     this.element.setAttribute('aria-labelledby', 'h-time');
@@ -60,8 +57,7 @@ export class DailyMessagesSection {
     const avgItem = el('span');
     avgItem.append(avg, td.legendAverage);
     const legend = el('div', 'legend');
-    this.chip = new MarkChip(t, onClear);
-    legend.append(barsItem, avgItem, this.chip.element);
+    legend.append(barsItem, avgItem);
     const heading = new HelpButton(this.title, td.help.label, td.help.title, td.help.paragraphs);
     const head = el('div', 'head');
     head.append(heading.element, legend);
@@ -71,7 +67,6 @@ export class DailyMessagesSection {
   /** `marked`: the marked person, whose share of each day is shown, or `null`. */
   render(view: MonthView, marked: PersonView | null): void {
     const { t, tooltip } = this;
-    this.chip.render(marked);
     const mine = (d: Day): number => marked?.perDay[d.key] ?? 0;
     const whole = view.wholeFile;
     this.title.textContent = whole ? t.daily.titleWholeFile : t.daily.title;

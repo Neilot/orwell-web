@@ -5,7 +5,6 @@ import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { drawDayAxis, placeDays } from '../charts/day-axis';
 import { HelpButton } from '../components/help';
-import { MarkChip } from '../components/mark-chip';
 import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatInt, formatPercent, formatShare } from '../format';
@@ -49,22 +48,19 @@ export class StickersSection {
   private readonly top = el('div', 'blist');
   private readonly svg = svgEl('svg', { id: 'stkMonth', viewBox: '0 0 1200 200', role: 'img' });
   private readonly perDayTitle = el('div', 'sub-h');
-  private readonly chip: MarkChip;
 
   constructor(
     private readonly t: Messages,
     private readonly tooltip: Tooltip,
     onSelect: (id: string) => void,
-    onClear: () => void,
   ) {
     const ts = t.stickers;
     this.element.setAttribute('aria-labelledby', 'h-stk');
     const title = el('h2', undefined, ts.title);
     title.id = 'h-stk';
     const heading = new HelpButton(title, ts.help.label, ts.help.title, ts.help.paragraphs);
-    this.chip = new MarkChip(t, onClear);
     const head = el('div', 'head');
-    head.append(heading.element, this.chip.element);
+    head.append(heading.element);
     this.kpis.id = 'stkKpis';
     this.kpis.style.gridTemplateColumns = 'repeat(4,minmax(0,1fr))';
     this.who.id = 'stkWho';
@@ -105,7 +101,6 @@ export class StickersSection {
 
   /** `marked`: the marked person, whose share is shown, or `null`. */
   render(view: MonthView, marked: PersonView | null): void {
-    this.chip.render(marked);
     this.drawKpis(view);
     this.drawWho(view);
     this.drawTop(view, marked);

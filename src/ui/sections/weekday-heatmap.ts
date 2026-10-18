@@ -4,6 +4,7 @@ import { select } from 'd3-selection';
 import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { fitNames } from '../charts/fit-names';
+import { addMarkedRow, highlightMarkedRow } from '../charts/marked-row';
 import { heatFill } from '../charts/heat';
 import { heatLegend } from '../components/heat-legend';
 import { Segmented } from '../components/segmented';
@@ -34,6 +35,7 @@ export class WeekdayHeatmapSection {
   private readonly showAll: ShowAllButton;
   private view: MonthView | null = null;
   private selected: string | null = null;
+  private marked = false;
 
   constructor(
     private readonly t: Messages,
@@ -71,9 +73,11 @@ export class WeekdayHeatmapSection {
     );
   }
 
-  render(view: MonthView, selected: string | null): void {
+  /** `marked`: the selected person is marked, so their row always shows and stands out. */
+  render(view: MonthView, selected: string | null, marked: boolean): void {
     this.view = view;
     this.selected = selected;
+    this.marked = marked;
     this.draw();
   }
 
@@ -90,6 +94,8 @@ export class WeekdayHeatmapSection {
     if (this.segment.value === 'weekend') {
       people = people.sort((a, b) => weekendShare(b) - weekendShare(a));
     }
+    const marked = this.marked ? (view.people.find((p) => p.id === this.selected) ?? null) : null;
+    const markedId = addMarkedRow(people, marked);
     const height = TOP + people.length * ROW + 6;
     const s = select(this.svg);
     s.selectAll('*').remove();
@@ -159,8 +165,14 @@ export class WeekdayHeatmapSection {
       .attr('text-anchor', 'end')
       .attr('font-size', 12)
       .text((p) => personName(p, t))
-      .style('fill', (p) => (p.id === this.selected ? 'var(--fg)' : 'var(--fg2)'))
-      .attr('font-weight', (p) => (p.id === this.selected ? 700 : 400))
+      .style('fill', (p) =>
+        p.id === markedId
+          ? 'var(--accent-ink)'
+          : p.id === this.selected
+            ? 'var(--fg)'
+            : 'var(--fg2)',
+      )
+      .attr('font-weight', (p) => (p.id === this.selected || p.id === markedId ? 700 : 400))
       .style('cursor', 'pointer')
       .on('click', (_, p) => {
         this.onSelect(p.id);
@@ -198,6 +210,12 @@ export class WeekdayHeatmapSection {
         .style('font-family', 'var(--mono)')
         .style('fill', 'var(--muted)')
         .text(formatPercent(weekendShare(person)));
+    });
+    highlightMarkedRow(rows, markedId, {
+      width: W,
+      height: ROW,
+      from: LEFT,
+      to: LEFT + 7 * CELL,
     });
   }
 }

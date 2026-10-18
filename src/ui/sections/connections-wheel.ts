@@ -5,7 +5,6 @@ import { arc, curveBundle, lineRadial, type DefaultArcObject } from 'd3-shape';
 import type { MatrixType, MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { HelpButton } from '../components/help';
-import { MarkChip } from '../components/mark-chip';
 import { Segmented } from '../components/segmented';
 import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
@@ -45,7 +44,6 @@ export class ConnectionsWheelSection {
   private readonly svg = svgEl('svg', { id: 'bun', viewBox: '0 0 820 820', role: 'img' });
   private readonly communityList = el('div');
   private readonly communityNote = el('p');
-  private readonly chip: MarkChip;
   private readonly narrow = matchMedia(NARROW);
   private readonly edgesLayer;
   private readonly arcsLayer;
@@ -58,7 +56,6 @@ export class ConnectionsWheelSection {
     private readonly t: Messages,
     private readonly tooltip: Tooltip,
     private readonly onSelect: (id: string) => void,
-    onClear: () => void,
   ) {
     const tw = t.wheel;
     this.element.setAttribute('aria-labelledby', 'h-wheel');
@@ -94,7 +91,7 @@ export class ConnectionsWheelSection {
     controls.append(this.segment.element, sliderLabel, this.slider, this.sliderValue);
     const heading = new HelpButton(title, tw.help.label, tw.help.title, tw.help.paragraphs);
     const head = el('div', 'head');
-    head.append(heading.element, controls);
+    head.append(heading.element, this.segment.element);
 
     const legend = el('div', 'legend');
     const line = (color: string, label: string): HTMLSpanElement => {
@@ -104,13 +101,7 @@ export class ConnectionsWheelSection {
       item.append(swatch, label);
       return item;
     };
-    this.chip = new MarkChip(t, onClear, tw.marked);
-    this.chip.element.style.marginLeft = 'auto';
-    legend.append(
-      line('var(--accent)', tw.sends),
-      line('var(--in)', tw.receives),
-      this.chip.element,
-    );
+    legend.append(line('var(--accent)', tw.sends), line('var(--in)', tw.receives));
 
     this.scroll.id = 'bunWrap';
     this.scroll.tabIndex = 0;
@@ -146,7 +137,6 @@ export class ConnectionsWheelSection {
     this.view = view;
     this.selected = selected;
     this.marked = marked;
-    this.chip.render(marked ? (view.people.find((p) => p.id === selected) ?? null) : null);
     this.draw();
   }
 

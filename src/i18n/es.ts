@@ -227,8 +227,17 @@ export const es = {
   people: {
     deletedAccount: 'Cuenta eliminada',
   },
+  tabs: {
+    label: 'Partes del tablero',
+    summary: 'Resumen',
+    who: 'Quién habla',
+    when: 'Cuándo escriben',
+    what: 'Qué se dice',
+  },
   mark: {
-    clear: (name: string) => `Quitar la marca de ${name}`,
+    highlighting: 'Resaltando',
+    open: (name: string) => `Ver la ficha de ${name}`,
+    clear: (name: string) => `Quitar el resaltado de ${name}`,
     close: '✕',
   },
   communities: {
@@ -252,7 +261,6 @@ export const es = {
         'Con «Conexiones» eliges cuántas líneas se dibujan. En el celular, desliza la rueda de lado a lado para recorrerla.',
       ],
     },
-    marked: 'Marcada: ',
     scrollLabel: 'Rueda de conexiones, desplazable',
     chartLabel: 'Rueda de conexiones agrupadas por comunidad',
     communitiesTitle: 'Comunidades detectadas',

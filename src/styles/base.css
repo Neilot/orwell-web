@@ -188,13 +188,26 @@ svg text{font-family:var(--body);fill:var(--fg2)}
 .blist .val{font:12px var(--mono);text-align:right;color:var(--fg2);white-space:nowrap}
 .blist .track{position:relative}
 .blist .track span.me{position:absolute;left:0;top:0;height:100%;background:var(--in)}
-.mk-chip{display:inline-flex;align-items:center;gap:6px;max-width:280px;font:600 12.5px var(--body);color:var(--fg);background:color-mix(in srgb,var(--in) 14%,transparent);border:1px solid color-mix(in srgb,var(--in) 55%,transparent);border-radius:999px;padding:2px 7px 2px 9px;cursor:pointer}
-.mk-chip:hover{border-color:var(--in)}
-.mk-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.mk-chip i{width:10px;height:10px;border-radius:2px;background:var(--in);flex:none}
-.mk-chip .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mk-chip .x{font-size:11px;color:var(--fg2)}
-.hgroup{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+/* tab bar: one part of the dashboard at a time, with the highlighted person and the month */
+.tabbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-inline:calc(-1 * max(16px, env(safe-area-inset-left, 0px)));padding:10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0;max-width:100%}
+.tabs button{font:600 14px var(--body);color:var(--fg2);background:transparent;border:1px solid transparent;border-radius:999px;padding:7px 14px;cursor:pointer;white-space:nowrap}
+.tabs button:hover{color:var(--fg);border-color:var(--line)}
+.tabs button[aria-selected="true"]{background:var(--accent-fill);color:#fff;border-color:var(--accent-fill)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tabbar-right{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;justify-content:flex-end;min-width:0}
+.tabbar .ctl{margin-top:0!important}
+#globalMark{display:flex;align-items:center;gap:8px;min-width:0}
+#globalMark .gm-l{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+#globalMark .gm-chip{display:inline-flex;align-items:center;gap:7px;max-width:260px;font:600 13px var(--body);color:var(--fg);background:color-mix(in srgb,var(--in) 14%,transparent);border:1px solid color-mix(in srgb,var(--in) 55%,transparent);border-radius:999px;padding:3px 4px}
+#globalMark .gm-go{display:inline-flex;align-items:center;gap:7px;min-width:0;background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:0 2px 0 0}
+#globalMark .gm-go span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#globalMark .gm-av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:800 9.5px var(--display);color:var(--fg);flex:none}
+#globalMark .gm-x{width:22px;height:22px;border-radius:50%;border:0;background:transparent;color:var(--fg2);cursor:pointer;display:grid;place-items:center;font-size:12px}
+#globalMark .gm-x:hover{background:color-mix(in srgb,var(--in) 30%,transparent);color:var(--fg)}
+#globalMark button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:560px){.tabbar-right{width:100%;justify-content:space-between}#globalMark .gm-l,.tabbar #monthNote{display:none}.tabbar .mpick{flex:1}.tabbar .mp-btn{width:100%;min-width:0}}
+@media (pointer:coarse){.tabs button{padding:10px 16px}}
 .foot{color:var(--muted);font-size:13px;max-width:90ch}
 .scrollx{overflow-x:auto}
 @media (max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.awards{grid-template-columns:repeat(2,minmax(0,1fr))}.persona{grid-template-columns:minmax(0,1fr)}}

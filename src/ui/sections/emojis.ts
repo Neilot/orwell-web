@@ -1,7 +1,6 @@
 import type { MonthView, PersonView, Ranked } from '../../app';
 import type { Messages } from '../../i18n';
 import { HelpButton } from '../components/help';
-import { MarkChip } from '../components/mark-chip';
 import { el } from '../dom';
 import { formatInt, formatShare } from '../format';
 
@@ -15,20 +14,15 @@ export class EmojisSection {
   readonly element = el('section', 'card span2');
   private readonly written = el('div', 'blist');
   private readonly reactions = el('div', 'blist');
-  private readonly chip: MarkChip;
 
-  constructor(
-    private readonly t: Messages,
-    onClear: () => void,
-  ) {
+  constructor(private readonly t: Messages) {
     const te = t.emojis;
     this.element.setAttribute('aria-labelledby', 'h-emo');
     const title = el('h2', undefined, te.title);
     title.id = 'h-emo';
     const heading = new HelpButton(title, te.help.label, te.help.title, te.help.paragraphs);
-    this.chip = new MarkChip(t, onClear);
     const head = el('div', 'head');
-    head.append(heading.element, this.chip.element);
+    head.append(heading.element);
     this.written.id = 'emoText';
     this.reactions.id = 'emoReact';
     const left = el('div');
@@ -42,7 +36,6 @@ export class EmojisSection {
 
   /** `marked`: the marked person, whose share of each emoji is shown, or `null`. */
   render(view: MonthView, marked: PersonView | null): void {
-    this.chip.render(marked);
     const emojiPeople = view.vocabulary.emojiPeople;
     this.fill(
       this.written,

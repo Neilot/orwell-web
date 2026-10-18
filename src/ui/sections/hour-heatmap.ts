@@ -4,6 +4,7 @@ import { select } from 'd3-selection';
 import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { fitNames } from '../charts/fit-names';
+import { addMarkedRow, highlightMarkedRow } from '../charts/marked-row';
 import { heatFill } from '../charts/heat';
 import { heatLegend } from '../components/heat-legend';
 import { HelpButton } from '../components/help';
@@ -52,6 +53,7 @@ export class HourHeatmapSection {
   private readonly showAll: ShowAllButton;
   private view: MonthView | null = null;
   private selected: string | null = null;
+  private marked = false;
 
   constructor(
     private readonly t: Messages,
@@ -92,9 +94,11 @@ export class HourHeatmapSection {
     );
   }
 
-  render(view: MonthView, selected: string | null): void {
+  /** `marked`: the selected person is marked, so their row always shows and stands out. */
+  render(view: MonthView, selected: string | null, marked: boolean): void {
     this.view = view;
     this.selected = selected;
+    this.marked = marked;
     this.draw();
   }
 
@@ -110,6 +114,8 @@ export class HourHeatmapSection {
     if (this.segment.value === 'peak') {
       people = people.sort((a, b) => peakKey(a.hours) - peakKey(b.hours));
     }
+    const marked = this.marked ? (view.people.find((p) => p.id === this.selected) ?? null) : null;
+    const markedId = addMarkedRow(people, marked);
     const height = TOP + people.length * ROW + 8;
     const s = select(this.svg);
     s.selectAll('*').remove();
@@ -173,8 +179,14 @@ export class HourHeatmapSection {
       .attr('text-anchor', 'end')
       .attr('font-size', 12)
       .text((p) => personName(p, t))
-      .style('fill', (p) => (p.id === this.selected ? 'var(--fg)' : 'var(--fg2)'))
-      .attr('font-weight', (p) => (p.id === this.selected ? 700 : 400))
+      .style('fill', (p) =>
+        p.id === markedId
+          ? 'var(--accent-ink)'
+          : p.id === this.selected
+            ? 'var(--fg)'
+            : 'var(--fg2)',
+      )
+      .attr('font-weight', (p) => (p.id === this.selected || p.id === markedId ? 700 : 400))
       .style('cursor', 'pointer')
       .on('click', (_, p) => {
         this.onSelect(p.id);
@@ -212,6 +224,12 @@ export class HourHeatmapSection {
         .style('font-family', 'var(--mono)')
         .style('fill', 'var(--muted)')
         .text(th.peakHour(pad2(peakHour(person.hours))));
+    });
+    highlightMarkedRow(rows, markedId, {
+      width: W,
+      height: ROW,
+      from: LEFT,
+      to: LEFT + 24 * CELL,
     });
     s.append('text')
       .attr('x', W - 52)

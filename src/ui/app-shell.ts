@@ -9,6 +9,8 @@ import {
   type PersonView,
 } from '../app';
 import type { Messages } from '../i18n';
+import { HighlightLabel } from './components/highlight-label';
+import { TabBar } from './components/tab-bar';
 import { Tooltip } from './components/tooltip';
 import { dayText } from './dates';
 import { el, svgEl } from './dom';
@@ -29,6 +31,8 @@ import { RankingSection } from './sections/ranking';
 import { WeekdayHeatmapSection } from './sections/weekday-heatmap';
 
 export type Analyze = (file: File) => Promise<Dashboard>;
+
+type TabKey = 'summary' | 'who' | 'when' | 'what';
 
 function eyeIcon(): SVGSVGElement {
   const icon = svgEl('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' });
@@ -105,7 +109,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   const controls = monthPicker.element;
 
   const brand = el('div', 'brand');
-  brand.append(logo, title, subtitle, controls);
+  brand.append(logo, title, subtitle);
 
   // Header, right corner: upload button, hint and status line.
   const pick = el('button', 'btn');
@@ -155,40 +159,112 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     marked = true;
     selectPerson(id, true);
   };
+  /** Choosing someone in the card's search marks them too, without scrolling away. */
+  const pickAndMark = (id: string): void => {
+    marked = true;
+    selectPerson(id, false);
+  };
   const clearMark = (): void => {
     marked = false;
     if (view && selected) selectPerson(selected, false);
   };
   const kpis = new KpisSection(t);
-  const wheel = new ConnectionsWheelSection(t, tooltip, selectAndMark, clearMark);
-  const person = new PersonCardSection(t, tooltip, select);
-  const daily = new DailyMessagesSection(t, tooltip, clearMark);
+  const wheel = new ConnectionsWheelSection(t, tooltip, selectAndMark);
+  const person = new PersonCardSection(t, tooltip, pickAndMark);
+  const daily = new DailyMessagesSection(t, tooltip);
   const ranking = new RankingSection(t, select);
   const hours = new HourHeatmapSection(t, tooltip, select);
   const weekdays = new WeekdayHeatmapSection(t, tooltip, select);
   const rhythm = new GroupRhythmSection(t, tooltip);
   const scatter = new WordsScatterSection(t, tooltip, select);
   const wordCloud = new WordCloudSection(t, tooltip);
-  const stickers = new StickersSection(t, tooltip, select, clearMark);
+  const stickers = new StickersSection(t, tooltip, select);
   const awards = new AwardsSection(t, select);
-  const emojis = new EmojisSection(t, clearMark);
+  const emojis = new EmojisSection(t);
   const footNote = el('p', 'foot', t.footNote);
   footNote.id = 'footNote';
-  // Same order and two-column grid as the prototype; later sections slot in between.
-  const grid = el('div', 'grid2');
-  grid.append(
-    daily.element,
-    ranking.element,
-    scatter.element,
-    wordCloud.element,
-    hours.element,
-    weekdays.element,
-    rhythm.element,
-    stickers.element,
-    awards.element,
-    emojis.element,
+
+  // One panel per tab; each is a two-column grid where wide sections take both columns.
+  const panels = new Map<TabKey, HTMLElement>();
+  const board = el('div');
+  const tabs = new TabBar<TabKey>(
+    t.tabs.label,
+    (['summary', 'who', 'when', 'what'] as const).map((key) => ({ key, label: t.tabs[key] })),
+    (key) => {
+      for (const [k, panel] of panels) panel.hidden = k !== key;
+      // Names are fitted to the space they have, which is only known once a panel is shown.
+      if (view && selected) selectPerson(selected, false);
+    },
   );
-  const dashboardParts = [kpis.element, wheel.element, person.element, grid, footNote];
+  const layout: [TabKey, [HTMLElement, boolean][]][] = [
+    [
+      'summary',
+      [
+        [kpis.element, true],
+        [daily.element, true],
+        [awards.element, true],
+      ],
+    ],
+    [
+      'who',
+      [
+        [wheel.element, true],
+        [person.element, true],
+        [ranking.element, false],
+        [scatter.element, false],
+      ],
+    ],
+    [
+      'when',
+      [
+        [hours.element, true],
+        [weekdays.element, false],
+        [rhythm.element, false],
+      ],
+    ],
+    [
+      'what',
+      [
+        [wordCloud.element, true],
+        [stickers.element, true],
+        [emojis.element, true],
+      ],
+    ],
+  ];
+  for (const [key, sections] of layout) {
+    const panel = el('div', 'grid2 panel');
+    panel.id = `panel-${key}`;
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('aria-labelledby', `tab-${key}`);
+    for (const [section, wide] of sections) {
+      section.classList.toggle('span2', wide);
+      panel.append(section);
+    }
+    panels.set(key, panel);
+    board.append(panel);
+  }
+  const highlight = new HighlightLabel(
+    t,
+    () => {
+      if (selected) selectPerson(selected, true);
+    },
+    clearMark,
+  );
+  tabs.side.append(highlight.element, controls);
+  /** Switches tabs and, if the page was further down, goes back to the top of the new one. */
+  const openTab = (key: TabKey): void => {
+    tabs.show(key);
+    const panel = panels.get(key);
+    if (!panel) return;
+    const top = panel.getBoundingClientRect().top + scrollY - tabs.element.offsetHeight - 12;
+    if (scrollY > top) window.scrollTo({ top, behavior: 'auto' });
+  };
+  tabs.element.addEventListener('click', (ev) => {
+    const tab = ev.target instanceof Element ? ev.target.closest<HTMLElement>('[role=tab]') : null;
+    const key = tab?.id.slice(4) as TabKey | undefined;
+    if (key) openTab(key);
+  });
+  const dashboardParts = [tabs.element, board, footNote];
 
   const wrap = el('div', 'wrap');
   wrap.append(header, empty, ...dashboardParts);
@@ -203,9 +279,14 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
    * whoever is selected next and survives a change of month.
    */
   let marked = false;
+  tabs.show(tabs.initial());
 
-  /** Brings the person card to the middle of the screen, or to its top when it is taller. */
+  /**
+   * Brings the person card to the middle of the screen, or to its top when it is taller,
+   * opening its tab first when the click came from another one (an award, a heat-map row).
+   */
   function centerCard(): void {
+    tabs.show('who');
     const box = person.element.getBoundingClientRect();
     const gap = Math.max(16, (innerHeight - box.height) / 2);
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -222,18 +303,18 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     person.render(view, id);
     ranking.render(view, id);
     wheel.render(view, id, marked);
-    hours.render(view, id);
-    weekdays.render(view, id);
+    hours.render(view, id, marked);
+    weekdays.render(view, id, marked);
     scatter.render(view, id);
     wordCloud.render(view, id);
     daily.render(view, markedPerson);
     stickers.render(view, markedPerson);
     emojis.render(view, markedPerson);
+    highlight.render(markedPerson);
     if (scroll) centerCard();
   }
 
   function setDashboardVisible(visible: boolean): void {
-    controls.hidden = !visible;
     empty.hidden = visible;
     for (const part of dashboardParts) part.hidden = !visible;
   }
