@@ -1,13 +1,16 @@
 import {
   AnalysisFailure,
+  messagesPerPeriod,
   monthsOf,
   monthView,
   WHOLE_FILE,
   type Dashboard,
   type MonthView,
+  type PersonView,
 } from '../app';
 import type { Messages } from '../i18n';
 import { Tooltip } from './components/tooltip';
+import { dayText } from './dates';
 import { el, svgEl } from './dom';
 import { formatInt } from './format';
 import { ConnectionsWheelSection } from './sections/connections-wheel';
@@ -20,6 +23,7 @@ import { WordsScatterSection } from './sections/words-scatter';
 import { GroupRhythmSection } from './sections/group-rhythm';
 import { HourHeatmapSection } from './sections/hour-heatmap';
 import { KpisSection } from './sections/kpis';
+import { MonthPicker } from './sections/month-picker';
 import { PersonCardSection } from './sections/person-card';
 import { RankingSection } from './sections/ranking';
 import { WeekdayHeatmapSection } from './sections/weekday-heatmap';
@@ -60,6 +64,29 @@ function uploadIcon(): SVGSVGElement {
   return icon;
 }
 
+function lockIcon(): SVGSVGElement {
+  const icon = svgEl('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' });
+  icon.append(
+    svgEl('rect', {
+      x: '3',
+      y: '7',
+      width: '10',
+      height: '7',
+      rx: '1.5',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '1.5',
+    }),
+    svgEl('path', {
+      d: 'M5.5 7V5a2.5 2.5 0 015 0v2',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '1.5',
+    }),
+  );
+  return icon;
+}
+
 /** Builds the page: header with month picker and upload, then the dashboard sections. */
 export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze): void {
   const tooltip = new Tooltip();
@@ -72,24 +99,15 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   const subtitle = el('p', 'sub');
   subtitle.id = 'gsub';
 
-  const monthLabel = el('label', undefined, t.header.month);
-  monthLabel.htmlFor = 'month';
-  monthLabel.style.fontWeight = '600';
-  monthLabel.style.color = 'var(--fg)';
-  const monthSelect = el('select');
-  monthSelect.id = 'month';
-  monthSelect.style.fontWeight = '600';
-  const monthNote = el('span');
-  monthNote.id = 'monthNote';
-  monthNote.style.color = 'var(--muted)';
-  const controls = el('div', 'ctl');
-  controls.style.marginTop = '6px';
-  controls.append(monthLabel, monthSelect, monthNote);
+  const monthPicker = new MonthPicker(t, (month) => {
+    showMonth(month);
+  });
+  const controls = monthPicker.element;
 
   const brand = el('div', 'brand');
   brand.append(logo, title, subtitle, controls);
 
-  // Header, right: upload button, hint and status line.
+  // Header, right corner: upload button, hint and status line.
   const pick = el('button', 'btn');
   pick.id = 'pick';
   pick.type = 'button';
@@ -110,8 +128,12 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   input.accept = '.json,.zip,application/json,application/zip';
   input.hidden = true;
 
+  const what = el('span');
+  what.append(t.upload.hintBefore, el('b', undefined, t.upload.hintFile), t.upload.hintAfter);
+  const privacy = el('span', 'lk');
+  privacy.append(lockIcon(), t.upload.privacy);
   const hint = el('small');
-  hint.append(t.upload.hintBefore, el('b', undefined, t.upload.hintFile), t.upload.hintAfter);
+  hint.append(what, privacy);
   const status = el('div');
   status.id = 'msg';
   status.setAttribute('role', 'status');
@@ -128,19 +150,28 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   const select = (id: string): void => {
     selectPerson(id, true);
   };
+  /** A click on a name in the wheel also marks that person in the other charts. */
+  const selectAndMark = (id: string): void => {
+    marked = true;
+    selectPerson(id, true);
+  };
+  const clearMark = (): void => {
+    marked = false;
+    if (view && selected) selectPerson(selected, false);
+  };
   const kpis = new KpisSection(t);
-  const wheel = new ConnectionsWheelSection(t, tooltip, select);
+  const wheel = new ConnectionsWheelSection(t, tooltip, selectAndMark, clearMark);
   const person = new PersonCardSection(t, tooltip, select);
-  const daily = new DailyMessagesSection(t, tooltip);
+  const daily = new DailyMessagesSection(t, tooltip, clearMark);
   const ranking = new RankingSection(t, select);
   const hours = new HourHeatmapSection(t, tooltip, select);
   const weekdays = new WeekdayHeatmapSection(t, tooltip, select);
   const rhythm = new GroupRhythmSection(t, tooltip);
   const scatter = new WordsScatterSection(t, tooltip, select);
   const wordCloud = new WordCloudSection(t, tooltip);
-  const stickers = new StickersSection(t, tooltip, select);
+  const stickers = new StickersSection(t, tooltip, select, clearMark);
   const awards = new AwardsSection(t, select);
-  const emojis = new EmojisSection(t);
+  const emojis = new EmojisSection(t, clearMark);
   const footNote = el('p', 'foot', t.footNote);
   footNote.id = 'footNote';
   // Same order and two-column grid as the prototype; later sections slot in between.
@@ -166,22 +197,39 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   let dashboard: Dashboard | null = null;
   let view: MonthView | null = null;
   let selected: string | null = null;
+  /**
+   * Whether the selected person is marked: their lines stay lit in the wheel and the per-day,
+   * sticker and emoji charts show their share, until the mark is cleared. The mark follows
+   * whoever is selected next and survives a change of month.
+   */
+  let marked = false;
+
+  /** Brings the person card to the middle of the screen, or to its top when it is taller. */
+  function centerCard(): void {
+    const box = person.element.getBoundingClientRect();
+    const gap = Math.max(16, (innerHeight - box.height) / 2);
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: scrollY + box.top - gap, behavior: reduced ? 'auto' : 'smooth' });
+  }
 
   /** Shows a person in the card and highlights them everywhere, as the prototype does. */
   function selectPerson(id: string, scroll: boolean): void {
     if (!view) return;
     selected = id;
+    const markedPerson: PersonView | null = marked
+      ? (view.people.find((p) => p.id === id) ?? null)
+      : null;
     person.render(view, id);
     ranking.render(view, id);
-    wheel.render(view, id);
+    wheel.render(view, id, marked);
     hours.render(view, id);
     weekdays.render(view, id);
     scatter.render(view, id);
     wordCloud.render(view, id);
-    if (scroll) {
-      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      person.element.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
-    }
+    daily.render(view, markedPerson);
+    stickers.render(view, markedPerson);
+    emojis.render(view, markedPerson);
+    if (scroll) centerCard();
   }
 
   function setDashboardVisible(visible: boolean): void {
@@ -199,31 +247,25 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   function showMonth(month: string): void {
     if (!dashboard) return;
     view = monthView(dashboard, month);
-    selected = view.topWriter;
+    monthPicker.set(month);
+    // A marked person stays marked in the new month if they took part in it.
+    const keep = marked && view.people.some((p) => p.id === selected);
+    marked = keep;
+    if (!keep) selected = view.topWriter;
     const monthName = t.dates.months[view.monthIndex] ?? '';
     title.textContent = dashboard.title ?? t.header.defaultGroupName;
     const participants = formatInt(view.totals.participants);
-    // '2026-04-01' as '1 abr 2026'.
-    const longDay = (key: string): string =>
-      t.person.date(
-        String(Number(key.slice(8, 10))),
-        t.dates.monthsShort[Number(key.slice(5, 7)) - 1] ?? '',
-        key.slice(0, 4),
-      );
     subtitle.textContent = view.wholeFile
       ? t.header.wholeFileSubtitle(
-          longDay(view.firstDayKey),
-          longDay(view.lastDayKey),
+          dayText(view.firstDayKey, t),
+          dayText(view.lastDayKey, t),
           participants,
         )
       : t.header.subtitle(monthName, String(view.year), participants) +
         (view.partial ? t.header.partialMonth(String(view.lastDay)) : '');
     kpis.render(view);
-    daily.render(view);
     rhythm.render(view);
-    stickers.render(view);
     awards.render(view);
-    emojis.render(view);
     if (selected) selectPerson(selected, false);
   }
 
@@ -232,23 +274,26 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     const months = monthsOf(next);
     if (months.length === 0) return 0;
     dashboard = next;
-    // Newest first, as in the month picker of the prototype.
-    const wholeFile = el('option', undefined, t.header.wholeFileOption);
-    wholeFile.value = WHOLE_FILE;
-    monthSelect.replaceChildren(
-      wholeFile,
-      ...[...months].reverse().map((m) => {
-        const name = t.dates.months[Number(m.slice(5)) - 1] ?? m;
-        const option = el('option', undefined, t.header.monthOption(name, m.slice(0, 4)));
-        option.value = m;
-        return option;
-      }),
+    // A new file starts with nobody marked.
+    marked = false;
+    // The whole export first, then the months, newest first.
+    const counts = messagesPerPeriod(next);
+    monthPicker.setOptions(
+      [
+        {
+          value: WHOLE_FILE,
+          label: t.header.wholeFileOption,
+          messages: counts.get(WHOLE_FILE) ?? 0,
+        },
+        ...[...months].reverse().map((m) => ({
+          value: m,
+          label: t.header.monthOption(t.dates.months[Number(m.slice(5)) - 1] ?? m, m.slice(0, 4)),
+          messages: counts.get(m) ?? 0,
+        })),
+      ],
+      months.length,
     );
-    monthSelect.disabled = months.length < 2;
-    monthNote.textContent =
-      months.length > 1 ? t.header.monthsInFile(formatInt(months.length)) : '';
     const latest = months[months.length - 1] ?? '';
-    monthSelect.value = latest;
     setDashboardVisible(true);
     showMonth(latest);
     return months.length;
@@ -260,12 +305,12 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     try {
       const result = await analyze(file);
       const months = showDashboard(result);
-      status.textContent = months
-        ? t.upload.showing(file.name, months, formatInt(result.messageCount)) +
-          (result.skippedMessages
-            ? t.upload.skipped(result.skippedMessages, formatInt(result.skippedMessages))
-            : '')
-        : t.upload.noMessages;
+      // The header already shows the months and messages; only problems are reported here.
+      status.textContent = !months
+        ? t.upload.noMessages
+        : result.skippedMessages
+          ? t.upload.skipped(result.skippedMessages, formatInt(result.skippedMessages))
+          : '';
     } catch (error) {
       const code = error instanceof AnalysisFailure ? error.code : 'unknown';
       status.textContent = t.errors[code];
@@ -281,9 +326,6 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     const file = input.files?.[0];
     input.value = '';
     if (file) void analyzeFile(file);
-  });
-  monthSelect.addEventListener('change', () => {
-    showMonth(monthSelect.value);
   });
 
   showEmpty();

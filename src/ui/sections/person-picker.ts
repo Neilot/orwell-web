@@ -215,7 +215,8 @@ export class PersonPicker {
         button.type = 'button';
         button.dataset.c = String(c);
         button.setAttribute('aria-pressed', 'false');
-        button.append(dot, t.communities.short[c] ?? '');
+        // In a span, so a long label can end in "…".
+        button.append(dot, el('span', undefined, t.communities.short[c] ?? ''));
         return button;
       }),
     );

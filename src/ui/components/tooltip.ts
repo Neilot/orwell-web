@@ -7,6 +7,8 @@ export interface TooltipNotes {
   readonly subtitle?: string;
   /** Muted line after the rows. */
   readonly footer?: string;
+  /** More rows under a small heading, after the main ones. */
+  readonly group?: { readonly heading: string; readonly rows: readonly TooltipRow[] };
 }
 
 const OFFSET = 14;
@@ -40,10 +42,17 @@ export class Tooltip {
     const tip = this.element;
     tip.replaceChildren(el('b', undefined, title));
     if (notes.subtitle !== undefined) tip.append(note(notes.subtitle, 'marginBottom'));
-    for (const [label, value] of rows) {
-      const row = el('div', 'r');
-      row.append(el('span', undefined, label), el('span', undefined, value));
-      tip.append(row);
+    const addRows = (list: readonly TooltipRow[]): void => {
+      for (const [label, value] of list) {
+        const row = el('div', 'r');
+        row.append(el('span', undefined, label), el('span', undefined, value));
+        tip.append(row);
+      }
+    };
+    addRows(rows);
+    if (notes.group) {
+      tip.append(el('div', 'tsub', notes.group.heading));
+      addRows(notes.group.rows);
     }
     if (notes.footer !== undefined) tip.append(note(notes.footer, 'marginTop'));
     tip.hidden = false;

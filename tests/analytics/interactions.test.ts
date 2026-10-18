@@ -38,6 +38,8 @@ describe('Interactions', () => {
     ]);
     expect(april?.reactions).toBe(3);
     expect(april?.reactionEmojis).toEqual([['👍', 3]]);
+    // Only those who wrote or reacted are in the graph: Caro (replied to) and Nueve (mentioned) are not.
+    expect(april?.graph.nodes).toEqual([0, 1, 2]);
   });
 
   it('counts replies, mentions and reactions between people', () => {
@@ -65,7 +67,12 @@ describe('Interactions', () => {
       reactionsReceived: 2,
       mentioned: 1,
     });
-    expect(byId.get('u3')).toMatchObject({ messages: 0, reactionsSent: 1 });
+    expect(byId.get('u3')).toMatchObject({
+      messages: 0,
+      reactionsSent: 1,
+      reactionEmojis: { '★': 1 },
+    });
+    expect(byId.get('u2')?.reactionEmojis).toEqual({});
     // Custom emoji have no character, so they are counted as a star.
     expect(april?.reactionEmojis).toEqual([['★', 2]]);
 

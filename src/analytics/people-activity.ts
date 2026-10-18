@@ -1,5 +1,5 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
-import { getOrCreate, hourOf, increment, periodsOf, weekdayOf } from './calendar';
+import { dayOf, getOrCreate, hourOf, increment, periodsOf, weekdayOf } from './calendar';
 import { MESSAGE_KINDS, messageKind, type MessageKind } from './message-kind';
 import { words } from './text';
 
@@ -20,6 +20,10 @@ export interface PersonMonthActivity {
   /** Messages per weekday, Monday first. */
   readonly weekdays: number[];
   readonly kinds: Record<MessageKind, number>;
+  /** Messages per local day, keyed `YYYY-MM-DD`. */
+  readonly perDay: Record<string, number>;
+  /** Stickers per local day, keyed `YYYY-MM-DD`. */
+  readonly stickersPerDay: Record<string, number>;
 }
 
 /** Per month (`YYYY-MM`), the people who wrote, in order of their first message that month. */
@@ -37,6 +41,8 @@ function emptyActivity(id: ParticipantId): PersonMonthActivity {
     hours: new Array<number>(24).fill(0),
     weekdays: new Array<number>(7).fill(0),
     kinds: Object.fromEntries(MESSAGE_KINDS.map((k) => [k, 0])) as Record<MessageKind, number>,
+    perDay: {},
+    stickersPerDay: {},
   };
 }
 
@@ -62,7 +68,12 @@ export class PeopleActivity implements Analyzer<PeopleActivityResult> {
     increment(person.hours, hourOf(event.localTime));
     increment(person.weekdays, weekdayOf(event.localTime));
     person.kinds[kind]++;
-    if (kind === 'sticker') person.stickers++;
+    const day = dayOf(event.localTime);
+    person.perDay[day] = (person.perDay[day] ?? 0) + 1;
+    if (kind === 'sticker') {
+      person.stickers++;
+      person.stickersPerDay[day] = (person.stickersPerDay[day] ?? 0) + 1;
+    }
     if (kind === 'audio') person.voiceSeconds += event.durationSeconds ?? 0;
     if (event.text) {
       person.textMessages++;

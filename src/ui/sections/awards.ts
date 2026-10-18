@@ -1,5 +1,6 @@
 import { computeAwards, type Award, type MonthView } from '../../app';
 import type { Messages } from '../../i18n';
+import { HelpButton } from '../components/help';
 import { el } from '../dom';
 import { durationText } from '../duration';
 import { formatDecimal, formatInt, formatPercent } from '../format';
@@ -19,8 +20,9 @@ export class AwardsSection {
     this.element.setAttribute('aria-labelledby', 'h-aw');
     const title = el('h2', undefined, ta.title);
     title.id = 'h-aw';
+    const heading = new HelpButton(title, ta.help.label, ta.help.title, ta.help.paragraphs);
     const head = el('div', 'head');
-    head.append(title, el('span', 'foot', ta.note));
+    head.append(heading.element);
     this.grid.id = 'awards';
     this.element.append(head, this.grid);
     this.grid.addEventListener('click', (ev) => {

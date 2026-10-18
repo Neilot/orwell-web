@@ -37,6 +37,10 @@ export interface PersonMonthActivity {
   /** Messages per weekday, Monday first. */
   readonly weekdays: readonly number[];
   readonly kinds: Readonly<Record<MessageKind, number>>;
+  /** Messages per local day, keyed `YYYY-MM-DD`. */
+  readonly perDay: Readonly<Record<string, number>>;
+  /** Stickers per local day, keyed `YYYY-MM-DD`. */
+  readonly stickersPerDay: Readonly<Record<string, number>>;
 }
 
 export interface MonthResponseTimes {
@@ -59,6 +63,8 @@ export interface MonthParticipant {
   readonly reactionsSent: number;
   readonly reactionsReceived: number;
   readonly mentioned: number;
+  /** Reactions they put on others' messages, by emoji ("★" for custom emoji). */
+  readonly reactionEmojis: Readonly<Record<string, number>>;
 }
 
 export type InteractionType = 'reply' | 'mention' | 'reaction';
@@ -67,7 +73,10 @@ export type InteractionType = 'reply' | 'mention' | 'reaction';
 export type Edge = readonly [number, number, number];
 
 export interface InteractionGraph {
-  /** Positions in `MonthInteractions.people`, most messages first (at most 400). */
+  /**
+   * Positions in `MonthInteractions.people` of people who wrote or reacted, most messages first
+   * (at most 400).
+   */
   readonly nodes: readonly number[];
   readonly edges: Readonly<Record<InteractionType, readonly Edge[]>>;
   /** Per node: 0–4 for the five largest communities, 5 for everyone else. */
@@ -106,8 +115,21 @@ export interface PersonVocabulary {
   readonly emojis: Ranked;
 }
 
+/** How often a word was written in the period, and the three people who wrote it most. */
+export interface WordUse {
+  readonly total: number;
+  readonly fans: readonly (readonly [string, number])[];
+}
+
+export interface GroupVocabulary extends PersonVocabulary {
+  /** For every word shown in a cloud (the group's and each person's top words). */
+  readonly wordUses: Readonly<Record<string, WordUse>>;
+  /** For each of the group's top emojis, how many times each person wrote it. */
+  readonly emojiPeople: Readonly<Record<string, Readonly<Record<string, number>>>>;
+}
+
 export interface MonthVocabulary {
-  readonly group: PersonVocabulary;
+  readonly group: GroupVocabulary;
   readonly people: Readonly<Record<string, PersonVocabulary>>;
 }
 
@@ -118,6 +140,8 @@ export interface TopSticker {
   /** Who sent it most, and how many times. */
   readonly fan: string;
   readonly fanCount: number;
+  /** How many times each person sent it. */
+  readonly people: Readonly<Record<string, number>>;
 }
 
 export interface MonthStickers {

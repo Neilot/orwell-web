@@ -8,6 +8,7 @@ import {
   type MonthResponseTimes,
   type PersonHabits,
   type PersonMonthActivity,
+  type GroupVocabulary,
   type PersonVocabulary,
   type MonthStickers,
   type Ranked,
@@ -107,8 +108,8 @@ export interface MonthView {
   readonly reactions: number;
   /** The ten most used reactions; "★" stands for custom emoji. */
   readonly reactionEmojis: Ranked;
-  /** The group's most used words (up to 110) and written emojis (up to 10). */
-  readonly vocabulary: PersonVocabulary;
+  /** The group's most used words (up to 110) and written emojis (up to 10), and who uses them. */
+  readonly vocabulary: GroupVocabulary;
   readonly stickers: Omit<MonthStickers, 'people'>;
   readonly graph: GraphView;
   details(id: string): PersonDetails;
@@ -141,6 +142,17 @@ export function monthsOf(dashboard: Dashboard): string[] {
   return [...new Set(Object.keys(dashboard.messagesPerDay).map((day) => day.slice(0, 7)))].sort();
 }
 
+/** Messages in each month, plus the whole export under `WHOLE_FILE`. */
+export function messagesPerPeriod(dashboard: Dashboard): Map<string, number> {
+  const counts = new Map<string, number>([[WHOLE_FILE, 0]]);
+  for (const [day, messages] of Object.entries(dashboard.messagesPerDay)) {
+    const month = day.slice(0, 7);
+    counts.set(month, (counts.get(month) ?? 0) + messages);
+    counts.set(WHOLE_FILE, (counts.get(WHOLE_FILE) ?? 0) + messages);
+  }
+  return counts;
+}
+
 /** Index of the first largest value, as d3's `maxIndex`. */
 export function maxIndex(values: readonly number[]): number {
   let best = -1;
@@ -168,6 +180,8 @@ const NO_ACTIVITY: Omit<PersonMonthActivity, 'id'> = {
   hours: new Array<number>(24).fill(0),
   weekdays: new Array<number>(7).fill(0),
   kinds: Object.fromEntries(MESSAGE_KINDS.map((k) => [k, 0])) as Record<MessageKind, number>,
+  perDay: {},
+  stickersPerDay: {},
 };
 
 function people(dashboard: Dashboard, month: string): PersonView[] {
@@ -186,6 +200,7 @@ function people(dashboard: Dashboard, month: string): PersonView[] {
       reactionsSent: 0,
       reactionsReceived: 0,
       mentioned: 0,
+      reactionEmojis: {},
     }));
   return participants.map((participant, i) => {
     const k = node.get(i) ?? -1;
@@ -314,7 +329,12 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
     responseTimes,
     reactions: dashboard.interactionsPerMonth[month]?.reactions ?? 0,
     reactionEmojis: dashboard.interactionsPerMonth[month]?.reactionEmojis ?? [],
-    vocabulary: dashboard.vocabularyPerMonth[month]?.group ?? { words: [], emojis: [] },
+    vocabulary: dashboard.vocabularyPerMonth[month]?.group ?? {
+      words: [],
+      emojis: [],
+      wordUses: {},
+      emojiPeople: {},
+    },
     stickers: {
       top: dashboard.stickersPerMonth[month]?.top ?? [],
       distinct: dashboard.stickersPerMonth[month]?.distinct ?? 0,

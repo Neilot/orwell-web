@@ -2,7 +2,10 @@ import type { Analyzer, ChatEvent, EventId, Participant, ParticipantId } from '.
 import { getOrCreate, periodsOf } from './calendar';
 import { detectCommunities } from './communities';
 
-/** At most this many people (the most active) take part in the interaction graph. */
+/**
+ * At most this many people take part in the interaction graph: the most active of those who
+ * wrote or reacted.
+ */
 export const MAX_GRAPH_PEOPLE = 400;
 /** Stands for a reaction without an emoji character (a custom emoji). */
 export const CUSTOM_REACTION = '★';
@@ -21,13 +24,17 @@ export interface MonthParticipant {
   readonly reactionsSent: number;
   readonly reactionsReceived: number;
   readonly mentioned: number;
+  /** Reactions they put on others' messages, by emoji ("★" for custom emoji). */
+  readonly reactionEmojis: Readonly<Record<string, number>>;
 }
 
 /** `[from, to, count]`, as positions in `InteractionGraph.nodes`. */
 export type Edge = readonly [number, number, number];
 
 export interface InteractionGraph {
-  /** Positions in `MonthInteractions.people`, most messages first. */
+  /**
+   * Positions in `MonthInteractions.people` of people who wrote or reacted, most messages first.
+   */
   readonly nodes: readonly number[];
   readonly edges: Readonly<Record<InteractionType, readonly Edge[]>>;
   /** Per node: 0–4 for the five largest communities, 5 for everyone else. */
@@ -57,6 +64,7 @@ interface PersonState {
   reactionsSent: number;
   reactionsReceived: number;
   mentioned: number;
+  readonly reactionEmojis: Map<string, number>;
 }
 
 /** First name seen per id, in one of the three registration phases. */
@@ -90,6 +98,7 @@ class MonthState {
       reactionsSent: 0,
       reactionsReceived: 0,
       mentioned: 0,
+      reactionEmojis: new Map<string, number>(),
     }));
   }
 
@@ -102,6 +111,8 @@ class MonthState {
   result(): MonthInteractions {
     const order: ParticipantId[] = [];
     const seen = new Set<ParticipantId>();
+    // Only people who wrote or reacted take part in the graph, as in the prototype.
+    let graphCandidates = 0;
     for (const phase of [this.writers, this.reactors, this.others]) {
       for (const id of phase.keys()) {
         if (!seen.has(id)) {
@@ -109,6 +120,7 @@ class MonthState {
           order.push(id);
         }
       }
+      if (phase === this.reactors) graphCandidates = order.length;
     }
     const name = (id: ParticipantId): string | null =>
       this.writers.get(id) ?? this.reactors.get(id) ?? this.others.get(id) ?? null;
@@ -123,10 +135,12 @@ class MonthState {
         reactionsSent: state?.reactionsSent ?? 0,
         reactionsReceived: state?.reactionsReceived ?? 0,
         mentioned: state?.mentioned ?? 0,
+        reactionEmojis: Object.fromEntries(state?.reactionEmojis ?? []),
       };
     });
 
     const nodes = people
+      .slice(0, graphCandidates)
       .map((_, i) => i)
       .sort((a, b) => (people[b]?.messages ?? 0) - (people[a]?.messages ?? 0))
       .slice(0, MAX_GRAPH_PEOPLE);
@@ -186,7 +200,9 @@ export class Interactions implements Analyzer<InteractionsResult> {
       month.reactionEmojis.set(emoji, (month.reactionEmojis.get(emoji) ?? 0) + reaction.count);
       month.person(month.writers, event.author).reactionsReceived += reaction.count;
       for (const reactor of reaction.by) {
-        month.person(month.reactors, reactor).reactionsSent++;
+        const given = month.person(month.reactors, reactor);
+        given.reactionsSent++;
+        given.reactionEmojis.set(emoji, (given.reactionEmojis.get(emoji) ?? 0) + 1);
         month.add('reaction', reactor.id, author);
       }
     }

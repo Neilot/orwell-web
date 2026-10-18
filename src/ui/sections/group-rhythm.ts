@@ -5,6 +5,7 @@ import { MESSAGE_KINDS, type MonthView } from '../../app';
 import type { Messages } from '../../i18n';
 import { heatFill } from '../charts/heat';
 import type { Tooltip } from '../components/tooltip';
+import { HelpButton } from '../components/help';
 import { el, svgEl } from '../dom';
 import { durationText } from '../duration';
 import { formatInt, formatPercent, pad2 } from '../format';
@@ -33,8 +34,9 @@ export class GroupRhythmSection {
     this.element.setAttribute('aria-labelledby', 'h-punch');
     const title = el('h2', undefined, tr.title);
     title.id = 'h-punch';
+    const heading = new HelpButton(title, tr.help.label, tr.help.title, tr.help.paragraphs);
     const head = el('div', 'head');
-    head.append(title);
+    head.append(heading.element);
     this.punch.setAttribute('aria-label', tr.chartLabel);
     this.replies.setAttribute('aria-label', tr.repliesLabel);
     this.kindsBar.id = 'gKinds';
@@ -46,7 +48,6 @@ export class GroupRhythmSection {
     repliesTitle.style.marginTop = '8px';
     this.element.append(
       head,
-      el('p', 'desc', tr.desc),
       this.punch,
       kindsTitle,
       this.kindsBar,

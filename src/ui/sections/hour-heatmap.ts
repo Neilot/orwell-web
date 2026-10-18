@@ -49,7 +49,6 @@ export class HourHeatmapSection {
   readonly element = el('section', 'card span2');
   private readonly segment: Segmented<Order>;
   private readonly svg = svgEl('svg', { id: 'hour', viewBox: '0 0 1200 640', role: 'img' });
-  private readonly who = el('span');
   private readonly showAll: ShowAllButton;
   private view: MonthView | null = null;
   private selected: string | null = null;
@@ -81,17 +80,13 @@ export class HourHeatmapSection {
     this.svg.style.minWidth = '760px';
     const scroll = el('div', 'scrollx');
     scroll.append(this.svg);
-    this.who.id = 'hourWho';
-    const desc = el('p', 'desc');
-    desc.append(th.descBefore, this.who, th.descAfter);
     this.showAll = new ShowAllButton(t, 'hour', () => {
       this.draw();
     });
     this.showAll.element.id = 'hourAll';
     this.element.append(
       head,
-      desc,
-      heatLegend(t, th.legendHigh, th.legendNote, { width: '22px', height: '12px', radius: '3px' }),
+      heatLegend(t, th.legendHigh, { width: '22px', height: '12px', radius: '3px' }),
       scroll,
       this.showAll.element,
     );
@@ -109,9 +104,6 @@ export class HourHeatmapSection {
     const th = t.hours;
     const writers = view.people.filter((p) => p.messages > 0);
     this.showAll.update(writers.length);
-    this.who.textContent = this.showAll.showingAll
-      ? (view.wholeFile ? th.descAllWholeFile : th.descAll)(formatInt(writers.length))
-      : th.descTop(String(this.showAll.limit(writers.length)));
     let people = writers
       .sort((a, b) => b.messages - a.messages)
       .slice(0, this.showAll.limit(writers.length));

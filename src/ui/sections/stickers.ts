@@ -4,9 +4,11 @@ import { select } from 'd3-selection';
 import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { drawDayAxis, placeDays } from '../charts/day-axis';
+import { HelpButton } from '../components/help';
+import { MarkChip } from '../components/mark-chip';
 import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
-import { formatInt, formatPercent } from '../format';
+import { formatInt, formatPercent, formatShare } from '../format';
 import { personName } from '../people';
 
 const MAX_ROWS = 10;
@@ -21,16 +23,25 @@ function emptyNote(text: string): HTMLParagraphElement {
   return p;
 }
 
-function track(width: number): HTMLSpanElement {
+/** A bar `width` long (0–1), with an orange part `mine` long for the marked person. */
+function track(width: number, mine?: number): HTMLSpanElement {
   const fill = el('span');
   fill.style.width = `${String(width * 100)}%`;
   fill.style.background = 'var(--accent)';
   const bar = el('span', 'track');
   bar.append(fill);
+  if (mine !== undefined) {
+    const part = el('span', 'me');
+    part.style.width = `${String(mine * 100)}%`;
+    bar.append(part);
+  }
   return bar;
 }
 
-/** "El grupo en stickers": totals, who sends most, the favourite stickers and stickers per day. */
+/**
+ * "El grupo en stickers": totals, who sends most, the favourite stickers and stickers per day,
+ * with a marked person's share in orange.
+ */
 export class StickersSection {
   readonly element = el('section', 'card span2');
   private readonly kpis = el('div', 'kpis');
@@ -38,18 +49,22 @@ export class StickersSection {
   private readonly top = el('div', 'blist');
   private readonly svg = svgEl('svg', { id: 'stkMonth', viewBox: '0 0 1200 200', role: 'img' });
   private readonly perDayTitle = el('div', 'sub-h');
+  private readonly chip: MarkChip;
 
   constructor(
     private readonly t: Messages,
     private readonly tooltip: Tooltip,
     onSelect: (id: string) => void,
+    onClear: () => void,
   ) {
     const ts = t.stickers;
     this.element.setAttribute('aria-labelledby', 'h-stk');
     const title = el('h2', undefined, ts.title);
     title.id = 'h-stk';
+    const heading = new HelpButton(title, ts.help.label, ts.help.title, ts.help.paragraphs);
+    this.chip = new MarkChip(t, onClear);
     const head = el('div', 'head');
-    head.append(title, el('span', 'foot', ts.note));
+    head.append(heading.element, this.chip.element);
     this.kpis.id = 'stkKpis';
     this.kpis.style.gridTemplateColumns = 'repeat(4,minmax(0,1fr))';
     this.who.id = 'stkWho';
@@ -88,11 +103,13 @@ export class StickersSection {
     });
   }
 
-  render(view: MonthView): void {
+  /** `marked`: the marked person, whose share is shown, or `null`. */
+  render(view: MonthView, marked: PersonView | null): void {
+    this.chip.render(marked);
     this.drawKpis(view);
     this.drawWho(view);
-    this.drawTop(view);
-    this.drawDays(view);
+    this.drawTop(view, marked);
+    this.drawDays(view, marked);
   }
 
   private drawKpis(view: MonthView): void {
@@ -161,7 +178,7 @@ export class StickersSection {
     );
   }
 
-  private drawTop(view: MonthView): void {
+  private drawTop(view: MonthView, marked: PersonView | null): void {
     const { t } = this;
     const top = view.stickers.top;
     if (top.length === 0) {
@@ -184,15 +201,24 @@ export class StickersSection {
           emoji.append(sup);
         }
         const row = el('div', 'row');
-        row.style.gridTemplateColumns = '30px minmax(0,1fr) 56px';
+        row.style.gridTemplateColumns = `30px minmax(0,1fr) ${marked ? '104px' : '56px'}`;
         row.title = t.stickers.fan(names.get(sticker.fan) ?? '', formatInt(sticker.fanCount));
-        row.append(emoji, track(sticker.count / most), el('span', 'val', formatInt(sticker.count)));
+        const own = marked ? (sticker.people[marked.id] ?? 0) : 0;
+        row.append(
+          emoji,
+          track(sticker.count / most, marked ? own / most : undefined),
+          el(
+            'span',
+            'val',
+            formatInt(sticker.count) + (marked ? ` · ${formatShare(own / sticker.count)}` : ''),
+          ),
+        );
         return row;
       }),
     );
   }
 
-  private drawDays(view: MonthView): void {
+  private drawDays(view: MonthView, marked: PersonView | null): void {
     const { t, tooltip } = this;
     const whole = view.wholeFile;
     this.perDayTitle.textContent = whole ? t.stickers.perDayTitleWholeFile : t.stickers.perDayTitle;
@@ -200,6 +226,7 @@ export class StickersSection {
       ...d,
       d: d.i,
       stickers: view.stickers.perDay[d.key] ?? 0,
+      mine: marked?.stickersPerDay[d.key] ?? 0,
       messages: view.dailyCounts.get(d.key) ?? 0,
     }));
     const s = select(this.svg);
@@ -234,10 +261,11 @@ export class StickersSection {
       .style('font-family', 'var(--mono)')
       .style('fill', 'var(--muted)')
       .text((d) => formatInt(d));
-    const top3 = new Set(
+    // Only the busiest day is labelled; the rest show their figure on hover.
+    const peak = new Set(
       [...days]
         .sort((a, b) => b.stickers - a.stickers)
-        .slice(0, 3)
+        .slice(0, 1)
         .filter((d) => d.stickers > 0)
         .map((d) => d.d),
     );
@@ -252,7 +280,7 @@ export class StickersSection {
       .attr('height', (d) => H - M.b - y(d.stickers))
       .attr('rx', 3)
       .style('fill', 'var(--accent)')
-      .attr('fill-opacity', (d) => (top3.has(d.d) ? 1 : 0.6))
+      .attr('fill-opacity', (d) => (peak.has(d.d) ? 1 : 0.6))
       .on('pointerenter pointermove', (ev: PointerEvent, d) => {
         const weekday = t.dates.weekdays[d.weekday] ?? '';
         const title = whole
@@ -260,15 +288,36 @@ export class StickersSection {
           : t.stickers.tipTitle(weekday, String(d.day));
         tooltip.show(ev, title, [
           [t.stickers.tipStickers, formatInt(d.stickers)],
+          ...(marked
+            ? [
+                [
+                  personName(marked, t),
+                  `${formatInt(d.mine)} · ${d.stickers ? formatShare(d.mine / d.stickers) : '—'}`,
+                ] as const,
+              ]
+            : []),
           [t.stickers.tipShare, d.messages ? formatPercent(d.stickers / d.messages) : '—'],
         ]);
       })
       .on('pointerleave', () => {
         tooltip.hide();
       });
+    if (marked) {
+      s.append('g')
+        .selectAll('rect')
+        .data(days)
+        .join('rect')
+        .attr('x', bx)
+        .attr('width', x.bandwidth())
+        .attr('y', (d) => y(d.mine))
+        .attr('height', (d) => H - M.b - y(d.mine))
+        .attr('rx', 2)
+        .style('fill', 'var(--in)')
+        .style('pointer-events', 'none');
+    }
     s.append('g')
       .selectAll('text')
-      .data(days.filter((d) => top3.has(d.d)))
+      .data(days.filter((d) => peak.has(d.d)))
       .join('text')
       .attr('x', (d) => bx(d) + x.bandwidth() / 2)
       .attr('y', (d) => y(d.stickers) - 6)

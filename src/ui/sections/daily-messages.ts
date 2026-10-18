@@ -2,12 +2,15 @@ import { max, mean } from 'd3-array';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { select } from 'd3-selection';
 import { curveMonotoneX, line } from 'd3-shape';
-import type { MonthView } from '../../app';
+import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { drawDayAxis, placeDays, type PlacedDay } from '../charts/day-axis';
+import { HelpButton } from '../components/help';
+import { MarkChip } from '../components/mark-chip';
 import type { Tooltip, TooltipRow } from '../components/tooltip';
 import { el, svgEl } from '../dom';
-import { formatDecimal, formatInt } from '../format';
+import { formatDecimal, formatInt, formatShare } from '../format';
+import { personName } from '../people';
 
 interface Day extends PlacedDay {
   readonly v: number;
@@ -22,7 +25,10 @@ const M = { t: 22, r: 12, b: 44, l: 42 };
 /** Weekends are shaded only while the bars are wide enough for it to read. */
 const MAX_SHADED_DAYS = 62;
 
-/** "Mensajes por día del mes": one bar per day plus the trailing 7-day average. */
+/**
+ * "Mensajes por día del mes": one bar per day plus the trailing 7-day average. A marked person's
+ * share of each day is drawn over the bars in orange.
+ */
 export class DailyMessagesSection {
   readonly element = el('section', 'card span2');
   private readonly title = el('h2');
@@ -31,10 +37,12 @@ export class DailyMessagesSection {
     viewBox: `0 0 ${String(W)} ${String(H)}`,
     role: 'img',
   });
+  private readonly chip: MarkChip;
 
   constructor(
     private readonly t: Messages,
     private readonly tooltip: Tooltip,
+    onClear: () => void,
   ) {
     const td = t.daily;
     this.element.setAttribute('aria-labelledby', 'h-time');
@@ -52,14 +60,19 @@ export class DailyMessagesSection {
     const avgItem = el('span');
     avgItem.append(avg, td.legendAverage);
     const legend = el('div', 'legend');
-    legend.append(barsItem, avgItem);
+    this.chip = new MarkChip(t, onClear);
+    legend.append(barsItem, avgItem, this.chip.element);
+    const heading = new HelpButton(this.title, td.help.label, td.help.title, td.help.paragraphs);
     const head = el('div', 'head');
-    head.append(this.title, legend);
+    head.append(heading.element, legend);
     this.element.append(head, this.svg);
   }
 
-  render(view: MonthView): void {
+  /** `marked`: the marked person, whose share of each day is shown, or `null`. */
+  render(view: MonthView, marked: PersonView | null): void {
     const { t, tooltip } = this;
+    this.chip.render(marked);
+    const mine = (d: Day): number => marked?.perDay[d.key] ?? 0;
     const whole = view.wholeFile;
     this.title.textContent = whole ? t.daily.titleWholeFile : t.daily.title;
     const s = select(this.svg);
@@ -97,14 +110,6 @@ export class DailyMessagesSection {
         .attr('height', H - M.b - M.t + 14)
         .style('fill', 'var(--grid)')
         .attr('fill-opacity', 0.7);
-
-      s.append('text')
-        .attr('x', W - M.r)
-        .attr('y', 11)
-        .attr('text-anchor', 'end')
-        .attr('font-size', 11)
-        .style('fill', 'var(--muted)')
-        .text(t.daily.weekendNote);
     }
 
     const ticks = y.ticks(4);
@@ -153,6 +158,20 @@ export class DailyMessagesSection {
       .style('fill', 'var(--accent)')
       .attr('fill-opacity', (d) => (d === rec ? 1 : 0.5));
 
+    if (marked) {
+      s.append('g')
+        .selectAll('rect')
+        .data(all)
+        .join('rect')
+        .attr('x', bx)
+        .attr('width', x.bandwidth())
+        .attr('y', (d) => y(mine(d)))
+        .attr('height', (d) => H - M.b - y(mine(d)))
+        .attr('rx', 2)
+        .style('fill', 'var(--in)')
+        .style('pointer-events', 'none');
+    }
+
     const averaged = all.filter((d): d is AveragedDay => d.avg !== null);
     const path = line<AveragedDay>()
       .x(cx)
@@ -186,6 +205,12 @@ export class DailyMessagesSection {
       const rows: TooltipRow[] = [
         [t.daily.tipMessages, d.future ? t.daily.noValue : formatInt(d.v)],
       ];
+      if (marked && !d.future) {
+        rows.push([
+          personName(marked, t),
+          `${formatInt(mine(d))} · ${d.v ? formatShare(mine(d) / d.v) : t.daily.noValue}`,
+        ]);
+      }
       if (d.avg !== null) rows.push([t.daily.tipAverage, formatDecimal(d.avg)]);
       const weekday = t.dates.weekdays[d.weekday] ?? '';
       const month = t.dates.months[d.monthIndex] ?? '';

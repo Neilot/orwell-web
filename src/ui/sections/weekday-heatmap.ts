@@ -9,6 +9,7 @@ import { heatLegend } from '../components/heat-legend';
 import { Segmented } from '../components/segmented';
 import { ShowAllButton } from '../components/show-all';
 import type { Tooltip } from '../components/tooltip';
+import { HelpButton } from '../components/help';
 import { el, svgEl } from '../dom';
 import { formatInt, formatPercent } from '../format';
 import { personName } from '../people';
@@ -54,8 +55,9 @@ export class WeekdayHeatmapSection {
     );
     const title = el('h2', undefined, tw.title);
     title.id = 'h-wd';
+    const heading = new HelpButton(title, tw.help.label, tw.help.title, tw.help.paragraphs);
     const head = el('div', 'head');
-    head.append(title, this.segment.element);
+    head.append(heading.element, this.segment.element);
     this.svg.setAttribute('aria-label', tw.chartLabel);
     this.showAll = new ShowAllButton(t, 'wd', () => {
       this.draw();
@@ -63,7 +65,7 @@ export class WeekdayHeatmapSection {
     this.showAll.element.id = 'wdAll';
     this.element.append(
       head,
-      heatLegend(t, tw.legendHigh, tw.legendNote, { width: '18px', height: '10px', radius: '2px' }),
+      heatLegend(t, tw.legendHigh, { width: '18px', height: '10px', radius: '2px' }),
       this.svg,
       this.showAll.element,
     );

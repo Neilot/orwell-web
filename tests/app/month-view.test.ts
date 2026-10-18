@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { maxIndex, monthsOf, monthView } from '../../src/app/month-view';
+import { maxIndex, messagesPerPeriod, monthsOf, monthView } from '../../src/app/month-view';
 import {
   MESSAGE_KINDS,
   WHOLE_FILE,
@@ -26,6 +26,8 @@ function activity(id: string, messages: number): PersonMonthActivity {
     hours,
     weekdays,
     kinds: { ...kinds, text: messages },
+    perDay: {},
+    stickersPerDay: {},
   };
 }
 
@@ -39,6 +41,7 @@ function participant(id: string, name: string | null, messages: number): MonthPa
     reactionsSent: 0,
     reactionsReceived: 0,
     mentioned: 0,
+    reactionEmojis: {},
   };
 }
 
@@ -101,7 +104,12 @@ const dashboard: Dashboard = {
   habitsPerMonth: {},
   vocabularyPerMonth: {
     '2026-04': {
-      group: { words: [['hola', 2]], emojis: [['😀', 1]] },
+      group: {
+        words: [['hola', 2]],
+        emojis: [['😀', 1]],
+        wordUses: { hola: { total: 2, fans: [['u3', 2]] } },
+        emojiPeople: {},
+      },
       people: { u3: { words: [['hola', 2]], emojis: [] } },
     },
   },
@@ -111,6 +119,18 @@ const dashboard: Dashboard = {
 describe('monthsOf', () => {
   it('lists the months with messages, oldest first', () => {
     expect(monthsOf(dashboard)).toEqual(['2026-03', '2026-04']);
+  });
+});
+
+describe('messagesPerPeriod', () => {
+  it('adds up each month and the whole export', () => {
+    expect(messagesPerPeriod(dashboard)).toEqual(
+      new Map([
+        [WHOLE_FILE, 23],
+        ['2026-03', 6],
+        ['2026-04', 17],
+      ]),
+    );
   });
 });
 

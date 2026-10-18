@@ -113,23 +113,16 @@ export const es = {
     order: 'Orden',
     byPeak: 'Por hora pico',
     mostActive: 'Más activos primero',
-    descBefore: 'Arriba, el total del grupo por hora. Abajo, ',
-    descTop: (n: string) => `las ${n} personas más activas`,
-    descAll: (n: string) => `las ${n} personas que escribieron este mes`,
-    descAllWholeFile: (n: string) => `las ${n} personas que escribieron en el archivo`,
-    descAfter:
-      ': cada fila muestra cómo se reparten sus mensajes a lo largo del día, con los colores de la leyenda.',
     helpLabel: 'Cómo funciona esta tabla',
     helpTitle: 'Cómo leer esta tabla',
     helpParagraphs: [
-      'Cada fila es una persona y cada cuadro, una hora del día.',
+      'Arriba está el total del grupo en cada hora. Debajo, cada fila es una persona y cada cuadro, una hora del día.',
       'El color sigue la leyenda: va de «Muy poco» a «Su hora pico», que es la hora en la que esa persona más escribe.',
       'Con «Por hora pico», arriba salen quienes escriben más temprano y abajo, quienes escriben más tarde o de noche. Por eso las horas pico bajan en diagonal.',
       'Con «Más activos primero», arriba salen quienes más mensajes enviaron.',
-      'La columna «pico» dice a qué hora escribe más cada persona.',
+      'La columna «pico» dice a qué hora escribe más cada persona. Al principio se ven las 30 personas más activas; con el botón de abajo puedes ver a todas.',
     ],
     legendHigh: 'Su hora pico',
-    legendNote: '· cada fila se compara con la hora en que esa persona más escribe',
     chartLabel: 'Mensajes por hora y por persona',
     wholeGroup: 'Todo el grupo',
     peak: 'pico',
@@ -151,14 +144,30 @@ export const es = {
     activity: 'Actividad',
     weekend: 'Fin de semana',
     legendHigh: 'Su día fuerte',
-    legendNote: '· cada fila se compara con el día en que esa persona más escribe',
+    help: {
+      label: 'Cómo funciona esta tabla',
+      title: 'Cómo leer esta tabla',
+      paragraphs: [
+        'Arriba está el total del grupo en cada día. Debajo, cada fila es una persona y cada cuadro, un día de la semana.',
+        'El color va de «Muy poco» a «Su día fuerte», que es el día en que esa persona más escribe.',
+        'Con «Actividad», arriba salen quienes más escriben. Con «Fin de semana», arriba salen quienes más escriben los sábados y domingos.',
+        'La columna «finde» dice qué parte de sus mensajes envía cada persona el fin de semana.',
+      ],
+    },
     chartLabel: 'Mensajes por día de la semana y persona',
     weekendShort: 'finde',
     personTipTitle: (name: string, weekday: string) => `${name} · ${weekday}`,
   },
   rhythm: {
     title: 'El ritmo del grupo',
-    desc: 'Mensajes de todo el grupo por día y hora. Cuanto más grande y más cálido el círculo, más actividad; el más grande es el momento fuerte de la semana.',
+    help: {
+      label: 'Cómo funciona esta gráfica',
+      title: 'Cómo leer esta gráfica',
+      paragraphs: [
+        'Cada círculo es una hora de un día de la semana. Cuanto más grande y más cálido, más mensajes envió el grupo a esa hora; el más grande es el momento fuerte de la semana.',
+        'Debajo verás qué tipos de mensaje se envían más (texto, fotos, stickers…) y qué tan rápido se contestan las respuestas.',
+      ],
+    },
     chartLabel: 'Mensajes por día de la semana y hora',
     tipTitle: (weekday: string, hour: string) => `${weekday} · ${hour}:00`,
     kindsTitle: 'Tipos de mensaje en el grupo',
@@ -177,6 +186,7 @@ export const es = {
     wholeFileSubtitle: (first: string, last: string, participants: string) =>
       `Todo el archivo: del ${first} al ${last} · ${participants} participantes`,
     monthsInFile: (count: string) => `${count} meses en el archivo`,
+    monthMessages: (count: string) => `${count} mensajes`,
     subtitle: (month: string, year: string, participants: string) =>
       `${month} de ${year} · ${participants} participantes`,
     partialMonth: (day: string) => ` · datos hasta el día ${day}`,
@@ -192,14 +202,12 @@ export const es = {
     backToDemo: 'Volver al ejemplo',
     hintBefore: 'Sube el ',
     hintFile: 'result.json',
-    hintAfter:
-      ' o el .zip que exporta Telegram Desktop. El archivo se procesa en tu navegador y no se envía a ningún servidor.',
+    hintAfter: ' o el .zip que exporta Telegram Desktop',
+    privacy: 'Se procesa en tu navegador; no se envía a ningún servidor',
     reading: (name: string) => `Leyendo ${name}…`,
-    showing: (name: string, months: number, messages: string) =>
-      `Mostrando ${name}: ${String(months)} ${months === 1 ? 'mes' : 'meses'}, ${messages} mensajes en total.`,
     noMessages: 'El archivo no tiene ningún mensaje que analizar.',
     skipped: (count: number, formatted: string) =>
-      ` Se omitieron ${formatted} ${count === 1 ? 'mensaje no válido' : 'mensajes no válidos'}.`,
+      `Se omitieron ${formatted} ${count === 1 ? 'mensaje no válido' : 'mensajes no válidos'}.`,
   },
   errors: {
     'unsupported-file': `Ese tipo de archivo no se puede leer. Sube el archivo JSON de la exportación (se llame como se llame) o un .zip con su carpeta. ${HOW_TO_EXPORT}`,
@@ -219,6 +227,10 @@ export const es = {
   people: {
     deletedAccount: 'Cuenta eliminada',
   },
+  mark: {
+    clear: (name: string) => `Quitar la marca de ${name}`,
+    close: '✕',
+  },
   communities: {
     names: ['Comunidad A', 'Comunidad B', 'Comunidad C', 'Comunidad D', 'Comunidad E', 'Otros'],
     short: ['A', 'B', 'C', 'D', 'E', 'Otros'],
@@ -230,24 +242,27 @@ export const es = {
     connections: 'Conexiones',
     sends: 'Envía a…',
     receives: 'Recibe de…',
-    how: 'Pasa el cursor por un nombre; haz clic para ver su ficha',
-    hint: 'Desliza de lado a lado para recorrer la rueda. Para ver a alguien en detalle, búscalo en la ficha de abajo.',
+    help: {
+      label: 'Cómo funciona esta gráfica',
+      title: 'Cómo leer la rueda',
+      paragraphs: [
+        'Cada nombre es una persona. Quienes más hablan entre sí quedan juntos y forman una comunidad, con su propio color.',
+        'Las líneas unen a quienes se responden, se mencionan o reaccionan a sus mensajes. Las azules salen de la persona y las naranjas llegan a ella. Cuando muchas van hacia el mismo lado, se juntan como un cable.',
+        'Pasa el cursor por un nombre para ver con quién habla. Haz clic para abrir su ficha y resaltarla en las demás gráficas.',
+        'Con «Conexiones» eliges cuántas líneas se dibujan. En el celular, desliza la rueda de lado a lado para recorrerla.',
+      ],
+    },
+    marked: 'Marcada: ',
     scrollLabel: 'Rueda de conexiones, desplazable',
     chartLabel: 'Rueda de conexiones agrupadas por comunidad',
-    readTitle: 'Cómo leerla',
-    readText:
-      'Cada nombre es una persona, agrupada con quienes más interactúa. Las líneas son respuestas, menciones y reacciones; se juntan en «cables» cuando muchas van en la misma dirección.',
     communitiesTitle: 'Comunidades detectadas',
-    communityPeople: (n: string) => ` · ${n} personas`,
-    internal: (percent: string) => `${percent} interna`,
-    mostConnected: (name: string) => `Más conectada: ${name}`,
+    communityPeople: (n: string, count: number) => `${n} ${count === 1 ? 'persona' : 'personas'}`,
+    mostConnected: 'Más conectada: ',
     shownNote: (n: string) => `Se muestran las ${n} personas con más interacciones.`,
-    shareNote:
-      'El porcentaje indica qué parte de las interacciones de cada comunidad ocurre entre sus propios miembros.',
     tipMessages: 'Mensajes',
     tipSent: 'Interacciones enviadas',
     tipReceived: 'Interacciones recibidas',
-    tipClick: 'Haz clic para ver su ficha',
+    tipClick: 'Haz clic para ver su ficha y resaltarla',
   },
   person: {
     defaultTitle: 'Persona',
@@ -324,7 +339,15 @@ export const es = {
     legendBars: 'Mensajes por día',
     legendAverage: 'Promedio de 7 días',
     chartLabel: 'Mensajes por día',
-    weekendNote: 'Fondo gris: fin de semana',
+    help: {
+      label: 'Cómo funciona esta gráfica',
+      title: 'Cómo leer esta gráfica',
+      paragraphs: [
+        'Cada barra es un día; cuanto más alta, más mensajes hubo ese día.',
+        'La línea es el promedio de los últimos 7 días: sirve para ver si el grupo va a más o a menos sin fijarse en un solo día.',
+        'La barra más clara es el día récord. Cuando ves un mes, las franjas grises marcan los fines de semana.',
+      ],
+    },
     record: (count: string, weekday: string, day: string) =>
       `Récord: ${count} el ${weekday} ${day}`,
     tipTitle: (weekday: string, day: string, month: string) => `${weekday} ${day} de ${month}`,
@@ -338,7 +361,15 @@ export const es = {
   },
   scatter: {
     title: 'Palabras totales vs. palabras por mensaje',
-    desc: 'Hacia la derecha, quien más palabras escribió en total; hacia arriba, quien escribe mensajes más largos.',
+    help: {
+      label: 'Cómo funciona esta gráfica',
+      title: 'Cómo leer esta gráfica',
+      paragraphs: [
+        'Cada punto es una persona. Cuanto más grande, más mensajes envió.',
+        'Cuanto más a la derecha, más palabras escribió en total. Cuanto más arriba, más largos son sus mensajes.',
+        'La línea punteada es el promedio del grupo. Solo salen quienes escribieron al menos 5 mensajes con texto.',
+      ],
+    },
     chartLabel: 'Dispersión de palabras totales contra palabras por mensaje',
     thousands: (n: string) => `${n} mil`,
     xAxis: 'palabras en total →',
@@ -354,12 +385,36 @@ export const es = {
     group: 'Todo el grupo',
     chartLabel: 'Nube de palabras',
     empty: 'Esta persona no escribe texto.',
-    note: 'Sin artículos, preposiciones ni palabras muy comunes. El tamaño es proporcional a las veces que aparece cada palabra.',
-    tipTimes: 'Veces',
+    help: {
+      label: 'Cómo funciona esta gráfica',
+      title: 'Cómo leer la nube',
+      paragraphs: [
+        'Son las palabras que más se repiten. Cuanto más grande, más veces aparece.',
+        'No se cuentan artículos, preposiciones ni otras palabras muy comunes, como «que» o «para».',
+        'Pasa el cursor por una palabra para ver cuántas veces se usó y quiénes la usan más.',
+      ],
+    },
+    periodWholeFile: (first: string, last: string) => `Todo el archivo · del ${first} al ${last}`,
+    periodMonth: (month: string, year: string) =>
+      `${month.charAt(0).toUpperCase()}${month.slice(1)} de ${year}`,
+    periodPartial: (day: string) => ` · hasta el día ${day}`,
+    tipTotal: 'Total',
+    tipGroupTotal: 'Total del grupo',
+    tipFans: 'Quiénes más la usan',
+    tipFan: (rank: string, name: string) => `${rank}. ${name}`,
   },
   stickers: {
     title: 'El grupo en stickers',
-    note: 'Los stickers se cuentan aparte de los emojis escritos en el texto',
+    help: {
+      label: 'Cómo funciona esta gráfica',
+      title: 'Cómo leer esta sección',
+      paragraphs: [
+        'Los stickers se cuentan aparte de los emojis que se escriben dentro de los mensajes.',
+        'Junto a cada persona ves cuántos stickers envió y qué parte de sus mensajes son stickers.',
+        'Si la exportación no guarda los archivos de los stickers, se agrupan por el emoji que tiene cada uno.',
+        'Pasa el cursor por las barras para ver el detalle de cada día.',
+      ],
+    },
     sent: 'Stickers enviados',
     sentNote: (percent: string) => `${percent} de todos los mensajes`,
     users: 'Personas que usan stickers',
@@ -388,7 +443,14 @@ export const es = {
   },
   awards: {
     title: 'Los premios del grupo',
-    note: 'Haz clic en un premio para ver la ficha de esa persona',
+    help: {
+      label: 'Cómo funcionan los premios',
+      title: 'Cómo funcionan los premios',
+      paragraphs: [
+        'Cada premio va para la persona que más destaca en algo durante el periodo elegido.',
+        'Haz clic en un premio para ver la ficha de esa persona.',
+      ],
+    },
     nightOwl: { title: 'Noctámbulo', desc: 'de sus mensajes entre medianoche y las 5 a. m.' },
     earlyBird: { title: 'Madrugador', desc: 'de sus mensajes antes de las 9 a. m.' },
     mostReacted: { title: 'El más reaccionado', desc: 'reacciones por cada mensaje que envía' },
@@ -419,6 +481,14 @@ export const es = {
     written: 'Emojis más escritos',
     reactions: 'Reacciones más usadas',
     empty: 'Sin datos en esta exportación.',
+    help: {
+      label: 'Cómo funciona esta sección',
+      title: 'Cómo leer esta sección',
+      paragraphs: [
+        'A la izquierda, los emojis que la gente escribe dentro de sus mensajes. A la derecha, las reacciones que se ponen a los mensajes.',
+        'Telegram solo guarda en la exportación las reacciones más recientes de cada mensaje, así que puede haber más de las que se ven aquí.',
+      ],
+    },
   },
   footNote:
     'Datos de tu archivo, procesados en este navegador. Las reacciones solo incluyen las que Telegram guarda en la exportación (las más recientes de cada mensaje).',

@@ -72,6 +72,8 @@ describe('PeopleActivity', () => {
     expect(b?.hours[9]).toBe(2);
     expect(b?.weekdays[0]).toBe(2);
     expect(b?.kinds).toMatchObject({ text: 1, sticker: 1, other: 0 });
+    expect(b?.perDay).toEqual({ '2026-03-02': 2 });
+    expect(b?.stickersPerDay).toEqual({ '2026-03-02': 1 });
     expect(a).toMatchObject({ id: 'u1', messages: 1, words: 2, characters: 9 });
     expect(a?.hours[23]).toBe(1);
     expect(a?.weekdays[6]).toBe(1);

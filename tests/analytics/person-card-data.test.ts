@@ -70,7 +70,7 @@ describe('Vocabulary', () => {
       }),
     );
     const month = analyzer.result()['2026-01'];
-    expect(month?.group).toEqual(month?.people.u1);
+    expect(month?.group).toMatchObject(month?.people.u1 ?? {});
     const words = month?.people.u1;
     // Ties keep first-use order; "com" survives from the link, as in the prototype.
     expect(words?.words).toEqual([
@@ -84,6 +84,32 @@ describe('Vocabulary', () => {
       ['❤️', 1],
       ['👨‍👩‍👧', 1],
     ]);
+  });
+
+  it('names who writes each shown word and emoji most', () => {
+    const analyzer = new Vocabulary();
+    const say = (author: typeof ana, text: string) => {
+      analyzer.consume(chatEvent({ author, text }));
+    };
+    const beto = { id: 'u2', displayName: 'Beto' };
+    const carla = { id: 'u3', displayName: 'Carla' };
+    const dani = { id: 'u4', displayName: 'Dani' };
+    say(ana, 'playa playa 🔥');
+    say(beto, 'playa montaña');
+    say(carla, 'playa playa playa 🔥🔥');
+    say(dani, 'playa');
+    const group = analyzer.result()['2026-01']?.group;
+    // Ties keep whoever wrote first in the period ahead.
+    expect(group?.wordUses.playa).toEqual({
+      total: 7,
+      fans: [
+        ['u3', 3],
+        ['u1', 2],
+        ['u2', 1],
+      ],
+    });
+    expect(group?.wordUses.montaña).toEqual({ total: 1, fans: [['u2', 1]] });
+    expect(group?.emojiPeople['🔥']).toEqual({ u1: 1, u3: 2 });
   });
 });
 
@@ -119,9 +145,9 @@ describe('StickerUsage', () => {
     );
     const month = analyzer.result()['2026-01'];
     expect(month?.top).toEqual([
-      { emoji: '😀', count: 4, fan: 'u1', fanCount: 3 },
-      { emoji: '😀', count: 2, fan: 'u1', fanCount: 2 },
-      { emoji: '🏷️', count: 1, fan: 'u1', fanCount: 1 },
+      { emoji: '😀', count: 4, fan: 'u1', fanCount: 3, people: { u1: 3, u2: 1 } },
+      { emoji: '😀', count: 2, fan: 'u1', fanCount: 2, people: { u1: 2 } },
+      { emoji: '🏷️', count: 1, fan: 'u1', fanCount: 1, people: { u1: 1 } },
     ]);
     expect(month?.distinct).toBe(3);
     expect(month?.byEmojiOnly).toBe(false);

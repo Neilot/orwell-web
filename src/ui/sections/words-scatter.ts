@@ -4,6 +4,7 @@ import { select } from 'd3-selection';
 import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import type { Tooltip } from '../components/tooltip';
+import { HelpButton } from '../components/help';
 import { el, svgEl } from '../dom';
 import { formatDecimal, formatInt } from '../format';
 import { communityColor, personName } from '../people';
@@ -37,10 +38,11 @@ export class WordsScatterSection {
     this.element.setAttribute('aria-labelledby', 'h-words');
     const title = el('h2', undefined, ts.title);
     title.id = 'h-words';
+    const heading = new HelpButton(title, ts.help.label, ts.help.title, ts.help.paragraphs);
     const head = el('div', 'head');
-    head.append(title);
+    head.append(heading.element);
     this.svg.setAttribute('aria-label', ts.chartLabel);
-    this.element.append(head, el('p', 'desc', ts.desc), this.svg);
+    this.element.append(head, this.svg);
   }
 
   render(view: MonthView, selected: string | null): void {

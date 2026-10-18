@@ -16,6 +16,8 @@ export interface TopSticker {
   /** Who sent it most, and how many times. */
   readonly fan: ParticipantId;
   readonly fanCount: number;
+  /** How many times each person sent it. */
+  readonly people: Record<ParticipantId, number>;
 }
 
 export interface MonthStickers {
@@ -95,7 +97,13 @@ export class StickerUsage implements Analyzer<StickerUsageResult> {
           .slice(0, TOP_STICKERS)
           .map((s) => {
             const [fan = '', fanCount = 0] = [...s.by].sort((a, b) => b[1] - a[1])[0] ?? [];
-            return { emoji: s.emoji, count: s.count, fan, fanCount };
+            return {
+              emoji: s.emoji,
+              count: s.count,
+              fan,
+              fanCount,
+              people: Object.fromEntries(s.by),
+            };
           });
         const result: MonthStickers = {
           people: Object.fromEntries(

@@ -26,11 +26,27 @@ export interface PersonVocabulary {
   readonly emojis: Ranked;
 }
 
+/** How often a word was written in the period, and the three people who wrote it most. */
+export interface WordUse {
+  readonly total: number;
+  readonly fans: readonly (readonly [ParticipantId, number])[];
+}
+
+export interface GroupVocabulary extends PersonVocabulary {
+  /** For every word shown in a cloud: the group's top words and each person's. */
+  readonly wordUses: Record<string, WordUse>;
+  /** For each of the group's top emojis, how many times each person wrote it. */
+  readonly emojiPeople: Record<string, Record<ParticipantId, number>>;
+}
+
 /** Per month (`YYYY-MM`): the whole group and each person. */
 export type VocabularyResult = Record<
   string,
-  { readonly group: PersonVocabulary; readonly people: Record<ParticipantId, PersonVocabulary> }
+  { readonly group: GroupVocabulary; readonly people: Record<ParticipantId, PersonVocabulary> }
 >;
+
+/** How many people are named as the ones who use a word most. */
+const WORD_FANS = 3;
 
 interface Counts {
   readonly words: Map<string, number>;
@@ -93,15 +109,64 @@ export class Vocabulary implements Analyzer<VocabularyResult> {
     });
     return Object.fromEntries(
       [...this.months].map(([month, people]) => {
-        const group = this.groups.get(month);
+        const counts = this.groups.get(month) ?? { words: new Map(), emojis: new Map() };
+        const summaries = new Map([...people].map(([id, p]) => [id, summary(p)]));
+        const group = summary(counts);
         return [
           month,
           {
-            group: group ? summary(group) : { words: [], emojis: [] },
-            people: Object.fromEntries([...people].map(([id, p]) => [id, summary(p)])),
+            group: {
+              ...group,
+              wordUses: wordUses(counts, people, [group, ...summaries.values()]),
+              emojiPeople: emojiPeople(group, people),
+            },
+            people: Object.fromEntries(summaries),
           },
         ];
       }),
     );
   }
+}
+
+/** Total and top writers of every word that some cloud shows, reading each person's counts once. */
+function wordUses(
+  group: Counts,
+  people: ReadonlyMap<ParticipantId, Counts>,
+  shown: readonly PersonVocabulary[],
+): Record<string, WordUse> {
+  const fans = new Map<string, [ParticipantId, number][]>();
+  for (const vocabulary of shown) for (const [word] of vocabulary.words) fans.set(word, []);
+  for (const [id, p] of people) {
+    for (const [word, count] of p.words) {
+      const best = fans.get(word);
+      if (!best) continue;
+      // Keep the top three by count; on a tie, whoever wrote first in the period stays ahead.
+      if (best.length < WORD_FANS || count > (best[best.length - 1]?.[1] ?? 0)) {
+        best.push([id, count]);
+        best.sort((a, b) => b[1] - a[1]);
+        if (best.length > WORD_FANS) best.pop();
+      }
+    }
+  }
+  return Object.fromEntries(
+    [...fans].map(([word, best]) => [word, { total: group.words.get(word) ?? 0, fans: best }]),
+  );
+}
+
+/** For each of the group's top emojis, who wrote it and how many times. */
+function emojiPeople(
+  group: PersonVocabulary,
+  people: ReadonlyMap<ParticipantId, Counts>,
+): Record<string, Record<ParticipantId, number>> {
+  return Object.fromEntries(
+    group.emojis.map(([emoji]) => [
+      emoji,
+      Object.fromEntries(
+        [...people].flatMap(([id, p]) => {
+          const count = p.emojis.get(emoji) ?? 0;
+          return count ? [[id, count] as const] : [];
+        }),
+      ),
+    ]),
+  );
 }

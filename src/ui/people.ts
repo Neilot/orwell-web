@@ -11,14 +11,19 @@ export function communityColor(community: number): string {
   return `var(--c${String(community)})`;
 }
 
-/** Up to two initials, e.g. "Ana María" → "AM". */
+/**
+ * Up to two initials, e.g. "Ana María" → "AM": the first letter or digit of each word, so
+ * emojis are skipped ("🎶 SuitSVP 💚" → "S") and styled letters become plain ("𝘡" → "Z"). A
+ * name without letters shows its first emoji whole.
+ */
 export function initials(name: string): string {
-  return name
+  const letters = name
     .split(/\s+/)
-    .map((word) => word[0] ?? '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+    .map((word) => /[\p{L}\p{N}]/u.exec(word)?.[0].normalize('NFKC'))
+    .filter((letter): letter is string => letter !== undefined);
+  if (letters.length > 0) return letters.slice(0, 2).join('').toUpperCase();
+  const graphemes = [...new Intl.Segmenter('es', { granularity: 'grapheme' }).segment(name.trim())];
+  return graphemes[0]?.segment ?? '?';
 }
 
 /** Tints an avatar with its community colour. */

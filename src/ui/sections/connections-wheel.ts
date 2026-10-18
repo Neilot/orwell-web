@@ -4,10 +4,12 @@ import { select } from 'd3-selection';
 import { arc, curveBundle, lineRadial, type DefaultArcObject } from 'd3-shape';
 import type { MatrixType, MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
+import { HelpButton } from '../components/help';
+import { MarkChip } from '../components/mark-chip';
 import { Segmented } from '../components/segmented';
 import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
-import { formatInt, formatPercent } from '../format';
+import { formatInt } from '../format';
 import { communityColor, personName } from '../people';
 
 const RADIUS = 280;
@@ -31,7 +33,8 @@ type Leaf = HierarchyPointNode<WheelNode>;
 
 /**
  * "¿Quién habla con quién?": people around a circle, grouped by community, with their
- * interactions drawn as bundled curves. Hovering a name lights up whom they talk to.
+ * interactions drawn as bundled curves. Hovering a name lights up whom they talk to; clicking it
+ * marks that person, whose lines stay lit until someone else is chosen or the mark is cleared.
  */
 export class ConnectionsWheelSection {
   readonly element = el('section', 'card hero');
@@ -42,17 +45,20 @@ export class ConnectionsWheelSection {
   private readonly svg = svgEl('svg', { id: 'bun', viewBox: '0 0 820 820', role: 'img' });
   private readonly communityList = el('div');
   private readonly communityNote = el('p');
+  private readonly chip: MarkChip;
   private readonly narrow = matchMedia(NARROW);
   private readonly edgesLayer;
   private readonly arcsLayer;
   private readonly namesLayer;
   private view: MonthView | null = null;
   private selected: string | null = null;
+  private marked = false;
 
   constructor(
     private readonly t: Messages,
     private readonly tooltip: Tooltip,
     private readonly onSelect: (id: string) => void,
+    onClear: () => void,
   ) {
     const tw = t.wheel;
     this.element.setAttribute('aria-labelledby', 'h-wheel');
@@ -86,8 +92,9 @@ export class ConnectionsWheelSection {
     });
     const controls = el('div', 'ctl');
     controls.append(this.segment.element, sliderLabel, this.slider, this.sliderValue);
+    const heading = new HelpButton(title, tw.help.label, tw.help.title, tw.help.paragraphs);
     const head = el('div', 'head');
-    head.append(title, controls);
+    head.append(heading.element, controls);
 
     const legend = el('div', 'legend');
     const line = (color: string, label: string): HTMLSpanElement => {
@@ -97,9 +104,13 @@ export class ConnectionsWheelSection {
       item.append(swatch, label);
       return item;
     };
-    const how = el('span', 'wheel-how', tw.how);
-    how.style.color = 'var(--muted)';
-    legend.append(line('var(--accent)', tw.sends), line('var(--in)', tw.receives), how);
+    this.chip = new MarkChip(t, onClear, tw.marked);
+    this.chip.element.style.marginLeft = 'auto';
+    legend.append(
+      line('var(--accent)', tw.sends),
+      line('var(--in)', tw.receives),
+      this.chip.element,
+    );
 
     this.scroll.id = 'bunWrap';
     this.scroll.tabIndex = 0;
@@ -108,7 +119,7 @@ export class ConnectionsWheelSection {
     this.scroll.append(this.svg);
 
     const main = el('div', 'main');
-    main.append(head, legend, el('p', 'wheel-hint', tw.hint), this.scroll);
+    main.append(head, legend, this.scroll);
 
     this.communityList.id = 'commList';
     this.communityList.style.display = 'flex';
@@ -117,13 +128,7 @@ export class ConnectionsWheelSection {
     this.communityNote.id = 'commNote';
     this.communityNote.style.fontSize = '13px';
     const aside = el('aside');
-    aside.append(
-      el('h3', undefined, tw.readTitle),
-      el('p', undefined, tw.readText),
-      el('h3', undefined, tw.communitiesTitle),
-      this.communityList,
-      this.communityNote,
-    );
+    aside.append(el('h3', undefined, tw.communitiesTitle), this.communityList, this.communityNote);
     this.element.append(main, aside);
 
     const root = select(this.svg).append('g').attr('transform', 'translate(410,410)');
@@ -136,9 +141,12 @@ export class ConnectionsWheelSection {
     });
   }
 
-  render(view: MonthView, selected: string | null): void {
+  /** `marked`: the selected person was marked, so their connections stay lit. */
+  render(view: MonthView, selected: string | null, marked: boolean): void {
     this.view = view;
     this.selected = selected;
+    this.marked = marked;
+    this.chip.render(marked ? (view.people.find((p) => p.id === selected) ?? null) : null);
     this.draw();
   }
 
@@ -254,31 +262,44 @@ export class ConnectionsWheelSection {
       .attr('font-weight', (d) => (isSelected(d.data.k ?? -1) ? 700 : 400))
       .style('opacity', 1);
 
-    const reset = (): void => {
+    /** Lights up the lines of the person at graph position `k` and the names they reach. */
+    const focus = (k: number): void => {
+      const touches = (e: Link): boolean => e.a === k || e.b === k;
+      edges
+        .style('stroke', (e) =>
+          e.a === k ? 'var(--accent)' : e.b === k ? 'var(--in)' : 'var(--edge)',
+        )
+        .attr('stroke-opacity', (e) => (touches(e) ? 0.9 : 0.03))
+        .filter(touches)
+        .raise();
+      const near = new Set(shown.filter(touches).flatMap((e) => [e.a, e.b]));
+      const lit = (o: Leaf): boolean => near.has(o.data.k ?? -1) || o.data.k === k;
+      names
+        .style('fill', (o) => (lit(o) ? 'var(--fg)' : 'var(--muted)'))
+        .attr('font-weight', (o) => (o.data.k === k ? 700 : 400))
+        .style('opacity', (o) => (lit(o) ? 1 : 0.4));
+    };
+    const markedNode = this.marked ? graph.people.findIndex((p) => p.id === this.selected) : -1;
+    /** Back to rest: the marked person lit, or every line in its own weight. */
+    const rest = (): void => {
+      if (markedNode >= 0 && shownSet.has(markedNode)) {
+        focus(markedNode);
+        return;
+      }
       edges.style('stroke', 'var(--edge)').attr('stroke-opacity', base);
       names
         .style('fill', (d) => (isSelected(d.data.k ?? -1) ? 'var(--fg)' : 'var(--fg2)'))
         .attr('font-weight', (d) => (isSelected(d.data.k ?? -1) ? 700 : 400))
         .style('opacity', 1);
+    };
+    const reset = (): void => {
+      rest();
       tooltip.hide();
     };
     names
       .on('pointerenter', (ev: PointerEvent, d) => {
         const k = d.data.k ?? -1;
-        const touches = (e: Link): boolean => e.a === k || e.b === k;
-        edges
-          .style('stroke', (e) =>
-            e.a === k ? 'var(--accent)' : e.b === k ? 'var(--in)' : 'var(--edge)',
-          )
-          .attr('stroke-opacity', (e) => (touches(e) ? 0.9 : 0.03))
-          .filter(touches)
-          .raise();
-        const near = new Set(shown.filter(touches).flatMap((e) => [e.a, e.b]));
-        const lit = (o: Leaf): boolean => near.has(o.data.k ?? -1) || o.data.k === k;
-        names
-          .style('fill', (o) => (lit(o) ? 'var(--fg)' : 'var(--muted)'))
-          .attr('font-weight', (o) => (o.data.k === k ? 700 : 400))
-          .style('opacity', (o) => (lit(o) ? 1 : 0.4));
+        focus(k);
         const p = person(k);
         if (!p) return;
         const tw = t.wheel;
@@ -302,9 +323,10 @@ export class ConnectionsWheelSection {
       .on('pointerleave', reset)
       .on('click', (_, d) => {
         const p = person(d.data.k ?? -1);
-        reset();
+        tooltip.hide();
         if (p) this.onSelect(p.id);
       });
+    rest();
 
     // On a phone the wheel is wider than the screen: start scrolled to its centre.
     if (narrow && !this.scroll.dataset.c && this.scroll.scrollWidth > this.scroll.clientWidth) {
@@ -312,12 +334,11 @@ export class ConnectionsWheelSection {
       this.scroll.dataset.c = '1';
     }
 
-    this.drawCommunities(view, X, comms, strength, showN);
+    this.drawCommunities(view, comms, strength, showN);
   }
 
   private drawCommunities(
     view: MonthView,
-    X: readonly (readonly number[])[],
     comms: readonly number[],
     strength: (k: number) => number,
     showN: number,
@@ -329,61 +350,34 @@ export class ConnectionsWheelSection {
     const stats = comms.map((c) => ({
       c,
       size: range(K).filter((k) => community(k) === c).length,
-      inside: 0,
-      total: 0,
     }));
-    const index = new Map(comms.map((c, q) => [c, q]));
-    for (let a = 0; a < K; a++) {
-      for (let b = 0; b < K; b++) {
-        const v = X[a]?.[b] ?? 0;
-        if (!v) continue;
-        const ca = index.get(community(a));
-        const cb = index.get(community(b));
-        const from = ca === undefined ? undefined : stats[ca];
-        const to = cb === undefined ? undefined : stats[cb];
-        if (!from || !to) continue;
-        from.total += v;
-        if (ca === cb) from.inside += v;
-        else to.total += v;
-      }
-    }
     this.communityList.replaceChildren(
       ...stats.map((d) => {
-        const share = d.total ? d.inside / d.total : 0;
         const lead = range(K)
           .filter((k) => community(k) === d.c)
           .sort((a, b) => strength(b) - strength(a))[0];
         const leader = lead === undefined ? undefined : people[lead];
         const swatch = el('i');
         swatch.style.background = communityColor(d.c);
-        const label = el('span');
-        label.style.color = 'var(--fg)';
-        label.append(
-          el('b', undefined, t.communities.names[d.c] ?? ''),
-          t.wheel.communityPeople(String(d.size)),
-        );
-        const internal = el('span', 'num', t.wheel.internal(formatPercent(share)));
-        internal.style.fontSize = '12px';
         const fill = el('span');
-        fill.style.width = `${String(share * 100)}%`;
+        fill.style.width = `${String((d.size / K) * 100)}%`;
         fill.style.background = communityColor(d.c);
         const bar = el('div', 'bar');
         bar.append(fill);
-        const leadLine = el(
-          'span',
-          undefined,
-          t.wheel.mostConnected(leader ? personName(leader, t) : ''),
-        );
-        leadLine.style.gridColumn = '2/4';
-        leadLine.style.fontSize = '12.5px';
+        const leadLine = el('span', 'lead', t.wheel.mostConnected);
+        leadLine.append(el('b', undefined, leader ? personName(leader, t) : ''));
         const row = el('div', 'commrow');
-        row.append(swatch, label, internal, bar, leadLine);
+        row.append(
+          swatch,
+          el('span', 'nm', t.communities.names[d.c] ?? ''),
+          el('span', 'cnt', t.wheel.communityPeople(formatInt(d.size), d.size)),
+          bar,
+          leadLine,
+        );
         return row;
       }),
     );
     this.communityNote.textContent =
-      K < view.totals.participants || showN < K
-        ? t.wheel.shownNote(String(showN))
-        : t.wheel.shareNote;
+      K < view.totals.participants || showN < K ? t.wheel.shownNote(String(showN)) : '';
   }
 }

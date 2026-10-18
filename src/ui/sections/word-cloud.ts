@@ -4,8 +4,10 @@ import { select } from 'd3-selection';
 import type { MonthView, PersonView, Ranked } from '../../app';
 import type { Messages } from '../../i18n';
 import { seededRandom } from '../charts/random';
+import { HelpButton } from '../components/help';
 import { Segmented } from '../components/segmented';
 import type { Tooltip } from '../components/tooltip';
+import { dayText } from '../dates';
 import { el, svgEl } from '../dom';
 import { formatInt } from '../format';
 import { personName } from '../people';
@@ -23,12 +25,16 @@ interface CloudWord extends cloud.Word {
   readonly count: number;
 }
 
-/** "Palabras más usadas": a word cloud for the whole group or for the selected person. */
+/**
+ * "Palabras más usadas": a word cloud for the whole group or for the selected person, under a
+ * label with the period it covers. Hovering a word shows its total and who writes it most.
+ */
 export class WordCloudSection {
   readonly element = el('section', 'card span2');
   private readonly segment: Segmented<Who>;
   private readonly personButton: HTMLButtonElement;
   private readonly svg = svgEl('svg', { id: 'cloud', viewBox: '0 0 1200 440', role: 'img' });
+  private readonly period = el('div', 'period');
   private view: MonthView | null = null;
   private person: PersonView | null = null;
   /** Ignores a layout that finishes after a newer one has started. */
@@ -57,10 +63,14 @@ export class WordCloudSection {
     this.personButton.id = 'cloudPerson';
     const title = el('h2', undefined, tc.title);
     title.id = 'h-cloud';
+    const heading = new HelpButton(title, tc.help.label, tc.help.title, tc.help.paragraphs);
+    this.period.id = 'cloudPeriod';
+    const titles = el('div');
+    titles.append(heading.element, this.period);
     const head = el('div', 'head');
-    head.append(title, this.segment.element);
+    head.append(titles, this.segment.element);
     this.svg.setAttribute('aria-label', tc.chartLabel);
-    this.element.append(head, this.svg, el('p', 'foot', tc.note));
+    this.element.append(head, this.svg);
   }
 
   /** Redraws for a new month, or when the selected person changes and their cloud is shown. */
@@ -78,10 +88,16 @@ export class WordCloudSection {
     const { t, tooltip, view } = this;
     if (!view) return;
     const job = ++this.job;
-    const source: Ranked =
-      this.segment.value === 'person' && this.person
-        ? view.details(this.person.id).vocabulary.words
-        : view.vocabulary.words;
+    const tc = t.cloud;
+    this.period.textContent = view.wholeFile
+      ? tc.periodWholeFile(dayText(view.firstDayKey, t), dayText(view.lastDayKey, t))
+      : tc.periodMonth(t.dates.months[view.monthIndex] ?? '', String(view.year)) +
+        (view.partial ? tc.periodPartial(String(view.lastDay)) : '');
+    const person = this.segment.value === 'person' ? this.person : null;
+    const source: Ranked = person
+      ? view.details(person.id).vocabulary.words
+      : view.vocabulary.words;
+    const names = new Map(view.people.map((p) => [p.id, personName(p, t)]));
     const words = source.slice(0, MAX_WORDS);
     const s = select(this.svg);
     s.selectAll('*').remove();
@@ -133,7 +149,27 @@ export class WordCloudSection {
             .text((d) => d.text)
             .style('cursor', 'default')
             .on('pointerenter pointermove', (ev: PointerEvent, d) => {
-              tooltip.show(ev, d.text, [[t.cloud.tipTimes, formatInt(d.count)]]);
+              const use = view.vocabulary.wordUses[d.text];
+              const total = formatInt(use?.total ?? 0);
+              tooltip.show(
+                ev,
+                d.text,
+                person
+                  ? [
+                      [personName(person, t), formatInt(d.count)],
+                      [tc.tipGroupTotal, total],
+                    ]
+                  : [[tc.tipTotal, total]],
+                {
+                  group: {
+                    heading: tc.tipFans,
+                    rows: (use?.fans ?? []).map(([id, count], i) => [
+                      tc.tipFan(String(i + 1), names.get(id) ?? ''),
+                      formatInt(count),
+                    ]),
+                  },
+                },
+              );
             })
             .on('pointerleave', () => {
               tooltip.hide();
