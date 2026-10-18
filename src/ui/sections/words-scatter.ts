@@ -24,10 +24,18 @@ interface Point {
   readonly r: number;
 }
 
-/** "Palabras totales vs. palabras por mensaje": who writes a lot, and who writes long. */
+/**
+ * "Palabras totales vs. palabras por mensaje": who writes a lot, and who writes long. Channels
+ * and bots post few, long messages and squash everyone else, so they are left out unless the
+ * switch brings them back; the scales always follow whoever is shown.
+ */
 export class WordsScatterSection {
   readonly element = el('section', 'card');
   private readonly svg = svgEl('svg', { id: 'wscat', viewBox: '0 0 600 470', role: 'img' });
+  private readonly toggle = el('button', 'tgl');
+  private readonly toggleLabel = el('span');
+  private showOdd = false;
+  private last: { view: MonthView; selected: string | null } | null = null;
 
   constructor(
     private readonly t: Messages,
@@ -39,8 +47,19 @@ export class WordsScatterSection {
     const title = el('h2', undefined, ts.title);
     title.id = 'h-words';
     const heading = new HelpButton(title, ts.help.label, ts.help.title, ts.help.paragraphs);
+    this.toggle.type = 'button';
+    this.toggle.id = 'wsToggle';
+    this.toggle.setAttribute('aria-pressed', 'false');
+    this.toggle.hidden = true;
+    const knob = el('i');
+    knob.setAttribute('aria-hidden', 'true');
+    this.toggle.append(knob, this.toggleLabel);
+    this.toggle.addEventListener('click', () => {
+      this.showOdd = !this.showOdd;
+      if (this.last) this.render(this.last.view, this.last.selected);
+    });
     const head = el('div', 'head');
-    head.append(heading.element);
+    head.append(heading.element, this.toggle);
     this.svg.setAttribute('aria-label', ts.chartLabel);
     this.element.append(head, this.svg);
   }
@@ -48,10 +67,16 @@ export class WordsScatterSection {
   render(view: MonthView, selected: string | null): void {
     const { t, tooltip } = this;
     const ts = t.scatter;
+    this.last = { view, selected };
     const s = select(this.svg);
     s.selectAll('*').remove();
-    const points: Point[] = view.people
-      .filter((p) => p.textMessages >= MIN_TEXT_MESSAGES)
+    const writers = view.people.filter((p) => p.textMessages >= MIN_TEXT_MESSAGES);
+    const odd = writers.filter((p) => p.kind !== 'person').length;
+    this.toggle.hidden = odd === 0;
+    this.toggle.setAttribute('aria-pressed', String(this.showOdd));
+    this.toggleLabel.textContent = ts.showOdd(formatInt(odd));
+    const points: Point[] = writers
+      .filter((p) => this.showOdd || p.kind === 'person')
       .map((p) => ({
         person: p,
         x: p.words,

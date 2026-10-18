@@ -23,6 +23,8 @@ export interface Participant {
   readonly id: ParticipantId;
   /** Name as the source shows it, or `null` when it has none (e.g. a deleted account). */
   readonly displayName: string | null;
+  /** Set when the messages are posted in the name of a channel rather than a person. */
+  readonly isChannel?: boolean;
 }
 
 export interface Reaction {

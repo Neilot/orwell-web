@@ -90,6 +90,40 @@ describe('Interactions', () => {
 });
 
 describe('detectCommunities', () => {
+  it('tells channels and bots from people', () => {
+    const analyzer = new Interactions();
+    const ship = { id: 'u7', displayName: 'SHIPPERING' };
+    const news = { id: 'channel9', displayName: 'Anuncios', isChannel: true };
+    const helper = { id: 'u8', displayName: 'GroupHelpBot' };
+    const answerer = { id: 'u9', displayName: 'Respondón' };
+    let id = 0;
+    const say = (author: Participant, extra: Partial<ChatEvent> = {}) => {
+      analyzer.consume(message(String(++id), author, extra));
+      return String(id);
+    };
+    say(news, { text: 'Evento el sábado' });
+    say(helper, { text: 'Bienvenido' });
+    say(ana, { text: '/pareja@SHIPPERINGbot' });
+    say(ship, { text: 'La pareja del día…' });
+    // Someone who answers commands often enough counts as a bot even without its name.
+    for (let k = 0; k < 3; k++)
+      say(answerer, { replyTo: { eventId: say(beto, { text: '/dado' }) } });
+    // A person answering a single command stays a person.
+    say(caro, { replyTo: { eventId: say(beto, { text: '/dado' }) } });
+    const kinds = new Map(analyzer.result()['2026-04']?.people.map((p) => [p.name, p.kind]));
+    expect(Object.fromEntries(kinds)).toEqual({
+      Anuncios: 'channel',
+      GroupHelpBot: 'bot',
+      Ana: 'person',
+      SHIPPERING: 'bot',
+      Beto: 'person',
+      Respondón: 'bot',
+      Caro: 'person',
+    });
+    // Channels and bots still take part in the wheel; only the words scatter can hide them.
+    expect(analyzer.result()['2026-04']?.graph.nodes).toHaveLength(7);
+  });
+
   it('is reproducible with the seeded generator', () => {
     const a = seededRandom(7);
     const b = seededRandom(7);

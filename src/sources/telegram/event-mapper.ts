@@ -70,6 +70,8 @@ export function mapMessage(m: TelegramMessage): ChatEvent {
       id: m.from_id ?? UNKNOWN_AUTHOR,
       // Deleted accounts keep their id but export `from: null`.
       displayName: m.from,
+      // A channel posting in the group (its own or a linked one) has a "channel…" id.
+      ...(m.from_id?.startsWith('channel') && { isChannel: true }),
     },
     at: Number(m.date_unixtime) * 1000,
     localTime: m.date,

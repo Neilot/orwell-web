@@ -167,6 +167,23 @@ describe('TelegramSource', () => {
     expect(withoutFile?.kind).toBe('sticker');
   });
 
+  it('marks posts made in the name of a channel', async () => {
+    const message = (id: number, from_id: string) => ({
+      id,
+      type: 'message',
+      date: '2026-04-01T09:00:00',
+      date_unixtime: '1775034000',
+      from: 'Anuncios',
+      from_id,
+      text: 'hola',
+    });
+    const messages = [message(1, 'channel2394941030'), message(2, 'user101')];
+    const chat = await source.open(inputFile('result.json', exportWith({ messages })));
+    const [channel, person] = await collect(chat.events);
+    expect(channel?.author.isChannel).toBe(true);
+    expect(person?.author.isChannel).toBeUndefined();
+  });
+
   it('accepts personal chats', async () => {
     const chat = await source.open(
       inputFile('result.json', exportWith({ type: 'personal_chat', name: 'Ana Prueba' })),

@@ -9,6 +9,7 @@ import {
   type PersonView,
 } from '../app';
 import type { Messages } from '../i18n';
+import { FileDrop } from './components/file-drop';
 import { HighlightLabel } from './components/highlight-label';
 import { TabBar } from './components/tab-bar';
 import { Tooltip } from './components/tooltip';
@@ -26,6 +27,8 @@ import { GroupRhythmSection } from './sections/group-rhythm';
 import { HourHeatmapSection } from './sections/hour-heatmap';
 import { KpisSection } from './sections/kpis';
 import { MonthPicker } from './sections/month-picker';
+import { lockIcon, uploadIcon, WelcomeSection } from './sections/welcome';
+import { revealDashboard } from './reveal';
 import { PersonCardSection } from './sections/person-card';
 import { RankingSection } from './sections/ranking';
 import { WeekdayHeatmapSection } from './sections/weekday-heatmap';
@@ -44,49 +47,6 @@ function eyeIcon(): SVGSVGElement {
       'stroke-width': '2',
     }),
     svgEl('circle', { cx: '12', cy: '12', r: '3.2', fill: 'currentColor' }),
-  );
-  return icon;
-}
-
-function uploadIcon(): SVGSVGElement {
-  const icon = svgEl('svg', {
-    width: '16',
-    height: '16',
-    viewBox: '0 0 24 24',
-    'aria-hidden': 'true',
-  });
-  icon.append(
-    svgEl('path', {
-      d: 'M12 16V4m0 0l-5 5m5-5l5 5M4 20h16',
-      fill: 'none',
-      stroke: 'currentColor',
-      'stroke-width': '2.2',
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-    }),
-  );
-  return icon;
-}
-
-function lockIcon(): SVGSVGElement {
-  const icon = svgEl('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' });
-  icon.append(
-    svgEl('rect', {
-      x: '3',
-      y: '7',
-      width: '10',
-      height: '7',
-      rx: '1.5',
-      fill: 'none',
-      stroke: 'currentColor',
-      'stroke-width': '1.5',
-    }),
-    svgEl('path', {
-      d: 'M5.5 7V5a2.5 2.5 0 015 0v2',
-      fill: 'none',
-      stroke: 'currentColor',
-      'stroke-width': '1.5',
-    }),
   );
   return icon;
 }
@@ -115,16 +75,10 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   const pick = el('button', 'btn');
   pick.id = 'pick';
   pick.type = 'button';
-  pick.append(uploadIcon(), t.upload.pick);
-  const demo = el('button', 'btn ghost', t.upload.backToDemo);
-  demo.id = 'demo';
-  demo.type = 'button';
-  demo.hidden = true;
-  const buttons = el('div');
-  buttons.style.display = 'flex';
-  buttons.style.gap = '8px';
-  buttons.style.flexWrap = 'wrap';
-  buttons.append(pick, demo);
+  const pickIcon = uploadIcon();
+  pickIcon.setAttribute('width', '16');
+  pickIcon.setAttribute('height', '16');
+  pick.append(pickIcon, t.upload.pick);
 
   const input = el('input');
   input.id = 'file';
@@ -143,14 +97,27 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   status.setAttribute('role', 'status');
 
   const upload = el('div', 'upl');
-  upload.append(buttons, input, hint, status);
+  upload.append(pick, input, hint, status);
 
   const header = el('header', 'top');
   header.append(brand, upload);
 
-  // Body: an empty state until a file is analysed, then the sections.
-  const empty = el('section', 'card');
-  empty.append(el('h2', undefined, t.empty.heading), el('p', 'desc', t.empty.body));
+  // Body: the welcome view until a file is analysed, then the sections.
+  const welcome = new WelcomeSection(t, () => {
+    input.click();
+  });
+  const fileDrop = new FileDrop(
+    t.welcome.dropHere,
+    uploadIcon(),
+    (file) => {
+      void analyzeFile(file);
+    },
+    (over) => {
+      if (welcome.element.hidden) return false;
+      welcome.setOver(over);
+      return true;
+    },
+  );
   const select = (id: string): void => {
     selectPerson(id, true);
   };
@@ -208,8 +175,8 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     [
       'who',
       [
-        [wheel.element, true],
         [person.element, true],
+        [wheel.element, true],
         [ranking.element, false],
         [scatter.element, false],
       ],
@@ -267,8 +234,8 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   const dashboardParts = [tabs.element, board, footNote];
 
   const wrap = el('div', 'wrap');
-  wrap.append(header, empty, ...dashboardParts);
-  root.replaceChildren(wrap, tooltip.element);
+  wrap.append(header, welcome.element, ...dashboardParts);
+  root.replaceChildren(wrap, tooltip.element, fileDrop.element);
 
   let dashboard: Dashboard | null = null;
   let view: MonthView | null = null;
@@ -315,7 +282,8 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   }
 
   function setDashboardVisible(visible: boolean): void {
-    empty.hidden = visible;
+    welcome.element.hidden = visible;
+    document.body.classList.toggle('is-empty', !visible);
     for (const part of dashboardParts) part.hidden = !visible;
   }
 
@@ -380,22 +348,48 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     return months.length;
   }
 
+  /** Status and errors go to the welcome view while it is shown, to the header after. */
+  function say(text: string, error = false): void {
+    const first = !welcome.element.hidden;
+    welcome.say(first ? text : '', error);
+    status.textContent = first ? '' : text;
+  }
+
   async function analyzeFile(file: File): Promise<void> {
-    status.textContent = t.upload.reading(file.name);
+    say(t.upload.reading(file.name));
+    welcome.setBusy(true);
     pick.disabled = true;
     try {
       const result = await analyze(file);
+      const first = !welcome.element.hidden;
+      // Measured before the switch, so the button can fly from here to the header.
+      const from = welcome.pick.getBoundingClientRect();
       const months = showDashboard(result);
+      if (first && months) {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+        revealDashboard(from, pick, [
+          ...brand.children,
+          ...[...upload.children].slice(1),
+          tabs.element,
+          ...[...board.children].flatMap((panel) =>
+            panel instanceof HTMLElement && !panel.hidden ? [...panel.children] : [],
+          ),
+        ]);
+      }
       // The header already shows the months and messages; only problems are reported here.
-      status.textContent = !months
-        ? t.upload.noMessages
-        : result.skippedMessages
-          ? t.upload.skipped(result.skippedMessages, formatInt(result.skippedMessages))
-          : '';
+      say(
+        !months
+          ? t.upload.noMessages
+          : result.skippedMessages
+            ? t.upload.skipped(result.skippedMessages, formatInt(result.skippedMessages))
+            : '',
+        !months,
+      );
     } catch (error) {
       const code = error instanceof AnalysisFailure ? error.code : 'unknown';
-      status.textContent = t.errors[code];
+      say(t.errors[code], true);
     } finally {
+      welcome.setBusy(false);
       pick.disabled = false;
     }
   }

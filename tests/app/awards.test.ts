@@ -25,6 +25,7 @@ function person(id: string, messages: number, extra: Partial<PersonView> = {}): 
     reactionsReceived: 0,
     mentioned: 0,
     reactionEmojis: {},
+    kind: 'person',
     perDay: {},
     stickersPerDay: {},
     community: 0,

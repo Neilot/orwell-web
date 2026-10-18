@@ -75,16 +75,81 @@ export function drawDayAxis(
     .attr('y1', options.y - 12)
     .attr('y2', options.y + 2)
     .style('stroke', 'var(--line)');
+  const fontSize = 11.5;
+  const labels = pickMonthLabels(
+    starts.map((d) => ({ x: x(d.i) ?? 0, monthIndex: d.monthIndex, year: d.year })),
+    (start, form) => {
+      const month = t.dates.monthsShort[start.monthIndex] ?? '';
+      if (form === 'year') return String(start.year);
+      return form === 'monthYear' ? t.dates.monthYear(month, String(start.year)) : month;
+    },
+    (text) => text.length * fontSize * MONO_CHAR,
+  );
   svg
     .append('g')
     .selectAll('text')
-    .data(starts)
+    .data(labels)
     .join('text')
-    .attr('x', (d) => x(d.i) ?? 0)
+    .attr('x', (d) => d.x)
     .attr('y', options.y)
     .attr('text-anchor', 'start')
-    .attr('font-size', 11.5)
+    .attr('font-size', fontSize)
     .style('font-family', 'var(--mono)')
     .style('fill', 'var(--fg2)')
-    .text((d) => t.dates.monthYear(t.dates.monthsShort[d.monthIndex] ?? '', String(d.year)));
+    .text((d) => d.text);
+}
+
+/** Width of a JetBrains Mono character, as a share of the font size. */
+const MONO_CHAR = 0.62;
+/** Space kept free after each month label. */
+const LABEL_GAP = 10;
+/** Label every month, or every 2nd, 3rd… month; with 12, only the years. */
+const STEPS = [1, 2, 3, 4, 6, 12];
+
+export interface MonthStart {
+  /** Left edge of the month's first day on the chart. */
+  readonly x: number;
+  /** 0 = January. */
+  readonly monthIndex: number;
+  readonly year: number;
+}
+
+/**
+ * Which month starts get a label when the whole export is shown. With many months there is no
+ * room for all of them, so it labels every month if they fit, else every 2nd, 3rd, 4th or 6th
+ * month (January, April… so the steps line up with the calendar), else only the Januaries as
+ * years. The first month always gets its name and year so the axis says where it starts; a
+ * January carries its year too. A label that would run into the first one is left out.
+ */
+export function pickMonthLabels(
+  starts: readonly MonthStart[],
+  text: (start: MonthStart, form: 'month' | 'monthYear' | 'year') => string,
+  width: (label: string) => number,
+): { x: number; text: string }[] {
+  const [first, ...rest] = starts;
+  if (!first) return [];
+  let labels: { x: number; text: string }[] = [];
+  for (const step of STEPS) {
+    const head = { x: first.x, text: text(first, 'monthYear') };
+    labels = [head];
+    let free = head.x + width(head.text) + LABEL_GAP;
+    let fits = true;
+    for (const start of rest) {
+      if (start.monthIndex % step !== 0) continue;
+      const label = {
+        x: start.x,
+        text: text(start, step === 12 ? 'year' : start.monthIndex === 0 ? 'monthYear' : 'month'),
+      };
+      if (start.x < free) {
+        // Running into the first label only drops this one; anything else means fewer labels.
+        if (labels.length === 1) continue;
+        fits = false;
+        break;
+      }
+      labels.push(label);
+      free = label.x + width(label.text) + LABEL_GAP;
+    }
+    if (fits) return labels;
+  }
+  return labels;
 }

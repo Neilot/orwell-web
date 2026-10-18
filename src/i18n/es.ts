@@ -194,16 +194,46 @@ export const es = {
   empty: {
     title: 'Tu grupo de Telegram',
     subtitle: 'Sube la exportación del chat para ver su actividad.',
-    heading: 'Todavía no hay ningún chat',
-    body: 'Pulsa «Analizar mi chat» y elige el archivo JSON (normalmente result.json) que guarda Telegram Desktop al exportar el historial del grupo en formato JSON, o un .zip de la carpeta de la exportación.',
+  },
+  welcome: {
+    dropTitle: 'Arrastra aquí el archivo de tu chat',
+    dropTitleTouch: 'Sube el archivo de tu chat',
+    dropHint:
+      'El **result.json** o el **.zip** de la carpeta que guarda Telegram Desktop al exportar el chat',
+    or: 'o',
+    choose: 'Elegir archivo',
+    dropHere: 'Suelta el archivo para analizarlo',
+    howToTitle: 'Cómo exportar el chat de tu grupo',
+    /** «…» marks the names of Telegram's buttons and **…** a file name. */
+    steps: [
+      {
+        heading: 'Abre Telegram Desktop',
+        text: 'En tu computador. La app del celular no permite exportar chats.',
+      },
+      {
+        heading: 'Entra al grupo y abre su menú',
+        text: 'Pulsa «⋮» arriba a la derecha y elige «Exportar historial del chat».',
+      },
+      {
+        heading: 'Quita fotos y videos',
+        text: 'Desmarca fotos, videos y archivos. No se usan, y la exportación termina mucho antes.',
+      },
+      {
+        heading: 'Elige el formato JSON',
+        text: 'En «Formato», marca «JSON legible por máquina» y pulsa «Exportar».',
+      },
+      {
+        heading: 'Súbelo aquí',
+        text: 'Arrastra a esta página el **result.json** que se guardó, o la carpeta de la exportación comprimida en .zip.',
+      },
+    ],
   },
   upload: {
     pick: 'Analizar mi chat',
-    backToDemo: 'Volver al ejemplo',
     hintBefore: 'Sube el ',
     hintFile: 'result.json',
     hintAfter: ' o el .zip que exporta Telegram Desktop',
-    privacy: 'Se procesa en tu navegador; no se envía a ningún servidor',
+    privacy: 'Tu archivo no sale de tu equipo; nadie más lo ve',
     reading: (name: string) => `Leyendo ${name}…`,
     noMessages: 'El archivo no tiene ningún mensaje que analizar.',
     skipped: (count: number, formatted: string) =>
@@ -376,10 +406,13 @@ export const es = {
         'Cada punto es una persona. Cuanto más grande, más mensajes envió.',
         'Cuanto más a la derecha, más palabras escribió en total. Cuanto más arriba, más largos son sus mensajes.',
         'La línea punteada es el promedio del grupo. Solo salen quienes escribieron al menos 5 mensajes con texto.',
+        'Los canales y los bots publican mensajes largos o automáticos y deforman la gráfica, así que no se muestran. Para verlos, activa «Mostrar canales y bots».',
+        'Se considera bot a quien tiene un nombre que termina en «bot», a quien alguien le mandó un comando (como /faq@nombre_bot) o a quien suele contestar comandos.',
       ],
     },
     chartLabel: 'Dispersión de palabras totales contra palabras por mensaje',
     thousands: (n: string) => `${n} mil`,
+    showOdd: (count: string) => `Mostrar canales y bots (${count})`,
     xAxis: 'palabras en total →',
     yAxis: 'palabras por mensaje →',
     average: (n: string) => `promedio del grupo: ${n}`,

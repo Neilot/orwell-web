@@ -42,6 +42,7 @@ function participant(id: string, name: string | null, messages: number): MonthPa
     reactionsReceived: 0,
     mentioned: 0,
     reactionEmojis: {},
+    kind: 'person',
   };
 }
 

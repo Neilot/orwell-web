@@ -12,6 +12,24 @@ export const CUSTOM_REACTION = '★';
 const TOP_REACTIONS = 10;
 
 export type InteractionType = 'reply' | 'mention' | 'reaction';
+
+/** A channel posting in the group, a bot, or anyone else. */
+export type ParticipantKind = 'person' | 'channel' | 'bot';
+
+/** Replies to commands that make someone a bot: at least this many… */
+const BOT_MIN_COMMAND_REPLIES = 3;
+/** …and at least this share of their messages. */
+const BOT_COMMAND_REPLY_SHARE = 0.1;
+const COMMAND = /^\/\w+/;
+const COMMAND_TO_BOT = /^\/\w+@(\w+)/;
+
+/** Letters and digits only, lower case: "FurMeets" and "furmeets_bot" both give "furmeets". */
+function plain(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]/g, '');
+}
 const TYPES: readonly InteractionType[] = ['reply', 'mention', 'reaction'];
 
 /** Someone who took part in a month, with their interaction counts. */
@@ -26,6 +44,12 @@ export interface MonthParticipant {
   readonly mentioned: number;
   /** Reactions they put on others' messages, by emoji ("★" for custom emoji). */
   readonly reactionEmojis: Readonly<Record<string, number>>;
+  /**
+   * The export does not say who is a bot, so it is inferred: a name ending in "bot", someone in
+   * the chat sending it a command (/faq@furmeets_bot makes "FurMeets" a bot), or answering
+   * commands regularly (at least 3 replies, 10 % of their messages).
+   */
+  readonly kind: ParticipantKind;
 }
 
 /** `[from, to, count]`, as positions in `InteractionGraph.nodes`. */
@@ -65,6 +89,9 @@ interface PersonState {
   reactionsReceived: number;
   mentioned: number;
   readonly reactionEmojis: Map<string, number>;
+  /** Their messages that reply to a command such as "/faq". */
+  commandReplies: number;
+  isChannel: boolean;
 }
 
 /** First name seen per id, in one of the three registration phases. */
@@ -90,7 +117,7 @@ class MonthState {
     if (known === undefined || (known === null && who.displayName !== null)) {
       phase.set(who.id, who.displayName);
     }
-    return getOrCreate(this.people, who.id, () => ({
+    const state = getOrCreate(this.people, who.id, () => ({
       name: null,
       messages: 0,
       repliesSent: 0,
@@ -99,7 +126,11 @@ class MonthState {
       reactionsReceived: 0,
       mentioned: 0,
       reactionEmojis: new Map<string, number>(),
+      commandReplies: 0,
+      isChannel: false,
     }));
+    if (who.isChannel) state.isChannel = true;
+    return state;
   }
 
   add(type: InteractionType, from: ParticipantId, to: ParticipantId): void {
@@ -108,7 +139,8 @@ class MonthState {
     this.counts[type].set(key, (this.counts[type].get(key) ?? 0) + 1);
   }
 
-  result(): MonthInteractions {
+  /** `botNames`: plain names of the bots someone sent a command to, over the whole export. */
+  result(botNames: ReadonlySet<string>): MonthInteractions {
     const order: ParticipantId[] = [];
     const seen = new Set<ParticipantId>();
     // Only people who wrote or reacted take part in the graph, as in the prototype.
@@ -136,6 +168,7 @@ class MonthState {
         reactionsReceived: state?.reactionsReceived ?? 0,
         mentioned: state?.mentioned ?? 0,
         reactionEmojis: Object.fromEntries(state?.reactionEmojis ?? []),
+        kind: kindOf(name(id) ?? '', state, botNames),
       };
     });
 
@@ -173,6 +206,21 @@ class MonthState {
   }
 }
 
+function kindOf(
+  name: string,
+  state: PersonState | undefined,
+  botNames: ReadonlySet<string>,
+): ParticipantKind {
+  if (state?.isChannel) return 'channel';
+  const replies = state?.commandReplies ?? 0;
+  const answersCommands =
+    replies >= BOT_MIN_COMMAND_REPLIES &&
+    replies >= (state?.messages ?? 0) * BOT_COMMAND_REPLY_SHARE;
+  return /bot$/i.test(name.trim()) || botNames.has(plain(name)) || answersCommands
+    ? 'bot'
+    : 'person';
+}
+
 /**
  * Who interacts with whom each month: replies (to someone else's message, even an older one),
  * account mentions and reactions (from the reactor to the author). Also keeps everyone who took
@@ -182,8 +230,16 @@ export class Interactions implements Analyzer<InteractionsResult> {
   readonly id = 'interactions';
   private readonly months = new Map<string, MonthState>();
   private readonly authors = new Map<EventId, Participant>();
+  /** Events that are commands, such as "/faq", so replies to them can be told apart. */
+  private readonly commands = new Set<EventId>();
+  private readonly botNames = new Set<string>();
 
   consume(event: ChatEvent): void {
+    if (event.kind !== 'service' && COMMAND.test(event.text)) {
+      this.commands.add(event.id);
+      const bot = COMMAND_TO_BOT.exec(event.text)?.[1];
+      if (bot) this.botNames.add(plain(bot.replace(/_?bot$/i, '')));
+    }
     for (const period of periodsOf(event.localTime)) this.consumeIn(period, event);
   }
 
@@ -209,6 +265,9 @@ export class Interactions implements Analyzer<InteractionsResult> {
 
     const original = event.replyTo && this.authors.get(event.replyTo.eventId);
     if (original) {
+      if (this.commands.has(event.replyTo.eventId)) {
+        month.person(month.writers, event.author).commandReplies++;
+      }
       const target = month.person(month.others, original);
       if (original.id !== author) {
         month.add('reply', author, original.id);
@@ -223,6 +282,8 @@ export class Interactions implements Analyzer<InteractionsResult> {
   }
 
   result(): InteractionsResult {
-    return Object.fromEntries([...this.months].map(([month, state]) => [month, state.result()]));
+    return Object.fromEntries(
+      [...this.months].map(([month, state]) => [month, state.result(this.botNames)]),
+    );
   }
 }

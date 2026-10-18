@@ -65,6 +65,8 @@ export interface MonthParticipant {
   readonly mentioned: number;
   /** Reactions they put on others' messages, by emoji ("★" for custom emoji). */
   readonly reactionEmojis: Readonly<Record<string, number>>;
+  /** A channel posting in the group, a bot (inferred), or anyone else. */
+  readonly kind: 'person' | 'channel' | 'bot';
 }
 
 export type InteractionType = 'reply' | 'mention' | 'reaction';

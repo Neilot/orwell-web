@@ -201,6 +201,7 @@ function people(dashboard: Dashboard, month: string): PersonView[] {
       reactionsReceived: 0,
       mentioned: 0,
       reactionEmojis: {},
+      kind: 'person' as const,
     }));
   return participants.map((participant, i) => {
     const k = node.get(i) ?? -1;
