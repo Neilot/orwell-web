@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { maxIndex, messagesPerPeriod, monthsOf, monthView } from '../../src/app/month-view';
+import { lifeOf, maxIndex, messagesPerPeriod, monthsOf, monthView } from '../../src/app/month-view';
 import {
   MESSAGE_KINDS,
   WHOLE_FILE,
@@ -23,6 +23,7 @@ function activity(id: string, messages: number): PersonMonthActivity {
     characters: messages * 15,
     stickers: 0,
     voiceSeconds: 0,
+    emojis: 0,
     hours,
     weekdays,
     kinds: { ...kinds, text: messages },
@@ -116,6 +117,24 @@ const dashboard: Dashboard = {
   },
   stickersPerMonth: {},
   membership: {},
+  linksPerMonth: {},
+  starsPerMonth: {
+    '2026-04': {
+      mostReacted: [],
+      mostReplied: [],
+      people: {
+        u3: {
+          reacted: {
+            author: 'u3',
+            localTime: '2026-04-03T10:00:00',
+            kind: 'text',
+            text: 'hola',
+            count: 6,
+          },
+        },
+      },
+    },
+  },
 };
 
 describe('monthsOf', () => {
@@ -204,7 +223,17 @@ describe('monthView', () => {
       stickers: [],
       replyMedian: 30_000,
       replyCount: 1,
+      stars: {
+        reacted: {
+          author: 'u3',
+          localTime: '2026-04-03T10:00:00',
+          kind: 'text',
+          text: 'hola',
+          count: 6,
+        },
+      },
     });
+    expect(view.details('u2').stars).toEqual({});
     expect(view.vocabulary.emojis).toEqual([['😀', 1]]);
     expect(view.reactionEmojis).toEqual([['👍', 6]]);
     expect(view.stickers).toEqual({ top: [], distinct: 0, byEmojiOnly: false, perDay: {} });
@@ -239,5 +268,40 @@ describe('monthView', () => {
     const view = monthView(dashboard, '2026-03');
     expect(view).toMatchObject({ lastDay: 31, partial: false, previous: null });
     expect(view.responseTimes).toBeNull();
+  });
+});
+
+describe('lifeOf', () => {
+  it('goes month by month: messages, writers, newcomers, joins and leaves', () => {
+    const life = lifeOf({
+      ...dashboard,
+      membership: {
+        u3: [
+          { day: '2026-03-20', type: 'join', via: 'link', by: null },
+          { day: '2026-04-08', type: 'leave', removed: false, by: null },
+        ],
+        'name:Eva': [{ day: '2026-04-01', type: 'join', via: 'invited', by: 'Ana' }],
+      },
+    });
+    expect(life).toEqual([
+      {
+        month: '2026-03',
+        messages: 6,
+        writers: 2,
+        newWriters: 2,
+        joins: 1,
+        leaves: 0,
+        byPerson: { u1: 4, u2: 2 },
+      },
+      {
+        month: '2026-04',
+        messages: 17,
+        writers: 2,
+        newWriters: 1,
+        joins: 1,
+        leaves: 1,
+        byPerson: { u2: 5, u3: 12 },
+      },
+    ]);
   });
 });

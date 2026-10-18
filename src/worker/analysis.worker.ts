@@ -1,11 +1,13 @@
 // Worker composition root: the only place where sources and analyzers are wired together.
 import {
   Interactions,
+  LinkSharing,
   Membership,
   MessagesPerDay,
   PeopleActivity,
   PersonHabitsAnalyzer,
   ResponseTimes,
+  StarMessages,
   StickerUsage,
   Vocabulary,
   WeeklyRhythm,
@@ -57,6 +59,8 @@ async function analyze(file: InputFile): Promise<AnalyzeResponse> {
   const vocabulary = new Vocabulary();
   const stickers = new StickerUsage();
   const membership = new Membership();
+  const links = new LinkSharing();
+  const stars = new StarMessages();
   const report = await new AnalysisPipeline([
     perDay,
     people,
@@ -67,6 +71,8 @@ async function analyze(file: InputFile): Promise<AnalyzeResponse> {
     vocabulary,
     stickers,
     membership,
+    links,
+    stars,
   ]).run(source, file);
   // The pipeline stores each result under its analyzer's id; this reads it back typed.
   const resultOf = <T>(analyzer: Analyzer<T>): T => report.results[analyzer.id] as T;
@@ -85,6 +91,8 @@ async function analyze(file: InputFile): Promise<AnalyzeResponse> {
       vocabularyPerMonth: resultOf(vocabulary),
       stickersPerMonth: resultOf(stickers),
       membership: resultOf(membership),
+      linksPerMonth: resultOf(links),
+      starsPerMonth: resultOf(stars),
     },
   };
 }

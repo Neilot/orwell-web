@@ -32,6 +32,8 @@ export interface PersonMonthActivity {
   readonly stickers: number;
   /** Total length of their voice notes and audio files, in seconds. */
   readonly voiceSeconds: number;
+  /** Emojis written in their messages. */
+  readonly emojis: number;
   /** Messages per hour of the day, 0–23. */
   readonly hours: readonly number[];
   /** Messages per weekday, Monday first. */
@@ -105,8 +107,12 @@ export interface PersonHabits {
   readonly conversationsStarted: number;
   readonly questions: number;
   readonly laughs: number;
-  /** Their longest message and its length. */
-  readonly longest: { readonly length: number; readonly text: string } | null;
+  /** Their longest message, its length and when they sent it (the export's wall clock). */
+  readonly longest: {
+    readonly length: number;
+    readonly text: string;
+    readonly localTime: string;
+  } | null;
   /** Local days of their first and last message, `YYYY-MM-DD`. */
   readonly firstDay: string;
   readonly lastDay: string;
@@ -161,6 +167,51 @@ export interface MonthStickers {
   readonly perDay: Readonly<Record<string, number>>;
 }
 
+/** A site or a link, how many times it was shared, and by whom. */
+export interface SharedLink {
+  /** The site ("youtube.com") or the cleaned link ("ngl.link/name"). */
+  readonly key: string;
+  readonly count: number;
+  readonly fan: string;
+  readonly fanCount: number;
+  /** How many times each person shared it. */
+  readonly people: Readonly<Record<string, number>>;
+}
+
+export interface MonthLinks {
+  readonly total: number;
+  readonly distinctSites: number;
+  /** Links each person shared. */
+  readonly people: Readonly<Record<string, number>>;
+  readonly sites: readonly SharedLink[];
+  /** Full links shared at least twice. */
+  readonly links: readonly SharedLink[];
+}
+
+/** A message worth showing again, with how many reactions or replies it got. */
+export interface StarMessage {
+  readonly author: string;
+  /** The export's wall clock, `YYYY-MM-DDTHH:mm:ss`. */
+  readonly localTime: string;
+  readonly kind: MessageKind;
+  /** Up to the first thousand characters; empty for media without a caption. */
+  readonly text: string;
+  readonly stickerEmoji?: string;
+  /** Reactions or replies, depending on the list. */
+  readonly count: number;
+  /** For reactions, the most used emojis as `[emoji, count]`. */
+  readonly reactions?: Ranked;
+}
+
+export interface MonthStars {
+  readonly mostReacted: readonly StarMessage[];
+  readonly mostReplied: readonly StarMessage[];
+  /** Each person's message with the most reactions and the one with the most replies. */
+  readonly people: Readonly<
+    Record<string, { readonly reacted?: StarMessage; readonly replied?: StarMessage }>
+  >;
+}
+
 /** One time someone joined or left the group. */
 export interface MembershipEvent {
   /** Local day, `YYYY-MM-DD`. */
@@ -192,6 +243,8 @@ export interface Dashboard {
   readonly habitsPerMonth: Readonly<Record<string, Readonly<Record<string, PersonHabits>>>>;
   readonly vocabularyPerMonth: Readonly<Record<string, MonthVocabulary>>;
   readonly stickersPerMonth: Readonly<Record<string, MonthStickers>>;
+  readonly linksPerMonth: Readonly<Record<string, MonthLinks>>;
+  readonly starsPerMonth: Readonly<Record<string, MonthStars>>;
   /** Per person, when they joined or left the group, over the whole export. */
   readonly membership: Readonly<Record<string, readonly MembershipEvent[]>>;
 }

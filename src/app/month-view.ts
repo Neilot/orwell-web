@@ -11,8 +11,11 @@ import {
   type GroupVocabulary,
   type PersonVocabulary,
   type MembershipEvent,
+  type MonthLinks,
+  type MonthStars,
   type MonthStickers,
   type Ranked,
+  type StarMessage,
 } from './worker-protocol';
 
 /** Community of people outside the five largest communities. */
@@ -35,6 +38,24 @@ export interface PersonDetails {
   readonly replyMedian: number | null;
   /** Replies whose delay was measured. */
   readonly replyCount: number;
+  /** Their message with the most reactions and the one with the most replies, in the period. */
+  readonly stars: { readonly reacted?: StarMessage; readonly replied?: StarMessage };
+}
+
+/** One month of the whole export, for the month-by-month chart. */
+export interface LifeMonth {
+  /** `YYYY-MM`. */
+  readonly month: string;
+  readonly messages: number;
+  /** People who wrote that month. */
+  readonly writers: number;
+  /** People who wrote that month for the first time in the export. */
+  readonly newWriters: number;
+  /** Joins and leaves recorded by the export's notices. */
+  readonly joins: number;
+  readonly leaves: number;
+  /** Messages per person id. */
+  readonly byPerson: Readonly<Record<string, number>>;
 }
 
 export interface MonthTotals {
@@ -115,6 +136,12 @@ export interface MonthView {
   readonly graph: GraphView;
   /** Per person, when they joined or left the group (whole export, not only this period). */
   readonly membership: Readonly<Record<string, readonly MembershipEvent[]>>;
+  /** The sites and links shared in the period. */
+  readonly links: MonthLinks;
+  /** The messages with the most reactions and replies in the period. */
+  readonly stars: Omit<MonthStars, 'people'>;
+  /** Every month of the export, oldest first, whatever the period shown. */
+  readonly life: readonly LifeMonth[];
   details(id: string): PersonDetails;
   /** The previous month in the export, for comparisons, or `null` for the first one. */
   readonly previous: {
@@ -180,6 +207,7 @@ const NO_ACTIVITY: Omit<PersonMonthActivity, 'id'> = {
   characters: 0,
   stickers: 0,
   voiceSeconds: 0,
+  emojis: 0,
   hours: new Array<number>(24).fill(0),
   weekdays: new Array<number>(7).fill(0),
   kinds: Object.fromEntries(MESSAGE_KINDS.map((k) => [k, 0])) as Record<MessageKind, number>,
@@ -254,6 +282,43 @@ function graphView(
     }),
     matrices,
   };
+}
+
+const NO_LINKS: MonthLinks = { total: 0, distinctSites: 0, people: {}, sites: [], links: [] };
+
+/** The export month by month: messages, writers, newcomers, joins and leaves. */
+export function lifeOf(dashboard: Dashboard): LifeMonth[] {
+  const counts = messagesPerPeriod(dashboard);
+  const changes = new Map<string, { joins: number; leaves: number }>();
+  for (const events of Object.values(dashboard.membership)) {
+    for (const e of events) {
+      const month = e.day.slice(0, 7);
+      const c = changes.get(month) ?? { joins: 0, leaves: 0 };
+      if (e.type === 'join') c.joins++;
+      else c.leaves++;
+      changes.set(month, c);
+    }
+  }
+  const seen = new Set<string>();
+  return monthsOf(dashboard).map((month) => {
+    const writers = dashboard.peoplePerMonth[month] ?? [];
+    let newWriters = 0;
+    for (const p of writers) {
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        newWriters++;
+      }
+    }
+    return {
+      month,
+      messages: counts.get(month) ?? 0,
+      writers: writers.length,
+      newWriters,
+      joins: changes.get(month)?.joins ?? 0,
+      leaves: changes.get(month)?.leaves ?? 0,
+      byPerson: Object.fromEntries(writers.map((p) => [p.id, p.messages])),
+    };
+  });
 }
 
 export function monthView(dashboard: Dashboard, month: string): MonthView {
@@ -347,12 +412,19 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
     },
     graph: graphView(dashboard, month, everyone),
     membership: dashboard.membership,
+    links: dashboard.linksPerMonth[month] ?? NO_LINKS,
+    stars: {
+      mostReacted: dashboard.starsPerMonth[month]?.mostReacted ?? [],
+      mostReplied: dashboard.starsPerMonth[month]?.mostReplied ?? [],
+    },
+    life: lifeOf(dashboard),
     details: (id) => ({
       habits: dashboard.habitsPerMonth[month]?.[id] ?? null,
       vocabulary: dashboard.vocabularyPerMonth[month]?.people[id] ?? { words: [], emojis: [] },
       stickers: dashboard.stickersPerMonth[month]?.people[id] ?? [],
       replyMedian: responseTimes?.byPerson[id]?.median ?? null,
       replyCount: responseTimes?.byPerson[id]?.count ?? 0,
+      stars: dashboard.starsPerMonth[month]?.people[id] ?? {},
     }),
     previous: previousMonth
       ? {

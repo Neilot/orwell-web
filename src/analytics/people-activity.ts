@@ -1,7 +1,7 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
 import { dayOf, getOrCreate, hourOf, increment, periodsOf, weekdayOf } from './calendar';
 import { MESSAGE_KINDS, messageKind, type MessageKind } from './message-kind';
-import { words } from './text';
+import { EMOJI, words } from './text';
 
 /** What one person wrote in one month. */
 export interface PersonMonthActivity {
@@ -15,6 +15,8 @@ export interface PersonMonthActivity {
   stickers: number;
   /** Total length of their voice notes and audio files. */
   voiceSeconds: number;
+  /** Emojis written in their messages. */
+  emojis: number;
   /** Messages per hour of the day, 0–23. */
   readonly hours: number[];
   /** Messages per weekday, Monday first. */
@@ -38,6 +40,7 @@ function emptyActivity(id: ParticipantId): PersonMonthActivity {
     characters: 0,
     stickers: 0,
     voiceSeconds: 0,
+    emojis: 0,
     hours: new Array<number>(24).fill(0),
     weekdays: new Array<number>(7).fill(0),
     kinds: Object.fromEntries(MESSAGE_KINDS.map((k) => [k, 0])) as Record<MessageKind, number>,
@@ -79,6 +82,7 @@ export class PeopleActivity implements Analyzer<PeopleActivityResult> {
       person.textMessages++;
       person.words += words(event.text).length;
       person.characters += event.text.length;
+      person.emojis += event.text.match(EMOJI)?.length ?? 0;
     }
   }
 

@@ -1,6 +1,6 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
 import { getOrCreate, periodsOf } from './calendar';
-import { words } from './text';
+import { EMOJI, words } from './text';
 
 /** Spanish (and a few English) words too common to say anything about a person. */
 export const STOP_WORDS: ReadonlySet<string> = new Set(
@@ -14,7 +14,6 @@ export const TOP_WORDS = 110;
 export const TOP_EMOJIS = 10;
 
 const LAUGH = /^(j[aeiou]){2,}j?$/;
-const EMOJI = /\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*/gu;
 
 /** `[item, count]`, most frequent first; ties keep first-use order. */
 export type Ranked = readonly (readonly [string, number])[];

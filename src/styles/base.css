@@ -175,10 +175,53 @@ svg text{font-family:var(--body);fill:var(--fg2)}
 .award{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:4px;cursor:pointer;background:var(--panel);text-align:left;font:inherit;color:inherit}
 .award:hover{border-color:var(--fg2)}
 .award .t{font:600 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.award .w{font:700 18px var(--display);color:var(--fg);display:flex;align-items:center;gap:8px}
+.award .w{font:700 18px var(--display);color:var(--fg);display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;text-align:left;cursor:pointer;min-width:0}
 .award .w i{width:9px;height:9px;border-radius:50%;flex:none}
 .award .x{font:600 14px var(--mono);color:var(--accent-ink)}
 .award .d{font-size:13px;color:var(--fg2)}
+.award .q{display:block;margin-top:6px;padding:2px 0 2px 9px;border-left:3px solid var(--line);font-size:13px;color:var(--fg2);overflow-wrap:anywhere}
+.award .q .qt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.award .q small{display:block;margin-top:3px;font:11.5px var(--mono);color:var(--muted)}
+.award .ru{display:flex;flex-direction:column;gap:2px;margin-top:auto;padding-top:8px;border-top:1px dashed var(--line)}
+.award .ru button{display:flex;gap:6px;align-items:baseline;background:none;border:0;padding:1px 0;font:inherit;font-size:12.5px;color:var(--muted);text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.award .ru button:hover{color:var(--fg)}
+.award .ru b{font:600 11.5px var(--mono);color:var(--fg2)}
+.award .ru .num{margin-left:auto;font:12px var(--mono);color:var(--fg2)}
+.award button:focus-visible,.stars .who:focus-visible,.llist .cp:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.kd{display:inline-block;padding:0 6px;border-radius:999px;background:var(--grid);font:600 11px var(--mono);color:var(--fg2);font-style:normal}
+.empty{color:var(--muted);font-size:13px;list-style:none}
+/* most shared sites and links */
+.kpis#lnkKpis{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:14px}
+@media (max-width:560px){.kpis#lnkKpis{grid-template-columns:minmax(0,1fr)}}
+#lnkKpis .v{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.llist{display:flex;flex-direction:column;gap:10px}
+.llist .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;align-items:center}
+.llist .nm{display:flex;align-items:center;gap:6px;min-width:0;font:13px var(--mono);color:var(--fg)}
+.llist .nm .u{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:all}
+.llist .val{font:12px var(--mono);color:var(--fg2);text-align:right;white-space:nowrap}
+.llist .track{grid-column:1/-1;position:relative;height:8px;background:var(--grid);border-radius:2px;overflow:hidden}
+.llist .track span{position:absolute;left:0;top:0;height:100%;background:var(--accent)}
+.llist .track span.me{background:var(--in)}
+.llist .who{grid-column:1/-1;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.llist .who b{color:var(--fg2);font-weight:600}
+.llist .cp{flex:none;display:grid;place-items:center;width:24px;height:24px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;padding:0}
+.llist .cp:hover{color:var(--fg);border-color:var(--fg2)}
+.llist .cp.ok{color:var(--accent);border-color:var(--accent)}
+.llist .cp svg{width:13px;height:13px}
+/* star messages */
+.stars{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.star{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.star.mine{border-color:var(--in);box-shadow:inset 3px 0 0 var(--in)}
+.star .sh{display:flex;align-items:center;gap:10px;min-width:0}
+.star .who{display:flex;align-items:center;gap:7px;min-width:0;background:none;border:0;padding:0;font:600 14px var(--body);color:var(--fg);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.star .who i{width:9px;height:9px;border-radius:50%;flex:none}
+.star .who:hover{text-decoration:underline}
+.star .dt{margin-left:auto;flex:none;font:11.5px var(--mono);color:var(--muted)}
+.star .tx{margin:0;font-size:14px;color:var(--fg);white-space:pre-line;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.star .sf{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:13px;color:var(--fg2)}
+.star .sf b{margin-left:auto;font:600 12.5px var(--mono);color:var(--accent-ink)}
+/* the group month by month */
+#life{width:100%;height:auto;display:block}
 .lists{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 .blist{display:flex;flex-direction:column;gap:5px}
 .blist .row{display:grid;grid-template-columns:30px minmax(0,1fr) 56px;gap:8px;align-items:center;font-size:14px}
@@ -250,6 +293,15 @@ body.is-empty .upl{display:none}
 @media (max-width:860px){.welcome{grid-template-columns:minmax(0,1fr)}.drop{min-height:0;padding:30px 18px}}
 @media (pointer:coarse){.drop .t-drag,.drop-or{display:none}.drop .t-touch{display:inline}}
 @media (prefers-reduced-motion:reduce){.spinner{animation-duration:2.4s}.drop{transition:none}}
+/* analysing a new file over the one on screen */
+#loadCard{display:none}
+body.is-loading:not(.is-empty) #loadCard{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 84px);transform:translateX(-50%);z-index:45;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 32px);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 18px 12px 14px;box-shadow:0 18px 48px rgba(10,14,22,.28);animation:ld-in .2s ease-out}
+#loadCard b{display:block;font:700 15px var(--display);color:var(--fg)}
+#loadCard span{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw}
+@keyframes ld-in{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+body.is-loading:not(.is-empty) .panel,body.is-loading:not(.is-empty) .tabbar,body.is-loading:not(.is-empty) .brand{opacity:.35;pointer-events:none;filter:saturate(.6);transition:opacity .25s,filter .25s}
+body.is-loading #pick{opacity:.7;cursor:progress}
+@media (prefers-reduced-motion:reduce){#loadCard{animation:none!important}}
 /* message types as tiles */
 .klead{color:var(--fg2);font-size:14.5px;text-wrap:pretty}
 .klead b{color:var(--fg)}

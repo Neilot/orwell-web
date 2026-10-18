@@ -22,8 +22,12 @@ export interface PersonHabits {
   readonly questions: number;
   /** Words like "jaja", "jejeje" or "jajaj". */
   readonly laughs: number;
-  /** Their longest message. */
-  readonly longest: { readonly length: number; readonly text: string } | null;
+  /** Their longest message, with when they sent it (the export's wall clock). */
+  readonly longest: {
+    readonly length: number;
+    readonly text: string;
+    readonly localTime: string;
+  } | null;
   /** Local days of their first and last message, `YYYY-MM-DD`. */
   readonly firstDay: string;
   readonly lastDay: string;
@@ -42,7 +46,7 @@ interface HabitsState {
   conversationsStarted: number;
   questions: number;
   laughs: number;
-  longest: { length: number; text: string } | null;
+  longest: { length: number; text: string; localTime: string } | null;
 }
 
 function streak(days: Iterable<string>): number {
@@ -104,7 +108,7 @@ export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
     if (!text) return;
     if (text.includes('?')) p.questions++;
     if (text.length > (p.longest?.length ?? 0)) {
-      p.longest = { length: text.length, text };
+      p.longest = { length: text.length, text, localTime: event.localTime };
     }
     for (const word of words(text)) if (LAUGH.test(word)) p.laughs++;
   }

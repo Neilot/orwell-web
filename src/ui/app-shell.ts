@@ -23,15 +23,18 @@ import { AwardsSection } from './sections/awards';
 import { StickersSection } from './sections/stickers';
 import { WordCloudSection } from './sections/word-cloud';
 import { WordsScatterSection } from './sections/words-scatter';
+import { GroupLifeSection } from './sections/group-life';
 import { GroupRhythmSection } from './sections/group-rhythm';
 import { HourHeatmapSection } from './sections/hour-heatmap';
 import { KpisSection } from './sections/kpis';
+import { LinksSection } from './sections/links';
 import { MessageKindsSection } from './sections/message-kinds';
 import { MonthPicker } from './sections/month-picker';
 import { lockIcon, uploadIcon, WelcomeSection } from './sections/welcome';
 import { revealDashboard } from './reveal';
 import { PersonCardSection } from './sections/person-card';
 import { RankingSection } from './sections/ranking';
+import { StarMessagesSection } from './sections/star-messages';
 import { WeekdayHeatmapSection } from './sections/weekday-heatmap';
 
 export type Analyze = (file: File) => Promise<Dashboard>;
@@ -150,6 +153,11 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   const stickers = new StickersSection(t, tooltip, select);
   const awards = new AwardsSection(t, select);
   const emojis = new EmojisSection(t);
+  const links = new LinksSection(t);
+  const stars = new StarMessagesSection(t, select);
+  const life = new GroupLifeSection(t, tooltip, (month) => {
+    showMonth(month);
+  });
   const footNote = el('p', 'foot', t.footNote);
   footNote.id = 'footNote';
 
@@ -171,6 +179,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
       [
         [kpis.element, true],
         [daily.element, true],
+        [life.element, true],
         [awards.element, true],
       ],
     ],
@@ -195,7 +204,9 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
       'what',
       [
         [wordCloud.element, true],
+        [stars.element, true],
         [messageKinds.element, true],
+        [links.element, true],
         [stickers.element, true],
         [emojis.element, true],
       ],
@@ -236,9 +247,21 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   });
   const dashboardParts = [tabs.element, board, footNote];
 
+  // While another file is analysed over a chat already on screen, the page dims under this notice.
+  const loadName = el('span');
+  const loadText = el('div');
+  loadText.append(el('b', undefined, t.upload.analysing), loadName);
+  const loadSpinner = el('div', 'spinner');
+  loadSpinner.setAttribute('aria-hidden', 'true');
+  const loadCard = el('div');
+  loadCard.id = 'loadCard';
+  loadCard.setAttribute('role', 'status');
+  loadCard.setAttribute('aria-live', 'polite');
+  loadCard.append(loadSpinner, loadText);
+
   const wrap = el('div', 'wrap');
   wrap.append(header, welcome.element, ...dashboardParts);
-  root.replaceChildren(wrap, tooltip.element, fileDrop.element);
+  root.replaceChildren(wrap, tooltip.element, fileDrop.element, loadCard);
 
   let dashboard: Dashboard | null = null;
   let view: MonthView | null = null;
@@ -280,6 +303,9 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     daily.render(view, markedPerson);
     stickers.render(view, markedPerson);
     emojis.render(view, markedPerson);
+    life.render(view, markedPerson);
+    stars.render(view, markedPerson);
+    links.render(view, markedPerson);
     highlight.render(markedPerson);
     if (scroll) centerCard();
   }
@@ -327,7 +353,8 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     const months = monthsOf(next);
     if (months.length === 0) return 0;
     dashboard = next;
-    // A new file starts with nobody marked and nobody hidden.
+    // A new file starts on the summary, with nobody marked and nobody hidden.
+    tabs.show('summary');
     marked = false;
     scatter.reset();
     // The whole export first, then the months, newest first.
@@ -363,6 +390,8 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   async function analyzeFile(file: File): Promise<void> {
     say(t.upload.reading(file.name));
     welcome.setBusy(true);
+    loadName.textContent = file.name;
+    document.body.classList.add('is-loading');
     pick.disabled = true;
     try {
       const result = await analyze(file);
@@ -395,6 +424,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
       say(t.errors[code], true);
     } finally {
       welcome.setBusy(false);
+      document.body.classList.remove('is-loading');
       pick.disabled = false;
     }
   }

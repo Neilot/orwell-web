@@ -75,12 +75,12 @@ describe('Vocabulary', () => {
     const month = analyzer.result()['2026-01'];
     expect(month?.group).toMatchObject(month?.people.u1 ?? {});
     const words = month?.people.u1;
-    // Ties keep first-use order; "com" survives from the link, as in the prototype.
+    // Ties keep first-use order; the link counts once, as its site, ahead of the plain words.
     expect(words?.words).toEqual([
       ['hola', 2],
       ['jajaja', 2],
+      ['x.com', 1],
       ['amigos', 1],
-      ['com', 1],
     ]);
     expect(words?.emojis).toEqual([
       ['👍', 2],

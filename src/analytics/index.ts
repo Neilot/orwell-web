@@ -11,6 +11,7 @@ export {
   type MonthInteractions,
   type MonthParticipant,
 } from './interactions';
+export { LinkSharing, type LinksResult, type MonthLinks, type SharedLink } from './links';
 export { Membership, type MembershipEvent, type MembershipResult } from './membership';
 export { MESSAGE_KINDS, type MessageKind } from './message-kind';
 export { MessagesPerDay, type MessagesPerDayResult } from './messages-per-day';
@@ -39,4 +40,10 @@ export {
   type Ranked,
   type VocabularyResult,
 } from './vocabulary';
+export {
+  StarMessages,
+  type MonthStars,
+  type StarMessage,
+  type StarMessagesResult,
+} from './star-messages';
 export { WeeklyRhythm, type WeeklyRhythmResult } from './weekly-rhythm';

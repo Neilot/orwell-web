@@ -22,6 +22,25 @@ describe('words', () => {
     ]);
     expect(words('👍 !!')).toEqual([]);
   });
+
+  it('keeps links as their site, and @mentions and #tags whole', () => {
+    expect(
+      words(
+        'Mira https://www.YouTube.com/watch?v=abc, y www.ngl.link/x. Hola @Zelev_07 #FurMeets mail@ana.co',
+      ),
+    ).toEqual([
+      'youtube.com',
+      'ngl.link',
+      '@zelev_07',
+      '#furmeets',
+      'mira',
+      'y',
+      'hola',
+      'mail',
+      'ana',
+      'co',
+    ]);
+  });
 });
 
 describe('messageKind', () => {
