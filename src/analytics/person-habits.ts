@@ -1,6 +1,6 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
 import { dayOf, getOrCreate, periodsOf } from './calendar';
-import { LAUGH, words } from './text';
+import { laughOf, words } from './text';
 
 /** Silence after which the next message counts as starting a conversation. */
 export const CONVERSATION_GAP = 3 * 3600_000;
@@ -19,7 +19,7 @@ export interface PersonHabits {
   readonly conversationsStarted: number;
   /** Messages with text that contain a question mark. */
   readonly questions: number;
-  /** Laughs like "jaja", "jejeje", "haha" or "lol". */
+  /** Laughs like "jaja", "jejeje", "haha", "lol" or "xd". */
   readonly laughs: number;
   /** Their longest message, with when they sent it (the export's wall clock). */
   readonly longest: {
@@ -109,7 +109,7 @@ export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
     if (text.length > (p.longest?.length ?? 0)) {
       p.longest = { length: text.length, text, localTime: event.localTime };
     }
-    for (const word of words(text)) if (LAUGH.test(word)) p.laughs++;
+    for (const word of words(text)) if (laughOf(word)) p.laughs++;
   }
 
   result(): PersonHabitsResult {

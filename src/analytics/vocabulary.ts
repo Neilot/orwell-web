@@ -1,10 +1,10 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
 import { getOrCreate, periodsOf } from './calendar';
-import { EMOJI, LAUGH, words } from './text';
+import { EMOJI, laughOf, words } from './text';
 
 /** Spanish and English words too common to say anything about a person. */
 export const STOP_WORDS: ReadonlySet<string> = new Set(
-  'a al algo algun alguna algunas alguno algunos ante antes aqui aquí asi así aun aún bien cada casi como cómo con contra cual cuál cuales cuando cuándo de del desde donde dónde dos el él ella ellas ello ellos en entre era eran es esa esas ese eso esos esta está estaba estaban estamos estan están estar este esto estos estoy fue fueron ha había han hasta hay la las le les lo los mas más me mi mí mis mucho muchos muy nada ni no nos nosotros o otra otras otro otros para pero poco por porque que qué quien quién se sea ser si sí sido sin sobre solo sólo son su sus también tan tanto te tenemos tener tengo ti tiene tienen todo todos tu tú tus un una uno unos unas usted ustedes va vamos van ya yo eh ah oh pues entonces igual osea ok vez veces hace hacer hago hizo voy vas dice dijo creo tal algo así ese esa estos esas aquí allá ahí ahora hoy luego toda todas cosa cosas bueno buena buenas buenos sea son ser sí también tenía tienes vos usted the and you for this that with about after all also any are because been but can could did does doing from get got had has have her here him his how into its just like more not now off our out over she should some than them then there these they was were what when where which who will would your yeah yes okay lol'.split(
+  'a al algo algun alguna algunas alguno algunos ante antes aqui aquí asi así aun aún bien cada casi como cómo con contra cual cuál cuales cuando cuándo de del desde donde dónde dos el él ella ellas ello ellos en entre era eran es esa esas ese eso esos esta está estaba estaban estamos estan están estar este esto estos estoy fue fueron ha había han hasta hay la las le les lo los mas más me mi mí mis mucho muchos muy nada ni no nos nosotros o otra otras otro otros para pero poco por porque que qué quien quién se sea ser si sí sido sin sobre solo sólo son su sus también tan tanto te tenemos tener tengo ti tiene tienen todo todos tu tú tus un una uno unos unas usted ustedes va vamos van ya yo eh ah oh pues entonces igual osea ok vez veces hace hacer hago hizo voy vas dice dijo creo tal algo así ese esa estos esas aquí allá ahí ahora hoy luego toda todas cosa cosas bueno buena buenas buenos sea son ser sí también tenía tienes vos usted the and you for this that with about after all also any are because been but can could did does doing from get got had has have her here him his how into its just like more not now off our out over she should some than them then there these they was were what when where which who will would your yeah yes okay'.split(
     ' ',
   ),
 );
@@ -17,7 +17,7 @@ export const TOP_EMOJIS = 10;
 export type Ranked = readonly (readonly [string, number])[];
 
 export interface PersonVocabulary {
-  /** Meaningful words: laughs are folded into "jajaja"; stop words, numbers, links and words under three letters are left out. */
+  /** Meaningful words: each laugh counts under its family's word ("jajaja", "haha", "lol"…); stop words, numbers, links and words under three letters are left out. */
   readonly words: Ranked;
   /** Emojis written in the text (reactions and stickers aside). */
   readonly emojis: Ranked;
@@ -80,10 +80,12 @@ export class Vocabulary implements Analyzer<VocabularyResult> {
       words: new Map<string, number>(),
       emojis: new Map<string, number>(),
     }));
-    for (let word of words(event.text)) {
-      if (LAUGH.test(word)) word = 'jajaja';
+    for (const written of words(event.text)) {
+      // A laugh counts under its family's word, even a short one like "xd".
+      const laugh = laughOf(written);
+      const word = laugh ?? written;
       if (
-        word.length < 3 ||
+        (!laugh && word.length < 3) ||
         STOP_WORDS.has(word) ||
         /^\d+$/.test(word) ||
         word.startsWith('http')

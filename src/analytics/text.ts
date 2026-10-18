@@ -1,8 +1,23 @@
 const WORD = /[\p{L}\p{N}']+/gu;
 /** One emoji, joined sequences and variation selectors included. */
 export const EMOJI = /\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*/gu;
-/** A laugh in Spanish or English: "jaja", "jejeje", "haha", "lol", "lmao". */
-export const LAUGH = /^(?:(?:j[aeiou]){2,}j?|(?:h[aeiou]){2,}h?|lo+l|lmf?a+o+)$/;
+/** Laughs by family, each with the word it is counted as: Spanish "jaja", English "haha"… */
+const LAUGHS: readonly (readonly [RegExp, string])[] = [
+  [/^(?:j[aeiou]){2,}j?$/, 'jajaja'],
+  [/^a?(?:h[aeiou]){2,}h?$/, 'haha'],
+  [/^lo+l$/, 'lol'],
+  [/^lmf?a+o+$/, 'lmao'],
+  [/^x+d+$/, 'xd'],
+  [/^rofl$/, 'rofl'],
+];
+
+/**
+ * The word a laugh is counted as, keeping each language's own: "jajaj" and "jejeje" count as
+ * "jajaja", "hehe" and "hahaha" as "haha", "loool" as "lol"; \`null\` when it is not a laugh.
+ */
+export function laughOf(word: string): string | null {
+  return LAUGHS.find(([pattern]) => pattern.test(word))?.[1] ?? null;
+}
 /** A web address, up to the next space. */
 const LINK = /\b(?:https?:\/\/|www\.)[^\s<>"]+/giu;
 /** "@username", as Telegram allows them; not when glued to a word, like in an e-mail. */
