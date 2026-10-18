@@ -12,6 +12,7 @@ export {
   type MonthParticipant,
 } from './interactions';
 export { LinkSharing, type LinksResult, type MonthLinks, type SharedLink } from './links';
+export { GroupMoments, type Moment, type MomentMessage, type MomentsResult } from './moments';
 export { Membership, type MembershipEvent, type MembershipResult } from './membership';
 export { MESSAGE_KINDS, type MessageKind } from './message-kind';
 export { MessagesPerDay, type MessagesPerDayResult } from './messages-per-day';

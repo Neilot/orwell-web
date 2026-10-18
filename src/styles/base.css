@@ -222,6 +222,45 @@ svg text{font-family:var(--body);fill:var(--fg2)}
 .star .sf b{margin-left:auto;font:600 12.5px var(--mono);color:var(--accent-ink)}
 /* the group month by month */
 #life{width:100%;height:auto;display:block}
+/* moments of the group */
+#momTime{width:100%;height:auto;display:block;margin:4px 0 10px}
+#momTime .mpin:hover circle{fill:var(--accent-ink)}
+.moms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:860px){.moms{grid-template-columns:minmax(0,1fr)}}
+.mom{position:relative;display:flex;flex-direction:column;gap:5px;text-align:left;font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px 12px 46px;cursor:pointer;min-width:0}
+.mom:hover{border-color:var(--fg2)}
+.mom:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mom.mine{box-shadow:inset 3px 0 0 var(--in)}
+.mom .mn{position:absolute;left:12px;top:12px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font:700 11.5px var(--mono)}
+.mom .md{font:12px var(--mono);color:var(--muted)}
+.mom .mkw{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;font:600 16px var(--display);color:var(--fg)}
+.mom .mkw span{overflow-wrap:anywhere}
+.mom .mkw span+span:not(.me)::before{content:"·";margin-right:8px;color:var(--muted);font-weight:400}
+.mom .mkw .b{color:var(--accent-ink)}
+.mom .mkw .me{font-size:15px;margin-left:2px}
+.mom .ms{font-size:13px;color:var(--fg2)}
+.mom .ms b{color:var(--fg);font-weight:600}
+.mom .mw{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#momDlg{width:min(760px,calc(100vw - 24px));max-height:min(86vh,900px);padding:0;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--fg);box-shadow:0 24px 64px rgba(10,14,22,.4)}
+#momDlg[open]{display:flex;flex-direction:column}
+#momDlg::backdrop{background:rgba(10,14,22,.55)}
+#momDlg .dlg-h{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+#momDlg .dlg-d{font:12px var(--mono);color:var(--muted)}
+#momDlg h3{margin:4px 0 2px;font:700 20px var(--display)}
+#momDlg .dlg-s{font-size:13px;color:var(--fg2)}
+#momDlg .dlg-f{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:13px;color:var(--fg2);cursor:pointer}
+#momDlg .dlg-f input{accent-color:var(--accent);width:15px;height:15px}
+#momDlg .dlg-x{flex:none;width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--fg2);cursor:pointer;font-size:14px}
+#momDlg .dlg-x:hover{color:var(--fg);border-color:var(--fg2)}
+#momDlg .dlg-b{overflow-y:auto;padding:6px 20px 16px}
+#momDlg .mm{padding:9px 0;border-bottom:1px solid var(--line)}
+#momDlg .mm.mine{box-shadow:inset 3px 0 0 var(--in);padding-left:10px}
+#momDlg .mh{display:flex;align-items:center;gap:7px;font-size:13px}
+#momDlg .mh i{width:8px;height:8px;border-radius:50%;flex:none}
+#momDlg .mh span{margin-left:auto;font:11.5px var(--mono);color:var(--muted)}
+#momDlg .mm p{margin:3px 0 0;font-size:14px;white-space:pre-line;overflow-wrap:anywhere}
+#momDlg mark{background:color-mix(in srgb,var(--accent) 28%,transparent);color:inherit;border-radius:3px;padding:0 2px}
+#momDlg .mm-more{color:var(--muted);font-size:13px;padding-top:10px}
 .lists{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 .blist{display:flex;flex-direction:column;gap:5px}
 .blist .row{display:grid;grid-template-columns:30px minmax(0,1fr) 56px;gap:8px;align-items:center;font-size:14px}

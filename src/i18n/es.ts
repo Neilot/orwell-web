@@ -647,6 +647,38 @@ export const es = {
     when: (day: string, month: string, year: string, time: string) =>
       `${day} ${month} ${year} · ${time}`,
   },
+  moments: {
+    title: 'Momentos del grupo',
+    help: {
+      label: 'Cómo funciona esta sección',
+      title: 'Cómo se encuentran los momentos',
+      paragraphs: [
+        'Un momento es un rato en el que el grupo escribió mucho más de lo normal: tramos de 20 minutos seguidos con al menos el triple de mensajes que un tramo típico del chat.',
+        'Las palabras de cada momento son las que más se repitieron ahí comparadas con el resto del chat, y que usaron al menos dos personas. No se cuentan las risas ni las palabras comunes en español y en inglés (de, que, the, and…), así que funciona con chats en los dos idiomas.',
+        'Haz clic en un momento para leer sus mensajes. Todo se calcula en tu navegador: no se usa IA ni se envía nada.',
+      ],
+    },
+    chartLabel: 'Mensajes por día con los momentos marcados',
+    lead: (count: number, wholeFile: boolean) =>
+      `Los ${String(count)} momentos con más actividad ${wholeFile ? 'del archivo' : 'del mes'}, en orden de fecha. Las palabras son las que más se repitieron en ese momento comparadas con lo normal en el chat.`,
+    none: 'No hubo momentos con mucha más actividad de lo normal en este periodo.',
+    when: (weekday: string, day: string, year: string, from: string, to: string) =>
+      `${weekday} ${day}${year ? ` ${year}` : ''} · ${from}–${to}`,
+    minutes: (n: string) => `${n} min`,
+    hours: (n: string) => `${n} h`,
+    stats: (messages: string, people: string, duration: string) =>
+      `${messages} mensajes · ${people} personas · ${duration}`,
+    messages: (n: string) => `${n} mensajes`,
+    mostActive: (names: string) => `Más activos: ${names}`,
+    dialogDate: (n: string, when: string) => `Momento ${n} · ${when}`,
+    untitled: 'Conversación',
+    onlyKeywords: 'Solo los mensajes con estas palabras',
+    close: 'Cerrar',
+    firstOnly: (shown: string, total: string) =>
+      `Se muestran los primeros ${shown} de ${total} mensajes.`,
+    withKeywords: (shown: string, total: string) =>
+      `${shown} de ${total} mensajes tienen alguna de estas palabras.`,
+  },
   life: {
     title: 'La vida del grupo, mes a mes',
     help: {

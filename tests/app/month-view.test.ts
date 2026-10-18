@@ -118,6 +118,7 @@ const dashboard: Dashboard = {
   stickersPerMonth: {},
   membership: {},
   linksPerMonth: {},
+  momentsPerMonth: {},
   starsPerMonth: {
     '2026-04': {
       mostReacted: [],

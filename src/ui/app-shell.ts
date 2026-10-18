@@ -24,6 +24,7 @@ import { StickersSection } from './sections/stickers';
 import { WordCloudSection } from './sections/word-cloud';
 import { WordsScatterSection } from './sections/words-scatter';
 import { GroupLifeSection } from './sections/group-life';
+import { GroupMomentsSection } from './sections/group-moments';
 import { GroupRhythmSection } from './sections/group-rhythm';
 import { HourHeatmapSection } from './sections/hour-heatmap';
 import { KpisSection } from './sections/kpis';
@@ -154,6 +155,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   const awards = new AwardsSection(t, select);
   const emojis = new EmojisSection(t);
   const links = new LinksSection(t);
+  const moments = new GroupMomentsSection(t, tooltip);
   const stars = new StarMessagesSection(t, select);
   const life = new GroupLifeSection(t, tooltip, (month) => {
     showMonth(month);
@@ -203,6 +205,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     [
       'what',
       [
+        [moments.element, true],
         [wordCloud.element, true],
         [stars.element, true],
         [messageKinds.element, true],
@@ -306,6 +309,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     life.render(view, markedPerson);
     stars.render(view, markedPerson);
     links.render(view, markedPerson);
+    moments.render(view, markedPerson);
     highlight.render(markedPerson);
     if (scroll) centerCard();
   }

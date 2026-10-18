@@ -11,6 +11,7 @@ import {
   type GroupVocabulary,
   type PersonVocabulary,
   type MembershipEvent,
+  type Moment,
   type MonthLinks,
   type MonthStars,
   type MonthStickers,
@@ -140,6 +141,8 @@ export interface MonthView {
   readonly links: MonthLinks;
   /** The messages with the most reactions and replies in the period. */
   readonly stars: Omit<MonthStars, 'people'>;
+  /** The moments when the group wrote much more than usual, in date order. */
+  readonly moments: readonly Moment[];
   /** Every month of the export, oldest first, whatever the period shown. */
   readonly life: readonly LifeMonth[];
   details(id: string): PersonDetails;
@@ -418,6 +421,7 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
       mostReplied: dashboard.starsPerMonth[month]?.mostReplied ?? [],
     },
     life: lifeOf(dashboard),
+    moments: dashboard.momentsPerMonth[month] ?? [],
     details: (id) => ({
       habits: dashboard.habitsPerMonth[month]?.[id] ?? null,
       vocabulary: dashboard.vocabularyPerMonth[month]?.people[id] ?? { words: [], emojis: [] },

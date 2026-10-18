@@ -212,6 +212,25 @@ export interface MonthStars {
   >;
 }
 
+/** A stretch of time when the group wrote much more than usual. */
+export interface Moment {
+  /** Wall clock of its first and last message, `YYYY-MM-DDTHH:mm:ss`. */
+  readonly from: string;
+  readonly to: string;
+  readonly messageCount: number;
+  readonly people: number;
+  /** The words that stand out compared with the rest of the period, best first. */
+  readonly keywords: readonly string[];
+  readonly emojis: readonly string[];
+  /** Messages per person id, most first. */
+  readonly byPerson: readonly (readonly [string, number])[];
+  /** Its first messages, up to 800. */
+  readonly messages: readonly Pick<
+    StarMessage,
+    'author' | 'localTime' | 'kind' | 'text' | 'stickerEmoji'
+  >[];
+}
+
 /** One time someone joined or left the group. */
 export interface MembershipEvent {
   /** Local day, `YYYY-MM-DD`. */
@@ -245,6 +264,8 @@ export interface Dashboard {
   readonly stickersPerMonth: Readonly<Record<string, MonthStickers>>;
   readonly linksPerMonth: Readonly<Record<string, MonthLinks>>;
   readonly starsPerMonth: Readonly<Record<string, MonthStars>>;
+  /** The moments of each period, in date order. */
+  readonly momentsPerMonth: Readonly<Record<string, readonly Moment[]>>;
   /** Per person, when they joined or left the group, over the whole export. */
   readonly membership: Readonly<Record<string, readonly MembershipEvent[]>>;
 }
