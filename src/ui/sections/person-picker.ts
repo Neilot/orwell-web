@@ -2,6 +2,7 @@ import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { el, svgEl } from '../dom';
 import { communityColor, initials, personName, styleAvatar } from '../people';
+import { pageSignal } from '../page';
 
 const ALL = -1;
 
@@ -172,11 +173,19 @@ export class PersonPicker {
       this.renderList();
       this.query.focus();
     });
-    document.addEventListener('pointerdown', (ev) => {
-      if (!this.popover.hidden && ev.target instanceof Node && !this.element.contains(ev.target)) {
-        this.close(false);
-      }
-    });
+    document.addEventListener(
+      'pointerdown',
+      (ev) => {
+        if (
+          !this.popover.hidden &&
+          ev.target instanceof Node &&
+          !this.element.contains(ev.target)
+        ) {
+          this.close(false);
+        }
+      },
+      { signal: pageSignal() },
+    );
     this.element.addEventListener('keydown', (ev) => {
       if (ev.key === 'Escape' && !this.popover.hidden) this.close(true);
     });

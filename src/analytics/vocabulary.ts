@@ -1,10 +1,10 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
 import { getOrCreate, periodsOf } from './calendar';
-import { EMOJI, words } from './text';
+import { EMOJI, LAUGH, words } from './text';
 
-/** Spanish (and a few English) words too common to say anything about a person. */
+/** Spanish and English words too common to say anything about a person. */
 export const STOP_WORDS: ReadonlySet<string> = new Set(
-  'a al algo algun alguna algunas alguno algunos ante antes aqui aquí asi así aun aún bien cada casi como cómo con contra cual cuál cuales cuando cuándo de del desde donde dónde dos el él ella ellas ello ellos en entre era eran es esa esas ese eso esos esta está estaba estaban estamos estan están estar este esto estos estoy fue fueron ha había han hasta hay la las le les lo los mas más me mi mí mis mucho muchos muy nada ni no nos nosotros o otra otras otro otros para pero poco por porque que qué quien quién se sea ser si sí sido sin sobre solo sólo son su sus también tan tanto te tenemos tener tengo ti tiene tienen todo todos tu tú tus un una uno unos unas usted ustedes va vamos van ya yo eh ah oh pues entonces igual osea ok vez veces hace hacer hago hizo voy vas dice dijo creo tal algo así ese esa estos esas aquí allá ahí ahora hoy luego toda todas cosa cosas bueno buena buenas buenos sea son ser sí también tenía tienes vos usted the and you for this that with'.split(
+  'a al algo algun alguna algunas alguno algunos ante antes aqui aquí asi así aun aún bien cada casi como cómo con contra cual cuál cuales cuando cuándo de del desde donde dónde dos el él ella ellas ello ellos en entre era eran es esa esas ese eso esos esta está estaba estaban estamos estan están estar este esto estos estoy fue fueron ha había han hasta hay la las le les lo los mas más me mi mí mis mucho muchos muy nada ni no nos nosotros o otra otras otro otros para pero poco por porque que qué quien quién se sea ser si sí sido sin sobre solo sólo son su sus también tan tanto te tenemos tener tengo ti tiene tienen todo todos tu tú tus un una uno unos unas usted ustedes va vamos van ya yo eh ah oh pues entonces igual osea ok vez veces hace hacer hago hizo voy vas dice dijo creo tal algo así ese esa estos esas aquí allá ahí ahora hoy luego toda todas cosa cosas bueno buena buenas buenos sea son ser sí también tenía tienes vos usted the and you for this that with about after all also any are because been but can could did does doing from get got had has have her here him his how into its just like more not now off our out over she should some than them then there these they was were what when where which who will would your yeah yes okay lol'.split(
     ' ',
   ),
 );
@@ -12,8 +12,6 @@ export const STOP_WORDS: ReadonlySet<string> = new Set(
 /** How many of each person's top words and emojis are kept. */
 export const TOP_WORDS = 110;
 export const TOP_EMOJIS = 10;
-
-const LAUGH = /^(j[aeiou]){2,}j?$/;
 
 /** `[item, count]`, most frequent first; ties keep first-use order. */
 export type Ranked = readonly (readonly [string, number])[];

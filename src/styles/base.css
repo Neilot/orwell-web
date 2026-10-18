@@ -15,6 +15,7 @@ p{margin:0}
 .btn.ghost{background:transparent;color:var(--fg2);border:1px solid var(--line)}
 .btn:focus-visible,select:focus-visible,input:focus-visible,.seg button:focus-visible,.award:focus-visible,.rank-row:focus-visible,.pk-filters button:focus-visible,.wheel-scroll:focus-visible,#stkWho .row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .upl small{display:flex;flex-direction:column;align-items:flex-end;gap:3px;color:var(--muted);font-size:12.5px;line-height:1.4;text-align:right}
+.upl .lang button{padding:3px 9px;font:600 12px var(--mono);letter-spacing:.04em}
 .upl small .lk{display:inline-flex;align-items:center;gap:6px}
 .upl small svg{width:13px;height:13px;flex:none}
 #msg{font-size:13px;color:var(--fg2)}
@@ -252,7 +253,7 @@ svg text{font-family:var(--body);fill:var(--fg2)}
 @media (max-width:560px){.tabbar-right{width:100%;justify-content:space-between}#globalMark .gm-l,.tabbar #monthNote{display:none}.tabbar .mpick{flex:1}.tabbar .mp-btn{width:100%;min-width:0}}
 @media (pointer:coarse){.tabs button{padding:10px 16px}}
 /* welcome: a zone to drop the export into and the steps to make one */
-body.is-empty .upl{display:none}
+body.is-empty .upl > :not(.lang){display:none}
 .welcome{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:stretch}
 .drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:40px 24px;border:2px dashed color-mix(in srgb,var(--accent) 45%,var(--line));border-radius:18px;background:color-mix(in srgb,var(--accent) 5%,var(--panel));min-height:380px;cursor:pointer;transition:border-color .15s,background-color .15s,transform .15s}
 .drop:hover,.drop.over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel))}

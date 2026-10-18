@@ -1,6 +1,8 @@
 const WORD = /[\p{L}\p{N}']+/gu;
 /** One emoji, joined sequences and variation selectors included. */
 export const EMOJI = /\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*/gu;
+/** A laugh in Spanish or English: "jaja", "jejeje", "haha", "lol", "lmao". */
+export const LAUGH = /^(?:(?:j[aeiou]){2,}j?|(?:h[aeiou]){2,}h?|lo+l|lmf?a+o+)$/;
 /** A web address, up to the next space. */
 const LINK = /\b(?:https?:\/\/|www\.)[^\s<>"]+/giu;
 /** "@username", as Telegram allows them; not when glued to a word, like in an e-mail. */

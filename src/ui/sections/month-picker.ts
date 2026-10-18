@@ -1,6 +1,7 @@
 import type { Messages } from '../../i18n';
 import { el, svgEl } from '../dom';
 import { formatInt } from '../format';
+import { pageSignal } from '../page';
 
 /** One entry of the list: a month (`YYYY-MM`) or the whole export, and its message count. */
 export interface MonthOption {
@@ -134,11 +135,15 @@ export class MonthPicker {
         }
       }
     });
-    document.addEventListener('pointerdown', (ev) => {
-      if (!this.popover.hidden && ev.target instanceof Node && !this.wrap.contains(ev.target)) {
-        this.close(false);
-      }
-    });
+    document.addEventListener(
+      'pointerdown',
+      (ev) => {
+        if (!this.popover.hidden && ev.target instanceof Node && !this.wrap.contains(ev.target)) {
+          this.close(false);
+        }
+      },
+      { signal: pageSignal() },
+    );
   }
 
   /** New list of options; `months` is how many months the export has. */

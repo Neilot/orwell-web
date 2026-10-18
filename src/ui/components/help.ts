@@ -1,4 +1,5 @@
 import { el } from '../dom';
+import { pageSignal } from '../page';
 
 let nextId = 0;
 
@@ -45,17 +46,25 @@ export class HelpButton {
       this.pinned = !this.pinned;
       show(this.pinned);
     });
-    document.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Escape' && !this.popover.hidden) {
-        this.pinned = false;
-        show(false);
-      }
-    });
-    document.addEventListener('pointerdown', (ev) => {
-      if (this.pinned && ev.target !== this.button) {
-        this.pinned = false;
-        show(false);
-      }
-    });
+    document.addEventListener(
+      'keydown',
+      (ev) => {
+        if (ev.key === 'Escape' && !this.popover.hidden) {
+          this.pinned = false;
+          show(false);
+        }
+      },
+      { signal: pageSignal() },
+    );
+    document.addEventListener(
+      'pointerdown',
+      (ev) => {
+        if (this.pinned && ev.target !== this.button) {
+          this.pinned = false;
+          show(false);
+        }
+      },
+      { signal: pageSignal() },
+    );
   }
 }

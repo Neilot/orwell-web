@@ -1,7 +1,15 @@
+/** The languages the page is available in. */
+export type Locale = 'es' | 'en';
+
 const HOW_TO_EXPORT =
   'En Telegram Desktop: abre el chat, pulsa ⋮ → Exportar historial del chat, desmarca fotos y videos y elige el formato «JSON legible por máquina».';
 
 export const es = {
+  language: {
+    code: 'es' as Locale,
+    label: 'Idioma',
+    names: { es: 'Español', en: 'English' } as Record<Locale, string>,
+  },
   app: {
     title: 'Orwell',
     tagline: 'Estadísticas de tu grupo de Telegram. El archivo no sale de tu equipo.',
@@ -579,7 +587,7 @@ export const es = {
     podcaster: { title: 'Podcastero', desc: '' },
     voiceFan: { title: 'Fan de los audios', desc: 'notas de voz enviadas' },
     questioner: { title: 'El preguntón', desc: 'de sus mensajes son preguntas' },
-    laugher: { title: 'El que más se ríe', desc: '“jajaja” escritos' },
+    laugher: { title: 'El que más se ríe', desc: 'risas escritas (jaja, jeje, haha…)' },
     alwaysThere: { title: 'Siempre presente', desc: '' },
     longest: { title: 'Mensaje más largo', desc: 'caracteres en un solo mensaje' },
     editor: { title: 'El corrector', desc: 'mensajes editados después de enviarlos' },

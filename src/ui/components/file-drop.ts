@@ -1,4 +1,5 @@
 import { el } from '../dom';
+import { pageSignal } from '../page';
 
 /**
  * Lets a file be dropped anywhere on the page. While one is dragged, `onOver(true)` lets the
@@ -22,30 +23,46 @@ export class FileDrop {
 
     const hasFiles = (ev: DragEvent): boolean =>
       [...(ev.dataTransfer?.types ?? [])].includes('Files');
-    document.addEventListener('dragenter', (ev) => {
-      if (!hasFiles(ev)) return;
-      ev.preventDefault();
-      this.depth++;
-      // The page's own drop zone takes it when there is one; otherwise, the overlay.
-      if (!this.onOver(true)) this.element.hidden = false;
-    });
-    document.addEventListener('dragover', (ev) => {
-      if (!hasFiles(ev)) return;
-      ev.preventDefault();
-      if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
-    });
-    document.addEventListener('dragleave', (ev) => {
-      if (!hasFiles(ev)) return;
-      this.depth = Math.max(0, this.depth - 1);
-      if (this.depth === 0) this.end();
-    });
-    document.addEventListener('drop', (ev) => {
-      if (!hasFiles(ev)) return;
-      ev.preventDefault();
-      this.end();
-      const file = ev.dataTransfer?.files[0];
-      if (file) onFile(file);
-    });
+    document.addEventListener(
+      'dragenter',
+      (ev) => {
+        if (!hasFiles(ev)) return;
+        ev.preventDefault();
+        this.depth++;
+        // The page's own drop zone takes it when there is one; otherwise, the overlay.
+        if (!this.onOver(true)) this.element.hidden = false;
+      },
+      { signal: pageSignal() },
+    );
+    document.addEventListener(
+      'dragover',
+      (ev) => {
+        if (!hasFiles(ev)) return;
+        ev.preventDefault();
+        if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
+      },
+      { signal: pageSignal() },
+    );
+    document.addEventListener(
+      'dragleave',
+      (ev) => {
+        if (!hasFiles(ev)) return;
+        this.depth = Math.max(0, this.depth - 1);
+        if (this.depth === 0) this.end();
+      },
+      { signal: pageSignal() },
+    );
+    document.addEventListener(
+      'drop',
+      (ev) => {
+        if (!hasFiles(ev)) return;
+        ev.preventDefault();
+        this.end();
+        const file = ev.dataTransfer?.files[0];
+        if (file) onFile(file);
+      },
+      { signal: pageSignal() },
+    );
   }
 
   private end(): void {

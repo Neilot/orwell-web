@@ -9,6 +9,7 @@ import type { Tooltip, TooltipRow } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatInt, formatShare } from '../format';
 import { personName } from '../people';
+import { pageSignal } from '../page';
 
 const H = 320;
 const M = { l: 48, r: 48, t: 30 };
@@ -65,9 +66,13 @@ export class GroupLifeSection {
     const head = el('div', 'head');
     head.append(heading.element, legend);
     this.element.append(head, this.lead, this.svg);
-    this.narrow.addEventListener('change', () => {
-      if (this.last) this.render(...this.last);
-    });
+    this.narrow.addEventListener(
+      'change',
+      () => {
+        if (this.last) this.render(...this.last);
+      },
+      { signal: pageSignal() },
+    );
   }
 
   /** `marked`: the highlighted person, whose messages per month are shown, or `null`. */

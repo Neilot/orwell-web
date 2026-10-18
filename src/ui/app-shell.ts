@@ -8,7 +8,7 @@ import {
   type MonthView,
   type PersonView,
 } from '../app';
-import type { Messages } from '../i18n';
+import { LOCALES, type Locale, type Messages } from '../i18n';
 import { FileDrop } from './components/file-drop';
 import { HighlightLabel } from './components/highlight-label';
 import { TabBar } from './components/tab-bar';
@@ -39,6 +39,15 @@ import { WeekdayHeatmapSection } from './sections/weekday-heatmap';
 
 export type Analyze = (file: File) => Promise<Dashboard>;
 
+export interface ShellOptions {
+  /** Asks for the page in another language. */
+  readonly onLocale: (locale: Locale) => void;
+  /** A chat already analysed, shown at once in the given period (after a change of language). */
+  readonly restore?: { readonly dashboard: Dashboard; readonly month: string } | null;
+  /** Told every time the chat or the period on screen changes. */
+  readonly onShown?: (dashboard: Dashboard, month: string) => void;
+}
+
 type TabKey = 'summary' | 'who' | 'when' | 'what';
 
 function eyeIcon(): SVGSVGElement {
@@ -56,7 +65,12 @@ function eyeIcon(): SVGSVGElement {
 }
 
 /** Builds the page: header with month picker and upload, then the dashboard sections. */
-export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze): void {
+export function renderAppShell(
+  root: HTMLElement,
+  t: Messages,
+  analyze: Analyze,
+  options: ShellOptions,
+): void {
   const tooltip = new Tooltip();
 
   // Header, left: brand, group name, subtitle and month picker.
@@ -100,8 +114,25 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   status.id = 'msg';
   status.setAttribute('role', 'status');
 
+  // ES · EN, at the top of the corner.
+  const languages = el('div', 'seg lang');
+  languages.setAttribute('role', 'group');
+  languages.setAttribute('aria-label', t.language.label);
+  for (const code of LOCALES) {
+    const button = el('button', undefined, code.toUpperCase());
+    button.type = 'button';
+    button.lang = code;
+    button.title = t.language.names[code];
+    button.setAttribute('aria-label', t.language.names[code]);
+    button.setAttribute('aria-pressed', String(code === t.language.code));
+    button.addEventListener('click', () => {
+      if (code !== t.language.code) options.onLocale(code);
+    });
+    languages.append(button);
+  }
+
   const upload = el('div', 'upl');
-  upload.append(pick, input, hint, status);
+  upload.append(languages, pick, input, hint, status);
 
   const header = el('header', 'top');
   header.append(brand, upload);
@@ -341,6 +372,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
         )
       : t.header.subtitle(monthName, String(view.year), participants) +
         (view.partial ? t.header.partialMonth(String(view.lastDay)) : '');
+    options.onShown?.(dashboard, month);
     kpis.render(view);
     rhythm.render(view);
     messageKinds.render(view);
@@ -349,12 +381,13 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   }
 
   /** Returns the number of months shown, or 0 when the file had no messages. */
-  function showDashboard(next: Dashboard): number {
+  /** `fresh`: a newly analysed file, which starts on the summary; false when it is restored. */
+  function showDashboard(next: Dashboard, fresh = true, month?: string): number {
     const months = monthsOf(next);
     if (months.length === 0) return 0;
     dashboard = next;
     // A new file starts on the summary, with nobody marked and nobody hidden.
-    tabs.show('summary');
+    if (fresh) tabs.show('summary');
     marked = false;
     scatter.reset();
     // The whole export first, then the months, newest first.
@@ -376,7 +409,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     );
     const latest = months[months.length - 1] ?? '';
     setDashboardVisible(true);
-    showMonth(latest);
+    showMonth(month !== undefined && counts.has(month) ? month : latest);
     return months.length;
   }
 
@@ -403,7 +436,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
         window.scrollTo({ top: 0, behavior: 'auto' });
         revealDashboard(from, pick, [
           ...brand.children,
-          ...[...upload.children].slice(1),
+          ...[...upload.children].filter((child) => child !== pick),
           tabs.element,
           ...[...board.children].flatMap((panel) =>
             panel instanceof HTMLElement && !panel.hidden ? [...panel.children] : [],
@@ -439,4 +472,5 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   });
 
   showEmpty();
+  if (options.restore) showDashboard(options.restore.dashboard, false, options.restore.month);
 }

@@ -10,6 +10,7 @@ import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatInt } from '../format';
 import { communityColor, personName } from '../people';
+import { pageSignal } from '../page';
 
 const RADIUS = 280;
 const COMMUNITIES = [0, 1, 2, 3, 4, 5];
@@ -126,10 +127,14 @@ export class ConnectionsWheelSection {
     this.edgesLayer = root.append('g').attr('fill', 'none');
     this.arcsLayer = root.append('g');
     this.namesLayer = root.append('g');
-    this.narrow.addEventListener('change', () => {
-      delete this.scroll.dataset.c;
-      this.draw();
-    });
+    this.narrow.addEventListener(
+      'change',
+      () => {
+        delete this.scroll.dataset.c;
+        this.draw();
+      },
+      { signal: pageSignal() },
+    );
   }
 
   /** `marked`: the selected person was marked, so their connections stay lit. */

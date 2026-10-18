@@ -12,6 +12,7 @@ import { membershipList, membershipPill } from '../membership';
 import { communityColor, initials, personName, styleAvatar } from '../people';
 import { kindsBar } from './kinds-bar';
 import { PersonPicker } from './person-picker';
+import { pageSignal } from '../page';
 
 /** Partners drawn at most; the list is then trimmed to the height of the left column. */
 const MAX_PARTNERS = 60;
@@ -148,16 +149,24 @@ export class PersonCardSection {
     this.element.append(head, body);
 
     // Column heights change with the layout and once the web fonts are in.
-    this.oneColumn.addEventListener('change', () => {
-      this.fitEgo();
-    });
-    let resizeTimer = 0;
-    addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => {
+    this.oneColumn.addEventListener(
+      'change',
+      () => {
         this.fitEgo();
-      }, 120);
-    });
+      },
+      { signal: pageSignal() },
+    );
+    let resizeTimer = 0;
+    addEventListener(
+      'resize',
+      () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(() => {
+          this.fitEgo();
+        }, 120);
+      },
+      { signal: pageSignal() },
+    );
     void document.fonts.ready.then(() => {
       this.fitEgo();
     });

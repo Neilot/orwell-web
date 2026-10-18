@@ -43,3 +43,22 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  # GitHub keeps every deployment in the repository's history; only the one just published
+  # matters, so the older ones are removed.
+  prune:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+    steps:
+      - name: Keep only the latest deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          old=$(gh api "repos/$REPO/deployments?environment=github-pages&per_page=100" --paginate --jq '.[].id' | tail -n +2)
+          for id in $old; do
+            gh api -X POST "repos/$REPO/deployments/$id/statuses" -f state=inactive > /dev/null
+            gh api -X DELETE "repos/$REPO/deployments/$id"
+          done

@@ -1,5 +1,6 @@
 import type { Messages } from '../../i18n';
 import { el, svgEl } from '../dom';
+import { pageSignal } from '../page';
 
 /** Someone who can be hidden, with the short note shown next to their name. */
 export interface HideCandidate {
@@ -129,11 +130,19 @@ export class HidePicker {
       else if (target.dataset.id !== undefined) this.hidden.delete(target.dataset.id);
       this.onChange();
     });
-    document.addEventListener('pointerdown', (ev) => {
-      if (!this.popover.hidden && ev.target instanceof Node && !this.element.contains(ev.target)) {
-        this.open(false);
-      }
-    });
+    document.addEventListener(
+      'pointerdown',
+      (ev) => {
+        if (
+          !this.popover.hidden &&
+          ev.target instanceof Node &&
+          !this.element.contains(ev.target)
+        ) {
+          this.open(false);
+        }
+      },
+      { signal: pageSignal() },
+    );
     this.element.addEventListener('keydown', (ev) => {
       if (ev.key === 'Escape' && !this.popover.hidden) {
         ev.preventDefault();

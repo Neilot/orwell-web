@@ -1,10 +1,9 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
 import { dayOf, getOrCreate, periodsOf } from './calendar';
-import { words } from './text';
+import { LAUGH, words } from './text';
 
 /** Silence after which the next message counts as starting a conversation. */
 export const CONVERSATION_GAP = 3 * 3600_000;
-const LAUGH = /^(j[aeiou]){2,}j?$/;
 const DAY = 86_400_000;
 
 export interface PersonHabits {
@@ -20,7 +19,7 @@ export interface PersonHabits {
   readonly conversationsStarted: number;
   /** Messages with text that contain a question mark. */
   readonly questions: number;
-  /** Words like "jaja", "jejeje" or "jajaj". */
+  /** Laughs like "jaja", "jejeje", "haha" or "lol". */
   readonly laughs: number;
   /** Their longest message, with when they sent it (the export's wall clock). */
   readonly longest: {
