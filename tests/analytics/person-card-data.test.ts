@@ -36,6 +36,9 @@ describe('PersonHabitsAnalyzer', () => {
       edited: 1,
       questions: 1,
       laughs: 3,
+      // The day as the chat showed it, not the UTC date.
+      firstDay: '2026-04-01',
+      lastDay: '2026-04-05',
     });
     expect(result?.longest?.length).toBe(200);
     expect(result?.longest?.text).toBe('x'.repeat(200));

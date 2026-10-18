@@ -1,5 +1,5 @@
-import type { ChatEvent, EventKind, Participant, Reaction } from '../../core';
-import type { TelegramMessage } from './export-schema';
+import type { ChatEvent, EventKind, MembershipChange, Participant, Reaction } from '../../core';
+import type { TelegramMembershipService, TelegramMessage } from './export-schema';
 
 const UNKNOWN_AUTHOR = 'unknown';
 
@@ -91,5 +91,42 @@ export function mapMessage(m: TelegramMessage): ChatEvent {
     ...(sticker !== undefined && { stickerId: sticker }),
     ...(edited !== undefined && { editedAt: edited }),
     ...(m.duration_seconds !== undefined && { durationSeconds: m.duration_seconds }),
+  };
+}
+
+function membership(s: TelegramMembershipService): MembershipChange | undefined {
+  const names = (s.members ?? []).map((name) => ({ name }));
+  switch (s.action) {
+    case 'join_group_by_link':
+    case 'join_group_by_request':
+      return {
+        change: 'join',
+        via: s.action === 'join_group_by_link' ? 'link' : 'request',
+        who: [{ ...(s.actor_id !== undefined && { id: s.actor_id }), name: s.actor }],
+      };
+    case 'invite_members':
+      return { change: 'join', via: 'added', who: names };
+    case 'remove_members':
+      return { change: 'leave', who: names };
+    default:
+      return undefined;
+  }
+}
+
+/** Maps a service notice about people joining or leaving to a `'service'` event. */
+export function mapMembershipService(s: TelegramMembershipService): ChatEvent | undefined {
+  const change = membership(s);
+  if (!change) return undefined;
+  return {
+    id: String(s.id),
+    // Whoever did it: the person who joined or left, or the one who added or removed them.
+    author: { id: s.actor_id ?? UNKNOWN_AUTHOR, displayName: s.actor },
+    at: Number(s.date_unixtime) * 1000,
+    localTime: s.date,
+    kind: 'service',
+    text: '',
+    mentions: [],
+    reactions: [],
+    membership: change,
   };
 }

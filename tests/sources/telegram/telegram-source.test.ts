@@ -184,6 +184,52 @@ describe('TelegramSource', () => {
     expect(person?.author.isChannel).toBeUndefined();
   });
 
+  it('keeps the notices of people joining and leaving, and skips other service entries', async () => {
+    const at = { date: '2026-04-01T09:00:00', date_unixtime: '1775034000' };
+    const messages = [
+      {
+        ...at,
+        id: 1,
+        type: 'service',
+        action: 'join_group_by_link',
+        actor: 'Ana',
+        actor_id: 'user101',
+        inviter: 'Group',
+      },
+      {
+        ...at,
+        id: 2,
+        type: 'service',
+        action: 'invite_members',
+        actor: 'Ana',
+        actor_id: 'user101',
+        members: ['Beto'],
+      },
+      { ...at, id: 3, type: 'service', action: 'pin_message', actor: 'Ana', actor_id: 'user101' },
+      { ...at, id: 4, type: 'message', from: 'Ana', from_id: 'user101', text: 'hola' },
+      {
+        ...at,
+        id: 5,
+        type: 'service',
+        action: 'remove_members',
+        actor: 'Ana',
+        actor_id: 'user101',
+        members: ['Beto'],
+      },
+    ];
+    const chat = await source.open(inputFile('result.json', exportWith({ messages })));
+    const events = await collect(chat.events);
+    expect(chat.info.skippedEntries).toBe(0);
+    expect(events.map((e) => [e.id, e.kind, e.membership?.change, e.membership?.via])).toEqual([
+      ['1', 'service', 'join', 'link'],
+      ['2', 'service', 'join', 'added'],
+      ['4', 'text', undefined, undefined],
+      ['5', 'service', 'leave', undefined],
+    ]);
+    expect(events[0]?.membership?.who).toEqual([{ id: 'user101', name: 'Ana' }]);
+    expect(events[3]?.membership?.who).toEqual([{ name: 'Beto' }]);
+  });
+
   it('accepts personal chats', async () => {
     const chat = await source.open(
       inputFile('result.json', exportWith({ type: 'personal_chat', name: 'Ana Prueba' })),

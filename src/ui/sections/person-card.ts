@@ -7,6 +7,8 @@ import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatDecimal, formatInt, formatPercent, pad2 } from '../format';
 import { durationText } from '../duration';
+import { dayText } from '../dates';
+import { membershipList, membershipPill } from '../membership';
 import { communityColor, initials, personName, styleAvatar } from '../people';
 import { kindsBar } from './kinds-bar';
 import { PersonPicker } from './person-picker';
@@ -204,6 +206,8 @@ export class PersonCardSection {
             formatPercent(person.messages / view.totals.messages),
           )
         : '');
+    const pill = membershipPill(view.membership[person.id] ?? [], t);
+    if (pill) this.meta.append(pill);
   }
 
   private compare(value: number, average: number): HTMLSpanElement {
@@ -479,15 +483,8 @@ export class PersonCardSection {
     const { t } = this;
     const tf = t.person.facts;
     const habits = view.details(p.id).habits;
-    const date = (ms: number | undefined): string => {
-      if (ms === undefined) return '—';
-      const d = new Date(ms);
-      return t.person.date(
-        String(d.getUTCDate()),
-        t.dates.monthsShort[d.getUTCMonth()] ?? '',
-        String(d.getUTCFullYear()),
-      );
-    };
+    // The day as the chat showed it, not the UTC date.
+    const date = (day: string | undefined): string => (day ? dayText(day, t) : '—');
     const longest = habits?.longest;
     let longestValue: Node | string = '—';
     if (longest?.length) {
@@ -519,9 +516,13 @@ export class PersonCardSection {
       value.append(quote, more, ' ', count);
       longestValue = value;
     }
+    const joinsAndLeaves = view.membership[p.id] ?? [];
     const facts: [string, Node | string][] = [
-      [tf.first, date(habits?.first)],
-      [tf.last, date(habits?.last)],
+      ...(joinsAndLeaves.length
+        ? [[t.membership.title, membershipList(joinsAndLeaves, t)] as [string, Node]]
+        : []),
+      [tf.first, date(habits?.firstDay)],
+      [tf.last, date(habits?.lastDay)],
       [tf.favouriteHour, p.messages ? t.dates.hour(pad2(maxIndex(p.hours))) : '—'],
       [tf.favouriteDay, p.messages ? (t.dates.weekdays[maxIndex(p.weekdays)] ?? '—') : '—'],
       [

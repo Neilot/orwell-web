@@ -34,7 +34,7 @@ export class Tooltip {
 
   /** Fills and shows the box next to the pointer, flipping it when it would overflow. */
   show(
-    ev: PointerEvent,
+    ev: Pick<MouseEvent, 'clientX' | 'clientY'>,
     title: string,
     rows: readonly TooltipRow[],
     notes: TooltipNotes = {},

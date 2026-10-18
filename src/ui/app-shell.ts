@@ -26,6 +26,7 @@ import { WordsScatterSection } from './sections/words-scatter';
 import { GroupRhythmSection } from './sections/group-rhythm';
 import { HourHeatmapSection } from './sections/hour-heatmap';
 import { KpisSection } from './sections/kpis';
+import { MessageKindsSection } from './sections/message-kinds';
 import { MonthPicker } from './sections/month-picker';
 import { lockIcon, uploadIcon, WelcomeSection } from './sections/welcome';
 import { revealDashboard } from './reveal';
@@ -143,6 +144,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
   const hours = new HourHeatmapSection(t, tooltip, select);
   const weekdays = new WeekdayHeatmapSection(t, tooltip, select);
   const rhythm = new GroupRhythmSection(t, tooltip);
+  const messageKinds = new MessageKindsSection(t, tooltip);
   const scatter = new WordsScatterSection(t, tooltip, select);
   const wordCloud = new WordCloudSection(t, tooltip);
   const stickers = new StickersSection(t, tooltip, select);
@@ -193,6 +195,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
       'what',
       [
         [wordCloud.element, true],
+        [messageKinds.element, true],
         [stickers.element, true],
         [emojis.element, true],
       ],
@@ -314,6 +317,7 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
         (view.partial ? t.header.partialMonth(String(view.lastDay)) : '');
     kpis.render(view);
     rhythm.render(view);
+    messageKinds.render(view);
     awards.render(view);
     if (selected) selectPerson(selected, false);
   }
@@ -323,8 +327,9 @@ export function renderAppShell(root: HTMLElement, t: Messages, analyze: Analyze)
     const months = monthsOf(next);
     if (months.length === 0) return 0;
     dashboard = next;
-    // A new file starts with nobody marked.
+    // A new file starts with nobody marked and nobody hidden.
     marked = false;
+    scatter.reset();
     // The whole export first, then the months, newest first.
     const counts = messagesPerPeriod(next);
     monthPicker.setOptions(

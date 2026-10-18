@@ -11,6 +11,7 @@ export {
   type MonthInteractions,
   type MonthParticipant,
 } from './interactions';
+export { Membership, type MembershipEvent, type MembershipResult } from './membership';
 export { MESSAGE_KINDS, type MessageKind } from './message-kind';
 export { MessagesPerDay, type MessagesPerDayResult } from './messages-per-day';
 export {

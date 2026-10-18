@@ -27,6 +27,15 @@ export interface Participant {
   readonly isChannel?: boolean;
 }
 
+/** Someone joining or leaving the group, from the source's service notices. */
+export interface MembershipChange {
+  readonly change: 'join' | 'leave';
+  /** How they joined: with an invite link, by request, or added by someone (the event's author). */
+  readonly via?: 'link' | 'request' | 'added';
+  /** Who joined or left. Sources that only give names leave `id` out. */
+  readonly who: readonly { readonly id?: ParticipantId; readonly name: string | null }[];
+}
+
 export interface Reaction {
   /** The emoji, or `null` for a reaction without one (a custom emoji, for instance). */
   readonly emoji: string | null;
@@ -59,6 +68,8 @@ export interface ChatEvent {
   /** People mentioned by a link to their account, named as the text shows them. */
   readonly mentions: readonly Participant[];
   readonly reactions: readonly Reaction[];
+  /** On a `'service'` event, when it records people joining or leaving. */
+  readonly membership?: MembershipChange;
   /** Emoji attached to a sticker, when `kind` is `'sticker'`. */
   readonly stickerEmoji?: string;
   /** Identifies the sticker itself (e.g. its file), when the source exposes it. */

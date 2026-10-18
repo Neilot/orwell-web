@@ -115,6 +115,7 @@ const dashboard: Dashboard = {
     },
   },
   stickersPerMonth: {},
+  membership: {},
 };
 
 describe('monthsOf', () => {

@@ -77,5 +77,28 @@ export const MessageSchema = v.looseObject({
 
 export type TelegramMessage = v.InferOutput<typeof MessageSchema>;
 
+/** Service actions that record people joining or leaving the group. */
+export const MEMBERSHIP_ACTIONS: ReadonlySet<string> = new Set([
+  'join_group_by_link',
+  'join_group_by_request',
+  'invite_members',
+  'remove_members',
+]);
+
+/** One entry of `messages` with `type: "service"` about people joining or leaving. */
+export const MembershipServiceSchema = v.looseObject({
+  id: v.number(),
+  type: v.literal('service'),
+  date: v.pipe(v.string(), v.regex(LOCAL_DATE_TIME)),
+  date_unixtime: v.pipe(v.string(), v.regex(/^\d+$/)),
+  action: v.string(),
+  actor: v.fallback(v.optional(v.nullable(v.string()), null), null),
+  actor_id: v.fallback(v.optional(v.string()), undefined),
+  // Invitations and removals name the people involved, without their ids.
+  members: v.fallback(v.optional(v.array(v.nullable(v.string()))), []),
+});
+
+export type TelegramMembershipService = v.InferOutput<typeof MembershipServiceSchema>;
+
 /** Chat types that are broadcast channels rather than conversations. */
 export const CHANNEL_TYPES: ReadonlySet<string> = new Set(['public_channel', 'private_channel']);

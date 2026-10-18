@@ -107,6 +107,9 @@ export interface PersonHabits {
   readonly laughs: number;
   /** Their longest message and its length. */
   readonly longest: { readonly length: number; readonly text: string } | null;
+  /** Local days of their first and last message, `YYYY-MM-DD`. */
+  readonly firstDay: string;
+  readonly lastDay: string;
 }
 
 /** `[item, count]`, most frequent first. */
@@ -158,6 +161,17 @@ export interface MonthStickers {
   readonly perDay: Readonly<Record<string, number>>;
 }
 
+/** One time someone joined or left the group. */
+export interface MembershipEvent {
+  /** Local day, `YYYY-MM-DD`. */
+  readonly day: string;
+  readonly type: 'join' | 'leave';
+  readonly via?: 'link' | 'request' | 'invited' | 'self';
+  /** Who added or removed them, by name, when it was someone else. */
+  readonly by: string | null;
+  readonly removed?: boolean;
+}
+
 /** What the page needs to draw the dashboard. Plain data, so it survives `postMessage`. */
 export interface Dashboard {
   /** Group name from the export, or `null` when it has none. */
@@ -178,6 +192,8 @@ export interface Dashboard {
   readonly habitsPerMonth: Readonly<Record<string, Readonly<Record<string, PersonHabits>>>>;
   readonly vocabularyPerMonth: Readonly<Record<string, MonthVocabulary>>;
   readonly stickersPerMonth: Readonly<Record<string, MonthStickers>>;
+  /** Per person, when they joined or left the group, over the whole export. */
+  readonly membership: Readonly<Record<string, readonly MembershipEvent[]>>;
 }
 
 export type AnalysisErrorCode = OrwellErrorCode | 'unknown';

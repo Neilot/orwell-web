@@ -5,6 +5,7 @@ import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import type { Tooltip } from '../components/tooltip';
 import { HelpButton } from '../components/help';
+import { HidePicker } from '../components/hide-picker';
 import { el, svgEl } from '../dom';
 import { formatDecimal, formatInt } from '../format';
 import { communityColor, personName } from '../people';
@@ -27,7 +28,8 @@ interface Point {
 /**
  * "Palabras totales vs. palabras por mensaje": who writes a lot, and who writes long. Channels
  * and bots post few, long messages and squash everyone else, so they are left out unless the
- * switch brings them back; the scales always follow whoever is shown.
+ * switch brings them back, and anyone can be hidden by hand; the scales always follow whoever
+ * is shown. Hiding only affects this chart.
  */
 export class WordsScatterSection {
   readonly element = el('section', 'card');
@@ -35,6 +37,7 @@ export class WordsScatterSection {
   private readonly toggle = el('button', 'tgl');
   private readonly toggleLabel = el('span');
   private showOdd = false;
+  private readonly hide: HidePicker;
   private last: { view: MonthView; selected: string | null } | null = null;
 
   constructor(
@@ -54,14 +57,57 @@ export class WordsScatterSection {
     const knob = el('i');
     knob.setAttribute('aria-hidden', 'true');
     this.toggle.append(knob, this.toggleLabel);
-    this.toggle.addEventListener('click', () => {
-      this.showOdd = !this.showOdd;
+    const redraw = (): void => {
       if (this.last) this.render(this.last.view, this.last.selected);
+    };
+    this.toggle.addEventListener('click', (ev) => {
+      this.showOdd = !this.showOdd;
+      redraw();
+      this.explainOdd(ev);
     });
+    // Says which channels and bots the switch hides or shows.
+    for (const type of ['pointerenter', 'pointermove'] as const) {
+      this.toggle.addEventListener(type, (ev) => {
+        this.explainOdd(ev);
+      });
+    }
+    this.toggle.addEventListener('focus', () => {
+      const box = this.toggle.getBoundingClientRect();
+      this.explainOdd({ clientX: box.left, clientY: box.bottom });
+    });
+    for (const type of ['pointerleave', 'blur'] as const) {
+      this.toggle.addEventListener(type, () => {
+        this.tooltip.hide();
+      });
+    }
+    this.hide = new HidePicker(t, redraw);
+    const controls = el('div', 'hgroup2');
+    controls.append(this.toggle, this.hide.element);
     const head = el('div', 'head');
-    head.append(heading.element, this.toggle);
+    head.append(heading.element, controls);
     this.svg.setAttribute('aria-label', ts.chartLabel);
-    this.element.append(head, this.svg);
+    this.element.append(head, this.svg, this.hide.note);
+  }
+
+  /** Starts over with nobody hidden by hand, as for a new file. */
+  reset(): void {
+    this.hide.clear();
+    this.showOdd = false;
+  }
+
+  private explainOdd(at: Pick<MouseEvent, 'clientX' | 'clientY'>): void {
+    const { t, last } = this;
+    if (!last) return;
+    const odd = last.view.people.filter(
+      (p) => p.textMessages >= MIN_TEXT_MESSAGES && p.kind !== 'person',
+    );
+    if (odd.length === 0) return;
+    const ts = t.scatter;
+    this.tooltip.show(
+      at,
+      this.showOdd ? ts.oddShown : ts.oddHidden,
+      odd.map((p) => [personName(p, t), p.kind === 'bot' ? ts.bot : ts.channel]),
+    );
   }
 
   render(view: MonthView, selected: string | null): void {
@@ -75,8 +121,23 @@ export class WordsScatterSection {
     this.toggle.hidden = odd === 0;
     this.toggle.setAttribute('aria-pressed', String(this.showOdd));
     this.toggleLabel.textContent = ts.showOdd(formatInt(odd));
-    const points: Point[] = writers
+    const candidates = writers
       .filter((p) => this.showOdd || p.kind === 'person')
+      .sort((a, b) => b.words - a.words);
+    this.hide.update(
+      candidates.map((p) => ({
+        id: p.id,
+        name: personName(p, t),
+        note:
+          p.kind === 'bot'
+            ? ts.bot
+            : p.kind === 'channel'
+              ? ts.channel
+              : ts.words(formatInt(p.words)),
+      })),
+    );
+    const points: Point[] = candidates
+      .filter((p) => !this.hide.hidden.has(p.id))
       .map((p) => ({
         person: p,
         x: p.words,

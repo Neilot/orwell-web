@@ -7,12 +7,15 @@ import {
   type InputFile,
   type OpenedChat,
 } from '../../core';
-import { mapMessage } from './event-mapper';
+import { mapMembershipService, mapMessage } from './event-mapper';
 import {
   AccountExportSchema,
   CHANNEL_TYPES,
   ChatExportSchema,
+  MEMBERSHIP_ACTIONS,
+  MembershipServiceSchema,
   MessageSchema,
+  type TelegramMembershipService,
   type TelegramMessage,
 } from './export-schema';
 import { detectKind } from './file-kind';
@@ -87,16 +90,26 @@ function readExport(root: unknown): OpenedChat {
     throw new OrwellError('unsupported-chat-type', `Chats of type ${type} are not supported`);
   }
 
-  const valid: TelegramMessage[] = [];
+  const valid: (TelegramMessage | TelegramMembershipService)[] = [];
   let candidates = 0;
   for (const entry of messages) {
-    // Service entries (joins, pins, title changes…) and unknown entry types are not messages.
+    // Service entries are kept only when they record people joining or leaving; the rest
+    // (pins, title changes…) and unknown entry types are not messages.
     if (
       typeof entry === 'object' &&
       entry !== null &&
       'type' in entry &&
       entry.type !== 'message'
     ) {
+      if (
+        entry.type === 'service' &&
+        'action' in entry &&
+        typeof entry.action === 'string' &&
+        MEMBERSHIP_ACTIONS.has(entry.action)
+      ) {
+        const notice = v.safeParse(MembershipServiceSchema, entry);
+        if (notice.success) valid.push(notice.output);
+      }
       continue;
     }
     candidates++;
@@ -104,15 +117,28 @@ function readExport(root: unknown): OpenedChat {
     if (message.success) valid.push(message.output);
   }
   if (candidates === 0) throw new OrwellError('empty-chat', 'The chat has no messages');
-  if (valid.length === 0) throw new InvalidExportError('No message in the export could be read');
+  if (!valid.some((entry) => entry.type === 'message')) {
+    throw new InvalidExportError('No message in the export could be read');
+  }
 
   return {
-    info: { title: name, skippedEntries: candidates - valid.length },
+    info: {
+      title: name,
+      skippedEntries: candidates - valid.filter((entry) => entry.type === 'message').length,
+    },
     events: mapAll(valid),
   };
 }
 
 /** Maps lazily, so only one neutral event per message exists at a time. */
-function* mapAll(messages: readonly TelegramMessage[]): Generator<ChatEvent> {
-  for (const message of messages) yield mapMessage(message);
+function* mapAll(
+  entries: readonly (TelegramMessage | TelegramMembershipService)[],
+): Generator<ChatEvent> {
+  for (const entry of entries) {
+    if (entry.type === 'message') yield mapMessage(entry);
+    else {
+      const event = mapMembershipService(entry);
+      if (event) yield event;
+    }
+  }
 }

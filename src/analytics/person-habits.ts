@@ -24,6 +24,9 @@ export interface PersonHabits {
   readonly laughs: number;
   /** Their longest message. */
   readonly longest: { readonly length: number; readonly text: string } | null;
+  /** Local days of their first and last message, `YYYY-MM-DD`. */
+  readonly firstDay: string;
+  readonly lastDay: string;
 }
 
 /** Per month (`YYYY-MM`) and person. */
@@ -33,6 +36,8 @@ interface HabitsState {
   readonly days: Set<string>;
   first: number;
   last: number;
+  firstDay: string;
+  lastDay: string;
   edited: number;
   conversationsStarted: number;
   questions: number;
@@ -71,6 +76,8 @@ export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
       days: new Set<string>(),
       first: event.at,
       last: event.at,
+      firstDay: dayOf(event.localTime),
+      lastDay: dayOf(event.localTime),
       edited: 0,
       conversationsStarted: 0,
       questions: 0,
@@ -78,8 +85,14 @@ export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
       longest: null,
     }));
     p.days.add(dayOf(event.localTime));
-    p.first = Math.min(p.first, event.at);
-    p.last = Math.max(p.last, event.at);
+    if (event.at < p.first) {
+      p.first = event.at;
+      p.firstDay = dayOf(event.localTime);
+    }
+    if (event.at > p.last) {
+      p.last = event.at;
+      p.lastDay = dayOf(event.localTime);
+    }
     if (event.editedAt !== undefined) p.edited++;
 
     // Gaps are measured within the month, in file order.
@@ -108,6 +121,8 @@ export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
               streak: streak(p.days),
               first: p.first,
               last: p.last,
+              firstDay: p.firstDay,
+              lastDay: p.lastDay,
               edited: p.edited,
               conversationsStarted: p.conversationsStarted,
               questions: p.questions,

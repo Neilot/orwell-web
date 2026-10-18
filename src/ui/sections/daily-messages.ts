@@ -9,6 +9,7 @@ import { HelpButton } from '../components/help';
 import type { Tooltip, TooltipRow } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatDecimal, formatInt, formatShare } from '../format';
+import { membershipVerb } from '../membership';
 import { personName } from '../people';
 
 interface Day extends PlacedDay {
@@ -167,6 +168,45 @@ export class DailyMessagesSection {
         .style('pointer-events', 'none');
     }
 
+    // The highlighted person's joins and leaves, as flags; close ones go one row lower.
+    const joinsAndLeaves = marked ? (view.membership[marked.id] ?? []) : [];
+    const byDay = new Map(all.map((d) => [d.key, d]));
+    const flags = s.append('g').attr('pointer-events', 'none');
+    const rowEnds: number[] = [];
+    joinsAndLeaves.forEach((e, k) => {
+      const d = byDay.get(e.day);
+      if (!d) return;
+      const verb = membershipVerb(joinsAndLeaves, k, t);
+      const color = e.type === 'join' ? 'var(--good-ink)' : 'var(--in-ink)';
+      const fx = cx(d);
+      const width = verb.length * 7 + 10;
+      let row = rowEnds.findIndex((end) => end < fx - width / 2);
+      if (row < 0) row = rowEnds.push(0) - 1;
+      rowEnds[row] = fx + width / 2;
+      const ly = M.t - 1 + row * 14;
+      flags
+        .append('line')
+        .attr('x1', fx)
+        .attr('x2', fx)
+        .attr('y1', ly + 4)
+        .attr('y2', H - M.b)
+        .style('stroke', color)
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', '4 3');
+      flags
+        .append('text')
+        .attr('x', fx)
+        .attr('y', ly)
+        .attr('text-anchor', fx > W - 60 ? 'end' : fx < 60 ? 'start' : 'middle')
+        .attr('font-size', 11.5)
+        .attr('font-weight', 700)
+        .style('fill', color)
+        .style('paint-order', 'stroke')
+        .style('stroke', 'var(--panel)')
+        .attr('stroke-width', 3)
+        .text(verb);
+    });
+
     const averaged = all.filter((d): d is AveragedDay => d.avg !== null);
     const path = line<AveragedDay>()
       .x(cx)
@@ -212,7 +252,12 @@ export class DailyMessagesSection {
       const title = whole
         ? t.daily.tipTitleWholeFile(weekday, String(d.day), month, String(d.year))
         : t.daily.tipTitle(weekday, String(d.day), month);
-      tooltip.show(ev, title, rows);
+      const notes = joinsAndLeaves.flatMap((e, k) =>
+        marked && e.day === d.key
+          ? [t.membership.thatDay(personName(marked, t), membershipVerb(joinsAndLeaves, k, t))]
+          : [],
+      );
+      tooltip.show(ev, title, rows, notes.length ? { footer: notes.join(' · ') } : {});
     };
 
     s.append('g')

@@ -44,6 +44,8 @@ const noHabits: PersonHabits = {
   questions: 0,
   laughs: 0,
   longest: null,
+  firstDay: '2026-01-01',
+  lastDay: '2026-01-01',
 };
 
 function view(

@@ -10,6 +10,7 @@ import {
   type PersonMonthActivity,
   type GroupVocabulary,
   type PersonVocabulary,
+  type MembershipEvent,
   type MonthStickers,
   type Ranked,
 } from './worker-protocol';
@@ -112,6 +113,8 @@ export interface MonthView {
   readonly vocabulary: GroupVocabulary;
   readonly stickers: Omit<MonthStickers, 'people'>;
   readonly graph: GraphView;
+  /** Per person, when they joined or left the group (whole export, not only this period). */
+  readonly membership: Readonly<Record<string, readonly MembershipEvent[]>>;
   details(id: string): PersonDetails;
   /** The previous month in the export, for comparisons, or `null` for the first one. */
   readonly previous: {
@@ -343,6 +346,7 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
       perDay: dashboard.stickersPerMonth[month]?.perDay ?? {},
     },
     graph: graphView(dashboard, month, everyone),
+    membership: dashboard.membership,
     details: (id) => ({
       habits: dashboard.habitsPerMonth[month]?.[id] ?? null,
       vocabulary: dashboard.vocabularyPerMonth[month]?.people[id] ?? { words: [], emojis: [] },
