@@ -45,9 +45,10 @@ export interface MonthParticipant {
   /** Reactions they put on others' messages, by emoji ("★" for custom emoji). */
   readonly reactionEmojis: Readonly<Record<string, number>>;
   /**
-   * The export does not say who is a bot, so it is inferred: a name ending in "bot", someone in
-   * the chat sending it a command (/faq@furmeets_bot makes "FurMeets" a bot), or answering
-   * commands regularly (at least 3 replies, 10 % of their messages).
+   * The export does not say who is a bot, so it is inferred: someone in the chat sending it a
+   * command (/faq@furmeets_bot makes "FurMeets" a bot), or answering commands regularly (at
+   * least 3 replies, 10 % of their messages). A name ending in "bot" is not enough: people can
+   * be called that.
    */
   readonly kind: ParticipantKind;
 }
@@ -216,9 +217,7 @@ function kindOf(
   const answersCommands =
     replies >= BOT_MIN_COMMAND_REPLIES &&
     replies >= (state?.messages ?? 0) * BOT_COMMAND_REPLY_SHARE;
-  return /bot$/i.test(name.trim()) || botNames.has(plain(name)) || answersCommands
-    ? 'bot'
-    : 'person';
+  return botNames.has(plain(name)) || answersCommands ? 'bot' : 'person';
 }
 
 /**

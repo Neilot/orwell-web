@@ -407,7 +407,7 @@ export const es = {
         'Cuanto más a la derecha, más palabras escribió en total. Cuanto más arriba, más largos son sus mensajes.',
         'La línea punteada es el promedio del grupo. Solo salen quienes escribieron al menos 5 mensajes con texto.',
         'Los canales y los bots publican mensajes largos o automáticos y deforman la gráfica, así que no se muestran. Para verlos, activa «Mostrar canales y bots».',
-        'Se considera bot a quien tiene un nombre que termina en «bot», a quien alguien le mandó un comando (como /faq@nombre_bot) o a quien suele contestar comandos.',
+        'Se considera bot a quien alguien le mandó un comando con su nombre (como /faq@nombre_bot) o a quien suele contestar comandos. Un nombre que termina en «bot» no basta, porque una persona también puede llamarse así.',
       ],
     },
     chartLabel: 'Dispersión de palabras totales contra palabras por mensaje',

@@ -94,7 +94,8 @@ describe('detectCommunities', () => {
     const analyzer = new Interactions();
     const ship = { id: 'u7', displayName: 'SHIPPERING' };
     const news = { id: 'channel9', displayName: 'Anuncios', isChannel: true };
-    const helper = { id: 'u8', displayName: 'GroupHelpBot' };
+    // A person can be called this: a name alone does not make a bot.
+    const helper = { id: 'u8', displayName: 'Robot' };
     const answerer = { id: 'u9', displayName: 'Respondón' };
     let id = 0;
     const say = (author: Participant, extra: Partial<ChatEvent> = {}) => {
@@ -113,7 +114,7 @@ describe('detectCommunities', () => {
     const kinds = new Map(analyzer.result()['2026-04']?.people.map((p) => [p.name, p.kind]));
     expect(Object.fromEntries(kinds)).toEqual({
       Anuncios: 'channel',
-      GroupHelpBot: 'bot',
+      Robot: 'person',
       Ana: 'person',
       SHIPPERING: 'bot',
       Beto: 'person',
