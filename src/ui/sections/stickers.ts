@@ -1,7 +1,7 @@
 import { max } from 'd3-array';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { select } from 'd3-selection';
-import type { MonthView, PersonView } from '../../app';
+import { UNKNOWN_STICKER, type MonthView, type PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { drawDayAxis, placeDays } from '../charts/day-axis';
 import { HelpButton } from '../components/help';
@@ -134,6 +134,9 @@ export class StickersSection {
         return tile;
       }),
     );
+    if (favourite?.emoji === UNKNOWN_STICKER) {
+      this.kpis.children[2]?.setAttribute('title', ts.unknown);
+    }
   }
 
   private drawWho(view: MonthView): void {
@@ -197,7 +200,8 @@ export class StickersSection {
         }
         const row = el('div', 'row');
         row.style.gridTemplateColumns = `30px minmax(0,1fr) ${marked ? '104px' : '56px'}`;
-        row.title = t.stickers.fan(names.get(sticker.fan) ?? '', formatInt(sticker.fanCount));
+        const fan = t.stickers.fan(names.get(sticker.fan) ?? '', formatInt(sticker.fanCount));
+        row.title = sticker.emoji === UNKNOWN_STICKER ? `${t.stickers.unknown} · ${fan}` : fan;
         const own = marked ? (sticker.people[marked.id] ?? 0) : 0;
         row.append(
           emoji,

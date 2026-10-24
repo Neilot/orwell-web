@@ -569,6 +569,7 @@ export const en: Messages = {
       `${weekday}, ${month} ${day}`,
     tipStickers: 'Stickers',
     tipShare: 'Of the day’s messages',
+    unknown: 'Unknown sticker',
   },
   awards: {
     title: 'The group awards',

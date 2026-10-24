@@ -15,5 +15,5 @@ export {
   type PersonDetails,
   type PersonView,
 } from './month-view';
-export { MESSAGE_KINDS, WHOLE_FILE } from './worker-protocol';
+export { MESSAGE_KINDS, UNKNOWN_STICKER, WHOLE_FILE } from './worker-protocol';
 export type * from './worker-protocol';

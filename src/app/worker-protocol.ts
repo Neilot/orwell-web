@@ -6,6 +6,9 @@ import type { OrwellErrorCode } from '../core';
  */
 export const WHOLE_FILE = 'all';
 
+/** Stands for a sticker the export gives no emoji for; mirrors the analytics' own constant. */
+export const UNKNOWN_STICKER = '🏷️';
+
 /** Message types shown in the dashboard, in display order. */
 export const MESSAGE_KINDS = [
   'text',

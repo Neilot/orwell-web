@@ -565,6 +565,7 @@ export const es = {
       `${weekday} ${day} de ${month}`,
     tipStickers: 'Stickers',
     tipShare: 'De los mensajes del día',
+    unknown: 'Sticker desconocido',
   },
   awards: {
     title: 'Los premios del grupo',

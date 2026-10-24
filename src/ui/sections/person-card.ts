@@ -1,7 +1,7 @@
 import { max, mean, range, sum } from 'd3-array';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { select } from 'd3-selection';
-import { maxIndex, type MonthView, type PersonView } from '../../app';
+import { maxIndex, UNKNOWN_STICKER, type MonthView, type PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
@@ -555,7 +555,14 @@ export class PersonCardSection {
       note.style.fontSize = '13px';
       note.style.color = 'var(--fg2)';
       note.style.alignSelf = 'center';
-      this.stickerChips.replaceChildren(...stickers.map(([e, c]) => chip(e, c, true)), note);
+      this.stickerChips.replaceChildren(
+        ...stickers.map(([e, c]) => {
+          const sticker = chip(e, c, true);
+          if (e === UNKNOWN_STICKER) sticker.title = t.stickers.unknown;
+          return sticker;
+        }),
+        note,
+      );
     } else {
       this.stickerChips.replaceChildren(muted(t.person.noStickers));
     }
