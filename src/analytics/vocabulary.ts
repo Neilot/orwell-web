@@ -1,6 +1,6 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
 import { getOrCreate, periodsOf } from './calendar';
-import { EMOJI, laughOf, words } from './text';
+import { EMOJI, words } from './text';
 
 /** Spanish and English words too common to say anything about a person. */
 export const STOP_WORDS: ReadonlySet<string> = new Set(
@@ -17,7 +17,7 @@ export const TOP_EMOJIS = 10;
 export type Ranked = readonly (readonly [string, number])[];
 
 export interface PersonVocabulary {
-  /** Meaningful words: each laugh counts under its family's word ("jajaja", "haha", "lol"…); stop words, numbers, links and words under three letters are left out. */
+  /** Meaningful words, as written: stop words, numbers, links and words under three letters are left out. */
   readonly words: Ranked;
   /** Emojis written in the text (reactions and stickers aside). */
   readonly emojis: Ranked;
@@ -80,12 +80,9 @@ export class Vocabulary implements Analyzer<VocabularyResult> {
       words: new Map<string, number>(),
       emojis: new Map<string, number>(),
     }));
-    for (const written of words(event.text)) {
-      // A laugh counts under its family's word, even a short one like "xd".
-      const laugh = laughOf(written);
-      const word = laugh ?? written;
+    for (const word of words(event.text)) {
       if (
-        (!laugh && word.length < 3) ||
+        word.length < 3 ||
         STOP_WORDS.has(word) ||
         /^\d+$/.test(word) ||
         word.startsWith('http')

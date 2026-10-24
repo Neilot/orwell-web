@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { laughOf } from '../../src/analytics/text';
 import { en } from '../../src/i18n/en';
 import { es } from '../../src/i18n/es';
 import { formatInt, formatPercent, setNumberLocale } from '../../src/ui/format';
@@ -43,20 +42,5 @@ describe('number formats', () => {
     expect([formatInt(12345), formatPercent(0.45)]).toEqual(['12,345', '45%']);
     setNumberLocale('es');
     expect([formatInt(12345), formatPercent(0.45)]).toEqual(['12.345', '45 %']);
-  });
-});
-
-describe('laughs', () => {
-  it('count under the word of their own family, in Spanish and English', () => {
-    expect(
-      ['jaja', 'jejeje', 'haha', 'hehehe', 'ahaha', 'loool', 'lmfaooo', 'xddd'].map(laughOf),
-    ).toEqual(['jajaja', 'jajaja', 'haha', 'haha', 'haha', 'lol', 'lmao', 'xd']);
-    expect(['hola', 'jefe', 'hash', 'logo', 'xbox'].map(laughOf)).toEqual([
-      null,
-      null,
-      null,
-      null,
-      null,
-    ]);
   });
 });

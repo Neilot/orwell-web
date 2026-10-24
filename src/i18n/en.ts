@@ -585,7 +585,6 @@ export const en: Messages = {
     podcaster: { title: 'Podcaster', desc: '' },
     voiceFan: { title: 'Voice note fan', desc: 'voice notes sent' },
     questioner: { title: 'The questioner', desc: 'of their messages are questions' },
-    laugher: { title: 'Laughs the most', desc: 'laughs written (jaja, haha, lol…)' },
     alwaysThere: { title: 'Always there', desc: '' },
     longest: { title: 'Longest message', desc: 'characters in a single message' },
     editor: { title: 'The editor', desc: 'messages edited after sending' },

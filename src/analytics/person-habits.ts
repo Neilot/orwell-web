@@ -1,6 +1,5 @@
 import type { Analyzer, ChatEvent, ParticipantId } from '../core';
 import { dayOf, getOrCreate, periodsOf } from './calendar';
-import { laughOf, words } from './text';
 
 /** Silence after which the next message counts as starting a conversation. */
 export const CONVERSATION_GAP = 3 * 3600_000;
@@ -19,8 +18,6 @@ export interface PersonHabits {
   readonly conversationsStarted: number;
   /** Messages with text that contain a question mark. */
   readonly questions: number;
-  /** Laughs like "jaja", "jejeje", "haha", "lol" or "xd". */
-  readonly laughs: number;
   /** Their longest message, with when they sent it (the export's wall clock). */
   readonly longest: {
     readonly length: number;
@@ -44,7 +41,6 @@ interface HabitsState {
   edited: number;
   conversationsStarted: number;
   questions: number;
-  laughs: number;
   longest: { length: number; text: string; localTime: string } | null;
 }
 
@@ -61,7 +57,7 @@ function streak(days: Iterable<string>): number {
   return best;
 }
 
-/** How and when each person writes: active days, streaks, questions, laughs, edits… */
+/** How and when each person writes: active days, streaks, questions, edits… */
 export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
   readonly id = 'person-habits';
   private readonly months = new Map<string, Map<ParticipantId, HabitsState>>();
@@ -84,7 +80,6 @@ export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
       edited: 0,
       conversationsStarted: 0,
       questions: 0,
-      laughs: 0,
       longest: null,
     }));
     p.days.add(dayOf(event.localTime));
@@ -109,7 +104,6 @@ export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
     if (text.length > (p.longest?.length ?? 0)) {
       p.longest = { length: text.length, text, localTime: event.localTime };
     }
-    for (const word of words(text)) if (laughOf(word)) p.laughs++;
   }
 
   result(): PersonHabitsResult {
@@ -129,7 +123,6 @@ export class PersonHabitsAnalyzer implements Analyzer<PersonHabitsResult> {
               edited: p.edited,
               conversationsStarted: p.conversationsStarted,
               questions: p.questions,
-              laughs: p.laughs,
               longest: p.longest,
             },
           ]),

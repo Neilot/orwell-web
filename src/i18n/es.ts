@@ -587,7 +587,6 @@ export const es = {
     podcaster: { title: 'Podcastero', desc: '' },
     voiceFan: { title: 'Fan de los audios', desc: 'notas de voz enviadas' },
     questioner: { title: 'El preguntón', desc: 'de sus mensajes son preguntas' },
-    laugher: { title: 'El que más se ríe', desc: 'risas escritas (jaja, jeje, haha…)' },
     alwaysThere: { title: 'Siempre presente', desc: '' },
     longest: { title: 'Mensaje más largo', desc: 'caracteres en un solo mensaje' },
     editor: { title: 'El corrector', desc: 'mensajes editados después de enviarlos' },

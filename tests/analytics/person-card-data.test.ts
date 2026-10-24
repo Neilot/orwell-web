@@ -9,7 +9,7 @@ const ana = { id: 'u1', displayName: 'Ana' };
 const beto = { id: 'u2', displayName: 'Beto' };
 
 describe('PersonHabitsAnalyzer', () => {
-  it('collects days, streaks, edits, questions, laughs and the longest message', () => {
+  it('collects days, streaks, edits, questions and the longest message', () => {
     const analyzer = new PersonHabitsAnalyzer();
     const start = Date.UTC(2026, 3, 1, 10);
     const say = (day: number, hours: number, text: string, extra = {}) => {
@@ -35,7 +35,6 @@ describe('PersonHabitsAnalyzer', () => {
       last: start + 96 * HOUR,
       edited: 1,
       questions: 1,
-      laughs: 3,
       // The day as the chat showed it, not the UTC date.
       firstDay: '2026-04-01',
       lastDay: '2026-04-05',
@@ -75,12 +74,14 @@ describe('Vocabulary', () => {
     const month = analyzer.result()['2026-01'];
     expect(month?.group).toMatchObject(month?.people.u1 ?? {});
     const words = month?.people.u1;
-    // Ties keep first-use order; the link counts once, as its site, ahead of the plain words.
+    // Ties keep first-use order; the link counts once, as its site, ahead of the plain words, and
+    // laughs stay as written.
     expect(words?.words).toEqual([
       ['hola', 2],
-      ['jajaja', 2],
       ['x.com', 1],
       ['amigos', 1],
+      ['jajaja', 1],
+      ['jejeje', 1],
     ]);
     expect(words?.emojis).toEqual([
       ['👍', 2],

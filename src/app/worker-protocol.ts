@@ -106,7 +106,6 @@ export interface PersonHabits {
   readonly edited: number;
   readonly conversationsStarted: number;
   readonly questions: number;
-  readonly laughs: number;
   /** Their longest message, its length and when they sent it (the export's wall clock). */
   readonly longest: {
     readonly length: number;

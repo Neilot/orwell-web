@@ -15,7 +15,6 @@ export type AwardKey =
   | 'podcaster'
   | 'voiceFan'
   | 'questioner'
-  | 'laugher'
   | 'alwaysThere'
   | 'longest'
   | 'editor'
@@ -155,7 +154,6 @@ export function computeAwards(view: MonthView): Award[] {
   if (texters.length === 0) texters = everyone.filter((p) => p.textMessages > 0);
   if (texters.length === 0) texters = writers;
   add('questioner', texters, (p) => (habits(p)?.questions ?? 0) / p.textMessages);
-  add('laugher', everyone, (p) => habits(p)?.laughs ?? 0);
   // Days with messages; on a tie, the longer run of days in a row wins.
   add(
     'alwaysThere',

@@ -43,7 +43,6 @@ const noHabits: PersonHabits = {
   edited: 0,
   conversationsStarted: 0,
   questions: 0,
-  laughs: 0,
   longest: null,
   firstDay: '2026-01-01',
   lastDay: '2026-01-01',
@@ -196,15 +195,15 @@ describe('computeAwards', () => {
     ).toEqual(['caro', 'ana']);
   });
 
-  it('uses habits for presence, laughs, questions and the longest message', () => {
+  it('uses habits for presence, questions and the longest message', () => {
     const habits = (extra: Partial<PersonHabits>): Partial<PersonDetails> => ({
       habits: { ...noHabits, ...extra },
     });
     const longest = { length: 300, text: 'x', localTime: '2026-01-09T10:00:00' };
     const awards = byKey(
       view([person('ana', 20), person('beto', 20, { words: 200 })], {
-        ana: habits({ activeDays: 12, streak: 9, laughs: 4, questions: 10, longest }),
-        beto: habits({ activeDays: 12, streak: 3, laughs: 12, edited: 2 }),
+        ana: habits({ activeDays: 12, streak: 9, questions: 10, longest }),
+        beto: habits({ activeDays: 12, streak: 3, edited: 2 }),
       }),
     );
     // Same days with messages: the longer run of days in a row wins.
@@ -213,7 +212,7 @@ describe('computeAwards', () => {
       extra: 9,
     });
     expect(Math.floor(awards.get('alwaysThere')?.podium[0]?.value ?? 0)).toBe(12);
-    expect(awards.get('laugher')?.podium[0]).toMatchObject({ person: { id: 'beto' }, value: 12 });
+    expect(awards.has('laugher' as AwardKey)).toBe(false);
     expect(awards.get('questioner')?.podium[0]).toMatchObject({
       person: { id: 'ana' },
       value: 0.5,
