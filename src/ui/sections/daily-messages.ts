@@ -4,8 +4,10 @@ import { select } from 'd3-selection';
 import { curveMonotoneX, line } from 'd3-shape';
 import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
+import { drawGridLines, drawTickLabels } from '../charts/axis';
 import { drawDayAxis, placeDays, type PlacedDay } from '../charts/day-axis';
 import { HelpButton } from '../components/help';
+import { legendItem } from '../components/legend';
 import type { Tooltip, TooltipRow } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatDecimal, formatInt, formatShare } from '../format';
@@ -34,7 +36,7 @@ const MAX_JOIN_NAMES = 5;
 export class DailyMessagesSection {
   readonly element = el('section', 'card span2');
   private readonly title = el('h2');
-  private readonly joinsItem = el('span');
+  private readonly joinsItem: HTMLSpanElement;
   private readonly svg = svgEl('svg', {
     id: 'time',
     viewBox: `0 0 ${String(W)} ${String(H)}`,
@@ -48,25 +50,17 @@ export class DailyMessagesSection {
     const td = t.daily;
     this.element.setAttribute('aria-labelledby', 'h-time');
     this.svg.setAttribute('aria-label', td.chartLabel);
+    this.joinsItem = legendItem('var(--good-ink)', td.legendJoins);
 
     this.title.textContent = td.title;
     this.title.id = 'h-time';
-    const bars = el('i');
-    bars.style.background = 'var(--accent)';
-    bars.style.borderRadius = '2px';
-    const avg = el('i', 'ln');
-    avg.style.background = 'var(--fg)';
-    const barsItem = el('span');
-    barsItem.append(bars, td.legendBars);
-    const avgItem = el('span');
-    avgItem.append(avg, td.legendAverage);
     const legend = el('div', 'legend');
-    const joins = el('i');
-    joins.style.background = 'var(--good-ink)';
-    joins.style.borderRadius = '2px';
-    this.joinsItem.append(joins, td.legendJoins);
     this.joinsItem.hidden = true;
-    legend.append(barsItem, avgItem, this.joinsItem);
+    legend.append(
+      legendItem('var(--accent)', td.legendBars),
+      legendItem('var(--fg)', td.legendAverage, true),
+      this.joinsItem,
+    );
     const heading = new HelpButton(this.title, td.help.label, td.help.title, td.help.paragraphs);
     const head = el('div', 'head');
     head.append(heading.element, legend);
@@ -117,29 +111,8 @@ export class DailyMessagesSection {
     }
 
     const ticks = y.ticks(4);
-    s.append('g')
-      .selectAll('line')
-      .data(ticks)
-      .join('line')
-      .attr('x1', M.l)
-      .attr('x2', W - M.r)
-      .attr('y1', (d) => y(d) + 0.5)
-      .attr('y2', (d) => y(d) + 0.5)
-      .style('stroke', 'var(--line)')
-      .attr('stroke-opacity', 0.6);
-
-    s.append('g')
-      .selectAll('text')
-      .data(ticks)
-      .join('text')
-      .attr('x', M.l - 8)
-      .attr('y', (d) => y(d))
-      .attr('dy', '0.32em')
-      .attr('text-anchor', 'end')
-      .attr('font-size', 11)
-      .style('font-family', 'var(--mono)')
-      .style('fill', 'var(--muted)')
-      .text((d) => formatInt(d));
+    drawGridLines(s, ticks, y, { from: M.l, to: W - M.r });
+    drawTickLabels(s, ticks, y, { x: M.l - 8 });
 
     drawDayAxis(s, all, x, whole, t, {
       y: H - M.b + 16,

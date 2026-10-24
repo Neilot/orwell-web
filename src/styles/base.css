@@ -43,6 +43,15 @@ svg text{font-family:var(--body);fill:var(--fg2)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
 .legend i.ln{width:18px;height:3px;border-radius:2px}
+.legend i.sq{border-radius:2px}
+.sub-note{text-transform:none;letter-spacing:0}
+#stkKpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.blist .row.who-row{grid-template-columns:minmax(90px,150px) minmax(0,1fr) 104px;cursor:pointer;border-radius:6px}
+.who-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg)}
+sup.repeat{font-size:10px;color:var(--muted)}
+.ego .nm .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.chips-note{font-size:13px;color:var(--fg2);align-self:center}
+.ego-legend{margin-bottom:6px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 #tip{position:fixed;pointer-events:none;z-index:30;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.35;box-shadow:0 6px 24px rgba(0,0,0,.18);max-width:280px}
 #tip b{font-family:var(--display)}

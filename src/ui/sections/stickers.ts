@@ -3,6 +3,7 @@ import { scaleBand, scaleLinear } from 'd3-scale';
 import { select } from 'd3-selection';
 import { UNKNOWN_STICKER, type MonthView, type PersonView } from '../../app';
 import type { Messages } from '../../i18n';
+import { drawGridLines, drawTickLabels } from '../charts/axis';
 import { drawDayAxis, placeDays } from '../charts/day-axis';
 import { HelpButton } from '../components/help';
 import type { Tooltip } from '../components/tooltip';
@@ -16,10 +17,7 @@ const H = 200;
 const M = { t: 22, b: 26, l: 40, r: 10 };
 
 function emptyNote(text: string): HTMLParagraphElement {
-  const p = el('p', undefined, text);
-  p.style.color = 'var(--muted)';
-  p.style.fontSize = '13px';
-  return p;
+  return el('p', 'empty', text);
 }
 
 /** A bar `width` long (0–1), with an orange part `mine` long for the marked person. */
@@ -62,12 +60,9 @@ export class StickersSection {
     const head = el('div', 'head');
     head.append(heading.element);
     this.kpis.id = 'stkKpis';
-    this.kpis.style.gridTemplateColumns = 'repeat(4,minmax(0,1fr))';
     this.who.id = 'stkWho';
     this.top.id = 'stkTop';
-    const whoNote = el('span', undefined, ts.whoNote);
-    whoNote.style.textTransform = 'none';
-    whoNote.style.letterSpacing = '0';
+    const whoNote = el('span', 'sub-note', ts.whoNote);
     const whoTitle = el('div', 'sub-h', `${ts.whoTitle} `);
     whoTitle.append(whoNote);
     const left = el('div');
@@ -153,19 +148,12 @@ export class StickersSection {
     this.who.replaceChildren(
       ...senders.map((p: PersonView) => {
         const name = personName(p, t);
-        const row = el('div', 'row');
-        row.style.gridTemplateColumns = 'minmax(90px,150px) minmax(0,1fr) 104px';
-        row.style.cursor = 'pointer';
-        row.style.borderRadius = '6px';
+        const row = el('div', 'row who-row');
         row.dataset.id = p.id;
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
         row.setAttribute('aria-label', t.stickers.openCard(name));
-        const label = el('span', undefined, name);
-        label.style.whiteSpace = 'nowrap';
-        label.style.overflow = 'hidden';
-        label.style.textOverflow = 'ellipsis';
-        label.style.color = 'var(--fg)';
+        const label = el('span', 'who-name', name);
         row.append(
           label,
           track(p.stickers / most),
@@ -193,9 +181,7 @@ export class StickersSection {
         seen.set(sticker.emoji, repeat);
         const emoji = el('span', 'e', sticker.emoji);
         if (repeat > 1) {
-          const sup = el('sup', undefined, String(repeat));
-          sup.style.fontSize = '10px';
-          sup.style.color = 'var(--muted)';
+          const sup = el('sup', 'repeat', String(repeat));
           emoji.append(sup);
         }
         const row = el('div', 'row');
@@ -239,27 +225,8 @@ export class StickersSection {
       .nice()
       .range([H - M.b, M.t]);
     const ticks = y.ticks(3);
-    s.append('g')
-      .selectAll('line')
-      .data(ticks)
-      .join('line')
-      .attr('x1', M.l)
-      .attr('x2', W - M.r)
-      .attr('y1', (d) => y(d) + 0.5)
-      .attr('y2', (d) => y(d) + 0.5)
-      .style('stroke', 'var(--grid)');
-    s.append('g')
-      .selectAll('text')
-      .data(ticks)
-      .join('text')
-      .attr('x', M.l - 8)
-      .attr('y', (d) => y(d))
-      .attr('dy', '0.32em')
-      .attr('text-anchor', 'end')
-      .attr('font-size', 11)
-      .style('font-family', 'var(--mono)')
-      .style('fill', 'var(--muted)')
-      .text((d) => formatInt(d));
+    drawGridLines(s, ticks, y, { from: M.l, to: W - M.r, color: 'var(--grid)', opacity: 1 });
+    drawTickLabels(s, ticks, y, { x: M.l - 8 });
     // Only the busiest day is labelled; the rest show their figure on hover.
     const peak = new Set(
       [...days]

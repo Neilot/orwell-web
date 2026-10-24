@@ -24,7 +24,6 @@ export const en: Messages = {
   },
   app: {
     title: 'Orwell',
-    tagline: 'Statistics for your Telegram group. The file never leaves your device.',
   },
   dates: {
     months: [
@@ -384,7 +383,6 @@ export const en: Messages = {
       activeDays: 'Active days',
       activeDaysNote: (span: string, streak: string) => `of ${span} · ${streak} in a row`,
       replyTime: 'Time to reply',
-      replyTimeNote: (group: string) => `median · group ${group}`,
       reactionsPerMessage: 'Reactions per message',
     },
     timesMore: (times: string) => `▲ ${times}× more`,
@@ -422,8 +420,6 @@ export const en: Messages = {
       withOthers: 'With others',
       first: 'First message',
       last: 'Last message',
-      favouriteHour: 'Favourite hour',
-      favouriteDay: 'Favourite day',
       questions: 'Questions',
       questionsValue: (percent: string) => `${percent} of their messages`,
       started: 'Conversations started',

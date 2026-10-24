@@ -3,6 +3,7 @@ import { scaleLinear, scaleLog } from 'd3-scale';
 import { select } from 'd3-selection';
 import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
+import { drawGridLines, drawTickLabels } from '../charts/axis';
 import type { Tooltip } from '../components/tooltip';
 import { HelpButton } from '../components/help';
 import { HidePicker } from '../components/hide-picker';
@@ -165,15 +166,7 @@ export class WordsScatterSection {
       .attr('y1', M.t)
       .attr('y2', H - M.b)
       .style('stroke', 'var(--grid)');
-    s.append('g')
-      .selectAll('line')
-      .data(yTicks)
-      .join('line')
-      .attr('x1', M.l)
-      .attr('x2', W - M.r)
-      .attr('y1', (d) => y(d))
-      .attr('y2', (d) => y(d))
-      .style('stroke', 'var(--grid)');
+    drawGridLines(s, yTicks, y, { from: M.l, to: W - M.r, color: 'var(--grid)', opacity: 1 });
     s.append('g')
       .selectAll('text')
       .data(xTicks)
@@ -185,18 +178,7 @@ export class WordsScatterSection {
       .style('font-family', 'var(--mono)')
       .style('fill', 'var(--muted)')
       .text((d) => (d >= 1000 ? ts.thousands(formatInt(d / 1000)) : formatInt(d)));
-    s.append('g')
-      .selectAll('text')
-      .data(yTicks)
-      .join('text')
-      .attr('x', M.l - 6)
-      .attr('y', (d) => y(d))
-      .attr('dy', '0.32em')
-      .attr('text-anchor', 'end')
-      .attr('font-size', 10.5)
-      .style('font-family', 'var(--mono)')
-      .style('fill', 'var(--muted)')
-      .text((d) => formatInt(d));
+    drawTickLabels(s, yTicks, y, { x: M.l - 6, fontSize: 10.5 });
     s.append('text')
       .attr('x', W - M.r)
       .attr('y', H - 6)

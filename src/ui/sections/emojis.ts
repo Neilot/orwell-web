@@ -53,10 +53,7 @@ export class EmojisSection {
   private fill(list: HTMLElement, items: Ranked, mine: ((emoji: string) => number) | null): void {
     const top = items.slice(0, MAX_ROWS);
     if (top.length === 0) {
-      const empty = el('p', undefined, this.t.emojis.empty);
-      empty.style.color = 'var(--muted)';
-      empty.style.fontSize = '13px';
-      list.replaceChildren(empty);
+      list.replaceChildren(el('p', 'empty', this.t.emojis.empty));
       return;
     }
     const most = top[0]?.[1] ?? 1;

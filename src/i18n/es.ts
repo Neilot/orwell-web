@@ -12,7 +12,6 @@ export const es = {
   },
   app: {
     title: 'Orwell',
-    tagline: 'Estadísticas de tu grupo de Telegram. El archivo no sale de tu equipo.',
   },
   dates: {
     months: [
@@ -380,7 +379,6 @@ export const es = {
       activeDays: 'Días activos',
       activeDaysNote: (span: string, streak: string) => `de ${span} · racha de ${streak}`,
       replyTime: 'Tarda en responder',
-      replyTimeNote: (group: string) => `mediana · grupo ${group}`,
       reactionsPerMessage: 'Reacciones por mensaje',
     },
     timesMore: (times: string) => `▲ ${times}× más`,
@@ -418,8 +416,6 @@ export const es = {
       withOthers: 'Con los demás',
       first: 'Primer mensaje',
       last: 'Último mensaje',
-      favouriteHour: 'Hora favorita',
-      favouriteDay: 'Día favorito',
       questions: 'Preguntas',
       questionsValue: (percent: string) => `${percent} de sus mensajes`,
       started: 'Conversaciones que inició',

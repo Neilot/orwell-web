@@ -4,7 +4,9 @@ import { select } from 'd3-selection';
 import { curveMonotoneX, line } from 'd3-shape';
 import type { LifeMonth, MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
+import { drawGridLines, drawTickLabels } from '../charts/axis';
 import { HelpButton } from '../components/help';
+import { legendItem } from '../components/legend';
 import type { Tooltip, TooltipRow } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatInt, formatShare } from '../format';
@@ -48,19 +50,11 @@ export class GroupLifeSection {
     title.id = 'h-life';
     const heading = new HelpButton(title, tl.help.label, tl.help.title, tl.help.paragraphs);
     const legend = el('div', 'legend');
-    const item = (color: string, label: string, isLine = false): HTMLSpanElement => {
-      const mark = el('i', isLine ? 'ln' : undefined);
-      mark.style.background = color;
-      if (!isLine) mark.style.borderRadius = '2px';
-      const span = el('span');
-      span.append(mark, label);
-      return span;
-    };
-    this.joinsItem = item('var(--good-ink)', tl.legendJoins);
-    this.leavesItem = item('var(--in-ink)', tl.legendLeaves);
+    this.joinsItem = legendItem('var(--good-ink)', tl.legendJoins);
+    this.leavesItem = legendItem('var(--in-ink)', tl.legendLeaves);
     legend.append(
-      item('var(--accent)', tl.legendMessages),
-      item('var(--fg)', tl.legendWriters, true),
+      legendItem('var(--accent)', tl.legendMessages),
+      legendItem('var(--fg)', tl.legendWriters, true),
       this.joinsItem,
       this.leavesItem,
     );
@@ -123,32 +117,14 @@ export class GroupLifeSection {
     const cx = (m: LifeMonth): number => bx(m) + x.bandwidth() / 2;
 
     const ticks = y.ticks(4);
-    s.append('g')
-      .selectAll('line')
-      .data(ticks)
-      .join('line')
-      .attr('x1', M.l)
-      .attr('x2', W - M.r)
-      .attr('y1', (d) => y(d) + 0.5)
-      .attr('y2', (d) => y(d) + 0.5)
-      .style('stroke', 'var(--line)')
-      .attr('stroke-opacity', 0.6);
-    const tickText = (values: number[], scale: (v: number) => number, left: boolean) =>
-      s
-        .append('g')
-        .selectAll('text')
-        .data(values)
-        .join('text')
-        .attr('x', left ? M.l - 8 : W - M.r + 8)
-        .attr('y', (d) => scale(d))
-        .attr('dy', '0.32em')
-        .attr('text-anchor', left ? 'end' : 'start')
-        .attr('font-size', 11)
-        .style('font-family', 'var(--mono)')
-        .style('fill', left ? 'var(--muted)' : 'var(--fg2)')
-        .text((d) => formatInt(d));
-    tickText(ticks, y, true);
-    tickText(yWriters.ticks(4), yWriters, false);
+    drawGridLines(s, ticks, y, { from: M.l, to: W - M.r });
+    drawTickLabels(s, ticks, y, { x: M.l - 8 });
+    // The writers' scale, on the right.
+    drawTickLabels(s, yWriters.ticks(4), yWriters, {
+      x: W - M.r + 8,
+      anchor: 'start',
+      color: 'var(--fg2)',
+    });
 
     s.append('g')
       .selectAll('rect')

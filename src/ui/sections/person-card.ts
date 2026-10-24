@@ -4,6 +4,7 @@ import { select } from 'd3-selection';
 import { maxIndex, UNKNOWN_STICKER, type MonthView, type PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import type { Tooltip } from '../components/tooltip';
+import { legendItem } from '../components/legend';
 import { el, svgEl } from '../dom';
 import { formatDecimal, formatInt, formatPercent, pad2 } from '../format';
 import { durationText } from '../duration';
@@ -34,10 +35,7 @@ function subHeading(text: string): HTMLDivElement {
 }
 
 function muted(text: string): HTMLSpanElement {
-  const span = el('span', undefined, text);
-  span.style.color = 'var(--muted)';
-  span.style.fontSize = '13px';
-  return span;
+  return el('span', 'empty', text);
 }
 
 /** "Ficha de persona": everything about one person in the selected month. */
@@ -118,18 +116,11 @@ export class PersonCardSection {
       block(subHeading(tp.kinds), this.kinds, this.kindsLegend),
     );
 
-    const egoLegend = el('div', 'legend');
-    egoLegend.style.marginBottom = '6px';
-    for (const [color, label] of [
-      ['var(--accent)', tp.sent],
-      ['var(--in)', tp.received],
-    ] as const) {
-      const swatch = el('i', 'ln');
-      swatch.style.background = color;
-      const item = el('span');
-      item.append(swatch, label);
-      egoLegend.append(item);
-    }
+    const egoLegend = el('div', 'legend ego-legend');
+    egoLegend.append(
+      legendItem('var(--accent)', tp.sent, true),
+      legendItem('var(--in)', tp.received, true),
+    );
     this.egoCard = card(
       'pc-ego',
       block(subHeading(tp.interactions), egoLegend, this.ego, this.egoNote),
@@ -439,10 +430,7 @@ export class PersonCardSection {
     this.egoTotal = partners.length;
     partners.splice(MAX_PARTNERS);
     if (partners.length === 0) {
-      const empty = el('p', undefined, t.person.noInteractions);
-      empty.style.color = 'var(--muted)';
-      empty.style.fontSize = '13px';
-      this.ego.replaceChildren(empty);
+      this.ego.replaceChildren(el('p', 'empty', t.person.noInteractions));
       return;
     }
     const top = Math.max(1, max(partners, (e) => Math.max(e.out, e.in)) ?? 0);
@@ -458,13 +446,8 @@ export class PersonCardSection {
         const name = partner ? personName(partner, t) : '';
         const sent = el('div', 'l');
         sent.append(el('span', 'v', formatInt(e.out)), bar(e.out, 'var(--accent)'));
-        const dot = el('i');
-        dot.style.display = 'inline-block';
-        dot.style.width = '8px';
-        dot.style.height = '8px';
-        dot.style.borderRadius = '50%';
+        const dot = el('i', 'dot');
         dot.style.background = communityColor(partner?.community ?? 5);
-        dot.style.marginRight = '5px';
         const who = el('div', 'nm');
         who.title = name;
         who.append(dot, name);
@@ -552,9 +535,7 @@ export class PersonCardSection {
           formatPercent(p.stickers / Math.max(1, p.messages)),
         ),
       );
-      note.style.fontSize = '13px';
-      note.style.color = 'var(--fg2)';
-      note.style.alignSelf = 'center';
+      note.className = 'chips-note';
       this.stickerChips.replaceChildren(
         ...stickers.map(([e, c]) => {
           const sticker = chip(e, c, true);
