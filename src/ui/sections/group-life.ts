@@ -11,13 +11,10 @@ import { formatInt, formatShare } from '../format';
 import { personName } from '../people';
 import { pageSignal } from '../page';
 
-const H = 320;
 const M = { l: 48, r: 48, t: 30 };
-/** Bottom of the bars, centre of the joins-and-leaves band, its half height, and the month row. */
+/** Bottom of the bars, and the height of the joins or the leaves under them. */
 const BARS_BOTTOM = 196;
-const BAND_MIDDLE = 262;
 const BAND = 40;
-const AXIS_Y = H - 8;
 /** Phones get a narrower canvas so the labels keep a readable size. */
 const NARROW = '(max-width:560px)';
 /** With fewer months than this, bars get thinner so they do not look like blocks. */
@@ -35,6 +32,8 @@ export class GroupLifeSection {
   private readonly lead = el('p', 'klead');
   private readonly svg = svgEl('svg', { id: 'life', role: 'img' });
   private readonly narrow = matchMedia(NARROW);
+  private readonly joinsItem: HTMLSpanElement;
+  private readonly leavesItem: HTMLSpanElement;
   private last: [MonthView, PersonView | null] | null = null;
 
   constructor(
@@ -57,11 +56,13 @@ export class GroupLifeSection {
       span.append(mark, label);
       return span;
     };
+    this.joinsItem = item('var(--good-ink)', tl.legendJoins);
+    this.leavesItem = item('var(--in-ink)', tl.legendLeaves);
     legend.append(
       item('var(--accent)', tl.legendMessages),
       item('var(--fg)', tl.legendWriters, true),
-      item('var(--good-ink)', tl.legendJoins),
-      item('var(--in-ink)', tl.legendLeaves),
+      this.joinsItem,
+      this.leavesItem,
     );
     const head = el('div', 'head');
     head.append(heading.element, legend);
@@ -87,6 +88,16 @@ export class GroupLifeSection {
     const mine = (m: LifeMonth): number => (marked ? (m.byPerson[marked.id] ?? 0) : 0);
     const monthName = (m: LifeMonth): string =>
       tl.monthName(t.dates.months[Number(m.month.slice(5)) - 1] ?? '', m.month.slice(0, 4));
+
+    // Joins and leaves only show when the export records some; with neither, the chart is shorter.
+    const hasJoins = months.some((m) => m.joins > 0);
+    const hasLeaves = months.some((m) => m.leaves > 0);
+    this.joinsItem.hidden = !hasJoins;
+    this.leavesItem.hidden = !hasLeaves;
+    const middle = hasJoins ? BARS_BOTTOM + 20 + BAND : BARS_BOTTOM + 20;
+    const H =
+      !hasJoins && !hasLeaves ? BARS_BOTTOM + 30 : hasLeaves ? middle + BAND + 42 : middle + 30;
+    const axisY = H - 8;
 
     const W = this.narrow.matches ? 420 : 1200;
     this.svg.setAttribute('viewBox', `0 0 ${String(W)} ${String(H)}`);
@@ -185,19 +196,22 @@ export class GroupLifeSection {
       .attr('stroke-width', 2);
 
     // Joins go up and leaves go down from a middle line.
-    s.append('line')
-      .attr('x1', M.l)
-      .attr('x2', W - M.r)
-      .attr('y1', BAND_MIDDLE + 0.5)
-      .attr('y2', BAND_MIDDLE + 0.5)
-      .style('stroke', 'var(--line)');
-    for (const [label, dy, color] of [
-      [tl.joinsAxis, -BAND / 2, 'var(--good-ink)'],
-      [tl.leavesAxis, BAND / 2, 'var(--in-ink)'],
+    if (hasJoins || hasLeaves) {
+      s.append('line')
+        .attr('x1', M.l)
+        .attr('x2', W - M.r)
+        .attr('y1', middle + 0.5)
+        .attr('y2', middle + 0.5)
+        .style('stroke', 'var(--line)');
+    }
+    for (const [label, dy, color, shown] of [
+      [tl.joinsAxis, -BAND / 2, 'var(--good-ink)', hasJoins],
+      [tl.leavesAxis, BAND / 2, 'var(--in-ink)', hasLeaves],
     ] as const) {
+      if (!shown) continue;
       s.append('text')
         .attr('x', M.l - 8)
-        .attr('y', BAND_MIDDLE + dy)
+        .attr('y', middle + dy)
         .attr('dy', '0.32em')
         .attr('text-anchor', 'end')
         .attr('font-size', 11)
@@ -217,7 +231,7 @@ export class GroupLifeSection {
         .join('rect')
         .attr('x', barX)
         .attr('width', bw)
-        .attr('y', (m) => (up ? BAND_MIDDLE - band(m[side]) : BAND_MIDDLE + 1))
+        .attr('y', (m) => (up ? middle - band(m[side]) : middle + 1))
         .attr('height', (m) => band(m[side]))
         .attr('rx', 2)
         .style('fill', color)
@@ -228,9 +242,7 @@ export class GroupLifeSection {
           .data(data)
           .join('text')
           .attr('x', cx)
-          .attr('y', (m) =>
-            up ? BAND_MIDDLE - band(m[side]) - 4 : BAND_MIDDLE + band(m[side]) + 13,
-          )
+          .attr('y', (m) => (up ? middle - band(m[side]) - 4 : middle + band(m[side]) + 13))
           .attr('text-anchor', 'middle')
           .attr('font-size', 11)
           .style('font-family', 'var(--mono)')
@@ -246,7 +258,7 @@ export class GroupLifeSection {
       .data(months.filter((_, k) => k % every === 0))
       .join('text')
       .attr('x', cx)
-      .attr('y', AXIS_Y)
+      .attr('y', axisY)
       .attr('text-anchor', 'middle')
       .attr('font-size', 11)
       .style('font-family', 'var(--mono)')
@@ -279,7 +291,8 @@ export class GroupLifeSection {
       }
       rows.push([tl.tipWriters, formatInt(m.writers)]);
       if (m !== months[0]) rows.push([tl.tipNewWriters, formatInt(m.newWriters)]);
-      rows.push([tl.tipJoins, formatInt(m.joins)], [tl.tipLeaves, formatInt(m.leaves)]);
+      if (hasJoins) rows.push([tl.tipJoins, formatInt(m.joins)]);
+      if (hasLeaves) rows.push([tl.tipLeaves, formatInt(m.leaves)]);
       tooltip.show(ev, monthName(m), rows, m.month !== current ? { footer: tl.tipOpen } : {});
     };
     const onMonth = this.onMonth;
@@ -325,7 +338,13 @@ export class GroupLifeSection {
         formatInt(lastMonth.writers),
       ) +
       (change === 0 ? tl.leadSame : tl.leadChange(formatInt(Math.abs(change)), change > 0)) +
-      (joins || leaves ? tl.leadChanges(formatInt(joins), formatInt(leaves)) : '') +
+      (joins && leaves
+        ? tl.leadChanges(formatInt(joins), formatInt(leaves))
+        : joins
+          ? tl.leadJoins(formatInt(joins))
+          : leaves
+            ? tl.leadLeaves(formatInt(leaves))
+            : '') +
       '.';
   }
 }

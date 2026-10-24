@@ -142,6 +142,8 @@ export interface MonthView {
   readonly stars: Omit<MonthStars, 'people'>;
   /** Every month of the export, oldest first, whatever the period shown. */
   readonly life: readonly LifeMonth[];
+  /** Who joined the group each day, by the name the notice gives, keyed `YYYY-MM-DD`. */
+  readonly joinsByDay: ReadonlyMap<string, readonly (string | null)[]>;
   details(id: string): PersonDetails;
   /** The previous month in the export, for comparisons, or `null` for the first one. */
   readonly previous: {
@@ -321,6 +323,20 @@ export function lifeOf(dashboard: Dashboard): LifeMonth[] {
   });
 }
 
+/** Who joined the group each day, from the export's notices. */
+export function joinsByDay(dashboard: Dashboard): Map<string, (string | null)[]> {
+  const days = new Map<string, (string | null)[]>();
+  for (const events of Object.values(dashboard.membership)) {
+    for (const e of events) {
+      if (e.type !== 'join') continue;
+      const list = days.get(e.day) ?? [];
+      list.push(e.name);
+      days.set(e.day, list);
+    }
+  }
+  return days;
+}
+
 export function monthView(dashboard: Dashboard, month: string): MonthView {
   const months = monthsOf(dashboard);
   const wholeFile = month === WHOLE_FILE;
@@ -418,6 +434,7 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
       mostReplied: dashboard.starsPerMonth[month]?.mostReplied ?? [],
     },
     life: lifeOf(dashboard),
+    joinsByDay: joinsByDay(dashboard),
     details: (id) => ({
       habits: dashboard.habitsPerMonth[month]?.[id] ?? null,
       vocabulary: dashboard.vocabularyPerMonth[month]?.people[id] ?? { words: [], emojis: [] },

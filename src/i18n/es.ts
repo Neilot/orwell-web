@@ -322,8 +322,6 @@ export const es = {
     wholeGroupNote: 'sin resaltar a nadie',
     clear: 'Quitar a la persona elegida y ver todo el grupo',
     close: '✕',
-    cardHint:
-      'Muestra a quien más escribe. Elige a alguien en «Persona», arriba, para ver su ficha y resaltarlo en todas las gráficas.',
   },
   communities: {
     names: ['Comunidad A', 'Comunidad B', 'Comunidad C', 'Comunidad D', 'Comunidad E', 'Otros'],
@@ -380,14 +378,19 @@ export const es = {
       wordsPerMessage: 'Palabras por mensaje',
       charactersPerMessage: 'Caracteres por mensaje',
       activeDays: 'Días activos',
-      activeDaysNote: (span: string, streak: string) => `de ${span} · racha de ${streak} seguidos`,
+      activeDaysNote: (span: string, streak: string) => `de ${span} · racha de ${streak}`,
       replyTime: 'Tarda en responder',
       replyTimeNote: (group: string) => `mediana · grupo ${group}`,
       reactionsPerMessage: 'Reacciones por mensaje',
     },
-    timesAverage: (times: string) => `${times}× el promedio`,
-    belowAverage: (percent: string) => `${percent} menos que el promedio`,
-    nearAverage: 'cerca del promedio',
+    timesMore: (times: string) => `▲ ${times}× más`,
+    percentMore: (percent: string) => `▲ ${percent} más`,
+    percentLess: (percent: string) => `▼ ${percent} menos`,
+    asAverage: '≈ Como la media',
+    faster: '▲ Más rápido',
+    slower: '▼ Más lento',
+    groupAverage: (value: string) => `Media del grupo: ${value}`,
+    factsTitle: 'Datos',
     hours: 'Horas en que escribe',
     weekdays: 'Días de la semana',
     kinds: 'Tipos de mensaje',
@@ -410,6 +413,8 @@ export const es = {
     barMessages: 'Mensajes',
     barShare: 'Proporción',
     facts: {
+      inGroup: 'En el grupo',
+      withOthers: 'Con los demás',
       first: 'Primer mensaje',
       last: 'Último mensaje',
       favouriteHour: 'Hora favorita',
@@ -420,7 +425,7 @@ export const es = {
       replies: 'Respuestas',
       reactions: 'Reacciones',
       sentReceived: (sent: string, received: string) => `${sent} enviadas · ${received} recibidas`,
-      edited: 'Editados',
+      edited: 'Mensajes editados',
       longest: 'Mensaje más largo',
       longestCharacters: (n: string) => `${n} caracteres`,
     },
@@ -431,6 +436,7 @@ export const es = {
     titleWholeFile: 'Mensajes por día',
     legendBars: 'Mensajes por día',
     legendAverage: 'Promedio de 7 días',
+    legendJoins: 'Entradas al grupo',
     chartLabel: 'Mensajes por día',
     help: {
       label: 'Cómo funciona esta gráfica',
@@ -439,6 +445,7 @@ export const es = {
         'Cada barra es un día; cuanto más alta, más mensajes hubo ese día.',
         'La línea es el promedio de los últimos 7 días: sirve para ver si el grupo va a más o a menos sin fijarse en un solo día.',
         'La barra más clara es el día récord. Cuando ves un mes, las franjas grises marcan los fines de semana.',
+        'Con «Todo el grupo» elegido, los números verdes sobre las barras son las personas que entraron al grupo ese día. Pasa el cursor por el día para ver quiénes.',
       ],
     },
     record: (count: string, weekday: string, day: string) =>
@@ -450,6 +457,8 @@ export const es = {
       `${weekday} ${day} de ${month} de ${year}`,
     tipMessages: 'Mensajes',
     tipAverage: 'Promedio de 7 días',
+    tipJoins: 'Entraron al grupo',
+    andMore: (count: string) => ` y ${count} más`,
     noValue: '—',
   },
   scatter: {
@@ -653,6 +662,7 @@ export const es = {
     replies: (count: number, formatted: string) =>
       `${formatted} ${count === 1 ? 'respuesta' : 'respuestas'}`,
     empty: 'Sin datos en este periodo.',
+    moreReplies: (count: string) => `Y ${count} respuestas más.`,
     when: (day: string, month: string, year: string, time: string) =>
       `${day} ${month} ${year} · ${time}`,
   },
@@ -687,6 +697,8 @@ export const es = {
     leadSame: ', las mismas que el mes anterior',
     leadChange: (count: string, more: boolean) =>
       `, ${count} ${more ? 'más' : 'menos'} que el mes anterior`,
+    leadJoins: (joins: string) => `. En todo el archivo entraron ${joins} personas`,
+    leadLeaves: (leaves: string) => `. En todo el archivo salieron ${leaves} personas`,
     leadChanges: (joins: string, leaves: string) =>
       `. En todo el archivo entraron ${joins} y salieron ${leaves}`,
   },

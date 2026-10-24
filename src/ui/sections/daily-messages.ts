@@ -24,6 +24,8 @@ const H = 270;
 const M = { t: 22, r: 12, b: 44, l: 42 };
 /** Weekends are shaded only while the bars are wide enough for it to read. */
 const MAX_SHADED_DAYS = 62;
+/** Names of the people who joined that a day's tooltip lists. */
+const MAX_JOIN_NAMES = 5;
 
 /**
  * "Mensajes por día del mes": one bar per day plus the trailing 7-day average. A marked person's
@@ -32,6 +34,7 @@ const MAX_SHADED_DAYS = 62;
 export class DailyMessagesSection {
   readonly element = el('section', 'card span2');
   private readonly title = el('h2');
+  private readonly joinsItem = el('span');
   private readonly svg = svgEl('svg', {
     id: 'time',
     viewBox: `0 0 ${String(W)} ${String(H)}`,
@@ -58,7 +61,12 @@ export class DailyMessagesSection {
     const avgItem = el('span');
     avgItem.append(avg, td.legendAverage);
     const legend = el('div', 'legend');
-    legend.append(barsItem, avgItem);
+    const joins = el('i');
+    joins.style.background = 'var(--good-ink)';
+    joins.style.borderRadius = '2px';
+    this.joinsItem.append(joins, td.legendJoins);
+    this.joinsItem.hidden = true;
+    legend.append(barsItem, avgItem, this.joinsItem);
     const heading = new HelpButton(this.title, td.help.label, td.help.title, td.help.paragraphs);
     const head = el('div', 'head');
     head.append(heading.element, legend);
@@ -168,6 +176,39 @@ export class DailyMessagesSection {
         .style('pointer-events', 'none');
     }
 
+    // With the whole group, how many people joined each day: a green number over the bar, or a
+    // dot when the bars are too thin for it.
+    const joined = marked ? [] : all.filter((d) => !d.future && view.joinsByDay.has(d.key));
+    this.joinsItem.hidden = joined.length === 0;
+    const thin = x.bandwidth() < 16;
+    const joinMarks = s.append('g').attr('pointer-events', 'none');
+    for (const d of joined) {
+      const count = view.joinsByDay.get(d.key)?.length ?? 0;
+      const top = y(d.v) - (d === rec ? 24 : 6);
+      if (thin) {
+        joinMarks
+          .append('circle')
+          .attr('cx', cx(d))
+          .attr('cy', top - 3)
+          .attr('r', 3.5)
+          .style('fill', 'var(--good-ink)');
+      } else {
+        joinMarks
+          .append('text')
+          .attr('x', cx(d))
+          .attr('y', top)
+          .attr('text-anchor', 'middle')
+          .attr('font-size', 11.5)
+          .attr('font-weight', 700)
+          .style('font-family', 'var(--mono)')
+          .style('fill', 'var(--good-ink)')
+          .style('paint-order', 'stroke')
+          .style('stroke', 'var(--panel)')
+          .attr('stroke-width', 3)
+          .text(`+${formatInt(count)}`);
+      }
+    }
+
     // The highlighted person's joins and leaves, as flags; close ones go one row lower.
     const joinsAndLeaves = marked ? (view.membership[marked.id] ?? []) : [];
     const byDay = new Map(all.map((d) => [d.key, d]));
@@ -246,6 +287,8 @@ export class DailyMessagesSection {
           `${formatInt(mine(d))} · ${d.v ? formatShare(mine(d) / d.v) : t.daily.noValue}`,
         ]);
       }
+      const names = marked || d.future ? undefined : view.joinsByDay.get(d.key);
+      if (names) rows.push([t.daily.tipJoins, formatInt(names.length)]);
       if (d.avg !== null) rows.push([t.daily.tipAverage, formatDecimal(d.avg)]);
       const weekday = t.dates.weekdays[d.weekday] ?? '';
       const month = t.dates.months[d.monthIndex] ?? '';
@@ -257,6 +300,11 @@ export class DailyMessagesSection {
           ? [t.membership.thatDay(personName(marked, t), membershipVerb(joinsAndLeaves, k, t))]
           : [],
       );
+      if (names) {
+        const shown = names.slice(0, MAX_JOIN_NAMES).map((n) => n ?? t.people.deletedAccount);
+        const rest = names.length - shown.length;
+        notes.push(shown.join(', ') + (rest > 0 ? t.daily.andMore(formatInt(rest)) : ''));
+      }
       tooltip.show(ev, title, rows, notes.length ? { footer: notes.join(' · ') } : {});
     };
 

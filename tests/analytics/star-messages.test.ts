@@ -78,6 +78,8 @@ describe('StarMessages', () => {
       { author: 'u1', text: '¿pizza o tacos?', count: 2 },
     ]);
     expect(result['2026-01']?.people.u1?.replied?.count).toBe(2);
+    // The most replied message carries what was said, in order.
+    expect(result['2026-01']?.mostReplied[0]?.replies?.map((r) => r.author)).toEqual(['u2', 'u3']);
     expect(result['2026-02']).toBeUndefined();
     expect(result.all?.mostReplied[0]?.count).toBe(3);
   });

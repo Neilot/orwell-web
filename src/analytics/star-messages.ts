@@ -7,6 +7,8 @@ import { messageKind, type MessageKind } from './message-kind';
 const TOP = 5;
 /** Text kept per message; enough to read it, short enough to keep the result light. */
 const MAX_TEXT = 1000;
+/** Replies kept for each of the most replied messages. */
+const MAX_REPLIES = 40;
 /** Reaction emojis shown next to a message. */
 const TOP_REACTIONS = 4;
 
@@ -23,6 +25,8 @@ export interface StarMessage {
   readonly count: number;
   /** For reactions, the most used emojis as `[emoji, count]`. */
   readonly reactions?: readonly (readonly [string, number])[];
+  /** For the most replied messages, the first replies, in the order they were sent. */
+  readonly replies?: readonly Omit<StarMessage, 'count' | 'reactions' | 'replies'>[];
 }
 
 export interface MonthStars {
@@ -39,12 +43,13 @@ export interface MonthStars {
 /** Per month (`YYYY-MM`), plus `WHOLE_FILE`. */
 export type StarMessagesResult = Record<string, MonthStars>;
 
-type Snapshot = Omit<StarMessage, 'count' | 'reactions'>;
+type Snapshot = Omit<StarMessage, 'count' | 'reactions' | 'replies'>;
 
 class MonthState {
   readonly mostReacted: StarMessage[] = [];
   readonly reacted = new Map<ParticipantId, StarMessage>();
-  readonly replies = new Map<EventId, number>();
+  /** The replies each message got from other people. */
+  readonly replies = new Map<EventId, Snapshot[]>();
 
   addReacted(message: StarMessage): void {
     const best = this.reacted.get(message.author);
@@ -98,7 +103,7 @@ export class StarMessages implements Analyzer<StarMessagesResult> {
       for (const period of periods) {
         if (period !== WHOLE_FILE && monthOf(original.localTime) !== period) continue;
         const replies = getOrCreate(this.months, period, () => new MonthState()).replies;
-        replies.set(repliedTo, (replies.get(repliedTo) ?? 0) + 1);
+        getOrCreate(replies, repliedTo, () => []).push(message);
       }
     }
   }
@@ -108,22 +113,25 @@ export class StarMessages implements Analyzer<StarMessagesResult> {
       [...this.months].map(([month, state]) => {
         const replied = new Map<ParticipantId, StarMessage>();
         const mostReplied: StarMessage[] = [];
-        for (const [id, count] of state.replies) {
+        const repliesOf = new Map<StarMessage, readonly Snapshot[]>();
+        for (const [id, replies] of state.replies) {
           const message = this.messages.get(id);
           if (!message) continue;
-          const star: StarMessage = { ...message, count };
+          const star: StarMessage = { ...message, count: replies.length };
           const best = replied.get(star.author);
-          if (!best || count > best.count) replied.set(star.author, star);
+          if (!best || star.count > best.count) replied.set(star.author, star);
           mostReplied.push(star);
+          repliesOf.set(star, replies);
         }
         mostReplied.sort((a, b) => b.count - a.count);
+        // Only the most replied messages carry their replies, to keep the result light.
+        const top = mostReplied
+          .slice(0, TOP)
+          .map((star) => ({ ...star, replies: (repliesOf.get(star) ?? []).slice(0, MAX_REPLIES) }));
         const people: Record<ParticipantId, { reacted?: StarMessage; replied?: StarMessage }> = {};
         for (const [id, star] of state.reacted) people[id] = { reacted: star };
         for (const [id, star] of replied) people[id] = { ...people[id], replied: star };
-        return [
-          month,
-          { mostReacted: state.mostReacted, mostReplied: mostReplied.slice(0, TOP), people },
-        ];
+        return [month, { mostReacted: state.mostReacted, mostReplied: top, people }];
       }),
     );
   }

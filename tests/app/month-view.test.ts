@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { lifeOf, maxIndex, messagesPerPeriod, monthsOf, monthView } from '../../src/app/month-view';
+import {
+  joinsByDay,
+  lifeOf,
+  maxIndex,
+  messagesPerPeriod,
+  monthsOf,
+  monthView,
+} from '../../src/app/month-view';
 import {
   MESSAGE_KINDS,
   WHOLE_FILE,
@@ -277,10 +284,10 @@ describe('lifeOf', () => {
       ...dashboard,
       membership: {
         u3: [
-          { day: '2026-03-20', type: 'join', via: 'link', by: null },
-          { day: '2026-04-08', type: 'leave', removed: false, by: null },
+          { day: '2026-03-20', type: 'join', name: 'Carla', via: 'link', by: null },
+          { day: '2026-04-08', type: 'leave', name: 'Carla', removed: false, by: null },
         ],
-        'name:Eva': [{ day: '2026-04-01', type: 'join', via: 'invited', by: 'Ana' }],
+        'name:Eva': [{ day: '2026-04-01', type: 'join', name: 'Eva', via: 'invited', by: 'Ana' }],
       },
     });
     expect(life).toEqual([
@@ -303,5 +310,21 @@ describe('lifeOf', () => {
         byPerson: { u2: 5, u3: 12 },
       },
     ]);
+  });
+});
+
+describe('joinsByDay', () => {
+  it('lists who joined each day, by the name the notice gives', () => {
+    const days = joinsByDay({
+      ...dashboard,
+      membership: {
+        u3: [
+          { day: '2026-03-20', type: 'join', name: 'Carla', via: 'link', by: null },
+          { day: '2026-04-08', type: 'leave', name: 'Carla', removed: false, by: null },
+        ],
+        'name:Eva': [{ day: '2026-03-20', type: 'join', name: 'Eva', via: 'invited', by: 'Ana' }],
+      },
+    });
+    expect([...days]).toEqual([['2026-03-20', ['Carla', 'Eva']]]);
   });
 });

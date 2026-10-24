@@ -6,6 +6,8 @@ export interface MembershipEvent {
   /** Local day, `YYYY-MM-DD`. */
   readonly day: string;
   readonly type: 'join' | 'leave';
+  /** The name the notice gives them, `null` when it has none. */
+  readonly name: string | null;
   /** How they joined: invite link, request, added by someone, or adding themselves. */
   readonly via?: 'link' | 'request' | 'invited' | 'self';
   /** Who added or removed them, by name, when it was someone else. */
@@ -71,12 +73,14 @@ export class Membership implements Analyzer<MembershipResult> {
             ? {
                 day: n.day,
                 type: 'join',
+                name: who.name,
                 via: n.via === 'added' ? (bySomeoneElse ? 'invited' : 'self') : (n.via ?? 'link'),
                 by: n.via === 'added' && bySomeoneElse ? n.actorName : null,
               }
             : {
                 day: n.day,
                 type: 'leave',
+                name: who.name,
                 removed: bySomeoneElse,
                 by: bySomeoneElse ? n.actorName : null,
               };

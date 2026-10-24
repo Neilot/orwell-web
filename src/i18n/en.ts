@@ -326,8 +326,6 @@ export const en: Messages = {
     wholeGroupNote: 'nobody highlighted',
     clear: 'Clear the chosen person and see the whole group',
     close: '✕',
-    cardHint:
-      'Showing whoever writes the most. Choose someone under “Person” at the top to see their card and highlight them in every chart.',
   },
   communities: {
     names: ['Community A', 'Community B', 'Community C', 'Community D', 'Community E', 'Others'],
@@ -389,9 +387,14 @@ export const en: Messages = {
       replyTimeNote: (group: string) => `median · group ${group}`,
       reactionsPerMessage: 'Reactions per message',
     },
-    timesAverage: (times: string) => `${times}× the average`,
-    belowAverage: (percent: string) => `${percent} below average`,
-    nearAverage: 'close to average',
+    timesMore: (times: string) => `▲ ${times}× more`,
+    percentMore: (percent: string) => `▲ ${percent} more`,
+    percentLess: (percent: string) => `▼ ${percent} less`,
+    asAverage: '≈ About average',
+    faster: '▲ Faster',
+    slower: '▼ Slower',
+    groupAverage: (value: string) => `Group average: ${value}`,
+    factsTitle: 'Facts',
     hours: 'Hours when they write',
     weekdays: 'Days of the week',
     kinds: 'Message types',
@@ -414,6 +417,8 @@ export const en: Messages = {
     barMessages: 'Messages',
     barShare: 'Share',
     facts: {
+      inGroup: 'In the group',
+      withOthers: 'With others',
       first: 'First message',
       last: 'Last message',
       favouriteHour: 'Favourite hour',
@@ -424,7 +429,7 @@ export const en: Messages = {
       replies: 'Replies',
       reactions: 'Reactions',
       sentReceived: (sent: string, received: string) => `${sent} sent · ${received} received`,
-      edited: 'Edited',
+      edited: 'Edited messages',
       longest: 'Longest message',
       longestCharacters: (n: string) => `${n} characters`,
     },
@@ -435,6 +440,7 @@ export const en: Messages = {
     titleWholeFile: 'Messages per day',
     legendBars: 'Messages per day',
     legendAverage: '7-day average',
+    legendJoins: 'Joins',
     chartLabel: 'Messages per day',
     help: {
       label: 'How this chart works',
@@ -443,6 +449,7 @@ export const en: Messages = {
         'Each bar is a day; the taller it is, the more messages there were that day.',
         'The line is the average of the last 7 days: it shows whether the group is picking up or slowing down without looking at a single day.',
         'The brightest bar is the busiest day. When you look at a month, the grey bands mark the weekends.',
+        'With “Whole group” chosen, the green numbers over the bars are the people who joined the group that day. Hover over the day to see who.',
       ],
     },
     record: (count: string, weekday: string, day: string) =>
@@ -454,6 +461,8 @@ export const en: Messages = {
       `${weekday}, ${month} ${day}, ${year}`,
     tipMessages: 'Messages',
     tipAverage: '7-day average',
+    tipJoins: 'Joined the group',
+    andMore: (count: string) => ` and ${count} more`,
     noValue: '—',
   },
   scatter: {
@@ -651,6 +660,7 @@ export const en: Messages = {
     replies: (count: number, formatted: string) =>
       `${formatted} ${count === 1 ? 'reply' : 'replies'}`,
     empty: 'No data for this period.',
+    moreReplies: (count: string) => `And ${count} more replies.`,
     when: (day: string, month: string, year: string, time: string) =>
       `${month} ${day}, ${year} · ${time}`,
   },
@@ -685,6 +695,8 @@ export const en: Messages = {
     leadSame: ', the same as the month before',
     leadChange: (count: string, more: boolean) =>
       `, ${count} ${more ? 'more' : 'fewer'} than the month before`,
+    leadJoins: (joins: string) => `. Over the whole file, ${joins} people joined`,
+    leadLeaves: (leaves: string) => `. Over the whole file, ${leaves} people left`,
     leadChanges: (joins: string, leaves: string) =>
       `. Over the whole file, ${joins} joined and ${leaves} left`,
   },

@@ -15,8 +15,11 @@ import { pageSignal } from '../page';
 
 /** Partners drawn at most; the list is then trimmed to the height of the left column. */
 const MAX_PARTNERS = 60;
-/** Partners always shown, also when the two columns stack on narrow screens. */
-const MIN_PARTNERS = 7;
+/** Partners shown at least beside the other cards, and when the cards stack on narrow screens. */
+const MIN_PARTNERS = 5;
+const STACKED_PARTNERS = 8;
+/** Space between the cards, in pixels, as in the stylesheet. */
+const CARD_GAP = 12;
 /** A longest message over this many characters is cut, with "Ver más" to open it. */
 const LONGEST_PREVIEW = 280;
 const ONE_COLUMN = '(max-width:1000px)';
@@ -40,19 +43,21 @@ export class PersonCardSection {
   private readonly avatar = el('div', 'avatar');
   private readonly title = el('h2');
   private readonly meta = el('div', 'meta');
-  private readonly hint = el('p', 'phint');
   private readonly tiles = el('div', 'tiles');
   private readonly hoursChart = svgEl('svg', { id: 'pHour', viewBox: '0 0 300 110' });
   private readonly weekdaysChart = svgEl('svg', { id: 'pWd', viewBox: '0 0 300 110' });
   private readonly kinds = el('div', 'stackbar');
   private readonly kindsLegend = el('div', 'legend');
-  private readonly facts = el('dl', 'facts');
+  private readonly facts = el('div', 'facts');
   private readonly ego = el('div', 'ego');
   private readonly egoNote = el('p', 'ego-note');
   private egoTotal = 0;
   private readonly oneColumn = matchMedia(ONE_COLUMN);
-  private readonly left: HTMLDivElement;
-  private readonly right: HTMLDivElement;
+  private readonly whenCard: HTMLDivElement;
+  private readonly egoCard: HTMLDivElement;
+  private readonly wordsCard: HTMLDivElement;
+  /** Whether the interactions show everyone rather than what fits beside the other cards. */
+  private egoAll = false;
   private readonly wordChips = el('div', 'chips');
   private readonly emojiChips = el('div', 'chips');
   private readonly stickerChips = el('div', 'chips');
@@ -68,14 +73,13 @@ export class PersonCardSection {
     this.title.id = 'h-persona';
     this.title.textContent = tp.defaultTitle;
     this.meta.id = 'pMeta';
-    this.hint.textContent = t.mark.cardHint;
 
     const nameBlock = el('div');
     nameBlock.append(this.title, this.meta);
     const name = el('div', 'pname');
     name.append(this.avatar, nameBlock);
     const head = el('div', 'phead');
-    head.append(name, this.hint);
+    head.append(name);
 
     this.tiles.id = 'pTiles';
     this.kinds.id = 'pKinds';
@@ -89,34 +93,26 @@ export class PersonCardSection {
     this.emojiChips.id = 'pEmo';
     this.stickerChips.id = 'pStk';
 
-    const column = (): HTMLDivElement => {
-      const div = el('div');
-      div.style.display = 'flex';
-      div.style.flexDirection = 'column';
-      div.style.gap = '16px';
-      div.style.minWidth = '0';
-      return div;
-    };
     const block = (...children: Node[]): HTMLDivElement => {
       const div = el('div');
       div.append(...children);
       return div;
     };
+    const card = (className: string, ...children: Node[]): HTMLDivElement => {
+      const div = el('div', `pcard ${className}`);
+      div.append(...children);
+      return div;
+    };
 
-    const charts = el('div', 'grid2');
-    charts.style.gap = '14px';
+    const charts = el('div', 'pc-two');
     charts.append(
       block(subHeading(tp.hours), this.hoursChart),
       block(subHeading(tp.weekdays), this.weekdaysChart),
     );
-    const left = column();
-    left.id = 'pColL';
-    this.left = left;
-    left.append(
-      this.tiles,
+    this.whenCard = card(
+      'pc-when',
       charts,
       block(subHeading(tp.kinds), this.kinds, this.kindsLegend),
-      this.facts,
     );
 
     const egoLegend = el('div', 'legend');
@@ -131,18 +127,32 @@ export class PersonCardSection {
       item.append(swatch, label);
       egoLegend.append(item);
     }
-    const right = column();
-    right.id = 'pColR';
-    this.right = right;
-    right.append(
+    this.egoCard = card(
+      'pc-ego',
       block(subHeading(tp.interactions), egoLegend, this.ego, this.egoNote),
+    );
+    this.wordsCard = card(
+      'pc-words',
       block(subHeading(tp.words), this.wordChips),
       block(subHeading(tp.emojis), this.emojiChips),
       block(subHeading(tp.stickers), this.stickerChips),
     );
 
-    const body = el('div', 'persona');
-    body.append(left, right);
+    // Figures on top; the interactions run as tall as the two cards beside them.
+    const body = el('div', 'persona pc');
+    body.append(
+      card('pc-tiles', this.tiles),
+      this.whenCard,
+      this.egoCard,
+      this.wordsCard,
+      card('pc-facts', subHeading(tp.factsTitle), this.facts),
+    );
+    this.egoNote.addEventListener('click', (ev) => {
+      if (ev.target instanceof Element && ev.target.closest('.more')) {
+        this.egoAll = !this.egoAll;
+        this.fitEgo();
+      }
+    });
     this.element.append(head, body);
 
     // Column heights change with the layout and once the web fonts are in.
@@ -169,11 +179,10 @@ export class PersonCardSection {
     });
   }
 
-  /** `chosen`: false while the card shows the top writer because nobody is chosen. */
-  render(view: MonthView, selectedId: string, chosen: boolean): void {
+  render(view: MonthView, selectedId: string): void {
     const person = view.people.find((p) => p.id === selectedId);
     if (!person) return;
-    this.hint.hidden = chosen;
+    this.egoAll = false;
     this.drawHeader(view, person);
     this.drawTiles(view, person);
     this.drawBars(
@@ -217,13 +226,43 @@ export class PersonCardSection {
     if (pill) this.meta.append(pill);
   }
 
-  private compare(value: number, average: number): HTMLSpanElement {
+  /**
+   * A short tag against the group's average: "▲ 7× más", "▼ 22 % menos" or "≈ Como la media";
+   * for reply times, faster or slower. The average itself shows on hover.
+   */
+  private compare(
+    value: number | null,
+    average: number | null,
+    format: (n: number) => string,
+    lowerIsBetter = false,
+  ): HTMLSpanElement {
     const tp = this.t.person;
     if (!average || !value) return el('span', 'c', '—');
     const ratio = value / average;
-    if (ratio >= 1.15) return el('span', 'c up', tp.timesAverage(formatDecimal(ratio)));
-    if (ratio <= 0.87) return el('span', 'c', tp.belowAverage(formatPercent(1 - ratio)));
-    return el('span', 'c', tp.nearAverage);
+    const above = ratio >= 1.15;
+    const below = ratio <= 0.87;
+    let tag: HTMLSpanElement;
+    if (lowerIsBetter) {
+      tag = below
+        ? el('span', 'cmp up', tp.faster)
+        : above
+          ? el('span', 'cmp down', tp.slower)
+          : el('span', 'cmp', tp.asAverage);
+    } else if (above) {
+      tag = el(
+        'span',
+        'cmp up',
+        ratio >= 2
+          ? tp.timesMore(formatInt(Math.round(ratio)))
+          : tp.percentMore(formatPercent(ratio - 1)),
+      );
+    } else {
+      tag = below
+        ? el('span', 'cmp down', tp.percentLess(formatPercent(1 - ratio)))
+        : el('span', 'cmp', tp.asAverage);
+    }
+    tag.title = tp.groupAverage(format(average));
+    return tag;
   }
 
   private drawTiles(view: MonthView, p: PersonView): void {
@@ -245,6 +284,7 @@ export class PersonCardSection {
         this.compare(
           p.messages,
           average((q) => q.messages),
+          (n) => formatInt(Math.round(n)),
         ),
       ],
       [
@@ -253,6 +293,7 @@ export class PersonCardSection {
         this.compare(
           p.words,
           average((q) => q.words),
+          (n) => formatInt(Math.round(n)),
         ),
       ],
       [
@@ -261,6 +302,7 @@ export class PersonCardSection {
         this.compare(
           p.characters,
           average((q) => q.characters),
+          (n) => formatInt(Math.round(n)),
         ),
       ],
       [
@@ -269,6 +311,7 @@ export class PersonCardSection {
         this.compare(
           perText(p, p.words),
           average((q) => perText(q, q.words)),
+          formatDecimal,
         ),
       ],
       [
@@ -277,6 +320,7 @@ export class PersonCardSection {
         this.compare(
           perText(p, p.characters),
           average((q) => perText(q, q.characters)),
+          formatDecimal,
         ),
       ],
       [
@@ -287,12 +331,17 @@ export class PersonCardSection {
       [
         durationText(details.replyMedian, t),
         tt.replyTime,
-        note(tt.replyTimeNote(durationText(view.responseTimes?.median ?? null, t))),
+        this.compare(
+          details.replyMedian,
+          view.responseTimes?.median ?? null,
+          (n) => durationText(n, t),
+          true,
+        ),
       ],
       [
         formatDecimal(reactionsPerMessage),
         tt.reactionsPerMessage,
-        this.compare(reactionsPerMessage, groupReactions),
+        this.compare(reactionsPerMessage, groupReactions, formatDecimal),
       ],
     ];
     this.tiles.replaceChildren(
@@ -417,8 +466,8 @@ export class PersonCardSection {
   }
 
   /**
-   * Shows as many partners as fit beside the left column (at least seven), so the right column
-   * never ends up taller than the left one. On narrow screens the columns stack: seven then.
+   * Shows as many partners as fit in the height of the two cards beside the list, so it ends
+   * level with them; "Ver más" shows everyone. On narrow screens the cards stack: eight then.
    */
   private fitEgo(): void {
     const rows = [...this.ego.querySelectorAll<HTMLElement>('.row')];
@@ -426,28 +475,42 @@ export class PersonCardSection {
       this.egoNote.hidden = true;
       return;
     }
+    const { t } = this;
+    const say = (shown: number): void => {
+      this.egoNote.hidden = shown >= this.egoTotal && !this.egoAll;
+      const more = el('button', 'more', this.egoAll ? t.person.showLess : t.person.showMore);
+      more.type = 'button';
+      this.egoNote.replaceChildren(
+        t.person.interactionsShown(formatInt(shown), formatInt(this.egoTotal)),
+        ' ',
+        more,
+      );
+    };
     for (const row of rows) row.hidden = false;
-    // The note takes room too, so it is measured as shown.
-    this.egoNote.hidden = false;
-    this.egoNote.textContent = this.t.person.interactionsShown('0', '0');
+    if (this.egoAll) {
+      say(rows.length);
+      return;
+    }
     let shown = rows.length;
     if (this.oneColumn.matches) {
-      shown = Math.min(shown, MIN_PARTNERS);
-    } else {
-      while (shown > MIN_PARTNERS && this.right.offsetHeight > this.left.offsetHeight) {
-        shown--;
-        const row = rows[shown];
-        if (row) row.hidden = true;
-      }
+      shown = Math.min(shown, STACKED_PARTNERS);
+      rows.forEach((row, i) => {
+        row.hidden = i >= shown;
+      });
+      say(shown);
+      return;
     }
-    rows.forEach((row, i) => {
-      row.hidden = i >= shown;
-    });
-    this.egoNote.hidden = shown >= this.egoTotal;
-    this.egoNote.textContent = this.t.person.interactionsShown(
-      formatInt(shown),
-      formatInt(this.egoTotal),
-    );
+    // Measured at its own height, not stretched to the row it shares.
+    this.egoCard.style.alignSelf = 'start';
+    const room = this.whenCard.offsetHeight + this.wordsCard.offsetHeight + CARD_GAP;
+    say(shown);
+    while (shown > MIN_PARTNERS && this.egoCard.offsetHeight > room) {
+      shown--;
+      const row = rows[shown];
+      if (row) row.hidden = true;
+      say(shown);
+    }
+    this.egoCard.style.alignSelf = '';
   }
 
   private drawChips(view: MonthView, p: PersonView): void {
@@ -516,40 +579,55 @@ export class PersonCardSection {
         this.fitEgo();
       });
       show(false);
-      const count = el('span', 'num', t.person.facts.longestCharacters(formatInt(longest.length)));
-      count.style.color = 'var(--muted)';
-      count.style.fontSize = '12px';
-      const value = document.createDocumentFragment();
-      value.append(quote, more, ' ', count);
+      const value = el('div');
+      value.append(quote, more);
       longestValue = value;
     }
+    // One join or leave is already in the header; a history of several is listed here.
     const joinsAndLeaves = view.membership[p.id] ?? [];
-    const facts: [string, Node | string][] = [
-      ...(joinsAndLeaves.length
-        ? [[t.membership.title, membershipList(joinsAndLeaves, t)] as [string, Node]]
-        : []),
-      [tf.first, date(habits?.firstDay)],
-      [tf.last, date(habits?.lastDay)],
-      [tf.favouriteHour, p.messages ? t.dates.hour(pad2(maxIndex(p.hours))) : '—'],
-      [tf.favouriteDay, p.messages ? (t.dates.weekdays[maxIndex(p.weekdays)] ?? '—') : '—'],
-      [
-        tf.questions,
-        p.textMessages
-          ? tf.questionsValue(formatPercent((habits?.questions ?? 0) / p.textMessages))
-          : '—',
-      ],
-      [tf.started, formatInt(habits?.conversationsStarted ?? 0)],
-      [tf.replies, tf.sentReceived(formatInt(p.repliesSent), formatInt(p.repliesReceived))],
-      [tf.reactions, tf.sentReceived(formatInt(p.reactionsSent), formatInt(p.reactionsReceived))],
-      [tf.edited, formatInt(habits?.edited ?? 0)],
-      [tf.longest, longestValue],
-    ];
-    this.facts.replaceChildren(
-      ...facts.flatMap(([term, value]) => {
+    const group = (title: string, rows: readonly [string, Node | string][]): HTMLDivElement => {
+      const list = el('dl');
+      for (const [term, value] of rows) {
         const dd = el('dd');
         dd.append(value);
-        return [el('dt', undefined, term), dd];
-      }),
+        list.append(el('dt', undefined, term), dd);
+      }
+      const box = el('div', 'fg');
+      box.append(el('div', 'fg-h', title), list);
+      return box;
+    };
+    const longestBox = el('div', 'fg fg-long');
+    const longestTitle = el('div', 'fg-h', tf.longest);
+    if (longest?.length) {
+      longestTitle.append(
+        ' ',
+        el('span', undefined, tf.longestCharacters(formatInt(longest.length))),
+      );
+    }
+    longestBox.append(longestTitle);
+    if (longestValue instanceof Node) longestBox.append(longestValue);
+    else longestBox.append(el('p', 'fg-none', t.person.noWords));
+    this.facts.replaceChildren(
+      group(tf.inGroup, [
+        ...(joinsAndLeaves.length > 1
+          ? [[t.membership.title, membershipList(joinsAndLeaves, t)] as [string, Node]]
+          : []),
+        [tf.first, date(habits?.firstDay)],
+        [tf.last, date(habits?.lastDay)],
+        [tf.started, formatInt(habits?.conversationsStarted ?? 0)],
+        [tf.edited, formatInt(habits?.edited ?? 0)],
+      ]),
+      group(tf.withOthers, [
+        [
+          tf.questions,
+          p.textMessages
+            ? tf.questionsValue(formatPercent((habits?.questions ?? 0) / p.textMessages))
+            : '—',
+        ],
+        [tf.replies, tf.sentReceived(formatInt(p.repliesSent), formatInt(p.repliesReceived))],
+        [tf.reactions, tf.sentReceived(formatInt(p.reactionsSent), formatInt(p.reactionsReceived))],
+      ]),
+      longestBox,
     );
   }
 }

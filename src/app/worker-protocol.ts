@@ -200,6 +200,8 @@ export interface StarMessage {
   readonly count: number;
   /** For reactions, the most used emojis as `[emoji, count]`. */
   readonly reactions?: Ranked;
+  /** For the most replied messages, the first replies, in the order they were sent. */
+  readonly replies?: readonly Omit<StarMessage, 'count' | 'reactions' | 'replies'>[];
 }
 
 export interface MonthStars {
@@ -216,6 +218,8 @@ export interface MembershipEvent {
   /** Local day, `YYYY-MM-DD`. */
   readonly day: string;
   readonly type: 'join' | 'leave';
+  /** The name the notice gives them, `null` when it has none. */
+  readonly name: string | null;
   readonly via?: 'link' | 'request' | 'invited' | 'self';
   /** Who added or removed them, by name, when it was someone else. */
   readonly by: string | null;

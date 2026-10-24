@@ -316,7 +316,7 @@ export function renderAppShell(
     const markedPerson: PersonView | null = marked
       ? (view.people.find((p) => p.id === id) ?? null)
       : null;
-    person.render(view, id, marked);
+    person.render(view, id);
     ranking.render(view, id);
     wheel.render(view, id, marked);
     hours.render(view, id, marked);

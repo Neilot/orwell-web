@@ -35,16 +35,16 @@ describe('Membership', () => {
     analyzer.consume(notice(ana, 28, { change: 'join', via: 'added', who: [{ name: 'Nadie' }] }));
     expect(analyzer.result()).toEqual({
       u3: [
-        { day: '2026-08-04', type: 'join', via: 'link', by: null },
-        { day: '2026-08-20', type: 'leave', removed: false, by: null },
-        { day: '2026-08-27', type: 'join', via: 'link', by: null },
+        { day: '2026-08-04', name: 'Carla', type: 'join', via: 'link', by: null },
+        { day: '2026-08-20', name: 'Carla', type: 'leave', removed: false, by: null },
+        { day: '2026-08-27', name: 'Carla', type: 'join', via: 'link', by: null },
       ],
       u4: [
-        { day: '2026-08-06', type: 'join', via: 'invited', by: 'Ana' },
-        { day: '2026-08-25', type: 'leave', removed: true, by: 'Ana' },
+        { day: '2026-08-06', name: 'Dani', type: 'join', via: 'invited', by: 'Ana' },
+        { day: '2026-08-25', name: 'Dani', type: 'leave', removed: true, by: 'Ana' },
       ],
       // Someone who never writes keeps an id made from their name.
-      'name:Nadie': [{ day: '2026-08-28', type: 'join', via: 'invited', by: 'Ana' }],
+      'name:Nadie': [{ day: '2026-08-28', name: 'Nadie', type: 'join', via: 'invited', by: 'Ana' }],
     });
   });
 
@@ -53,7 +53,7 @@ describe('Membership', () => {
     analyzer.consume(chatEvent({ author: ana }));
     analyzer.consume(notice(ana, 3, { change: 'join', via: 'added', who: [{ name: 'Ana' }] }));
     expect(analyzer.result()).toEqual({
-      u1: [{ day: '2026-08-03', type: 'join', via: 'self', by: null }],
+      u1: [{ day: '2026-08-03', name: 'Ana', type: 'join', via: 'self', by: null }],
     });
   });
 });
