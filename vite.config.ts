@@ -18,6 +18,7 @@ function devCsp(): Plugin {
 export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
   worker: { format: 'es' },
-  build: { target: 'es2022', sourcemap: true },
+  // Source maps help when debugging locally; the published site (built in CI) goes without them.
+  build: { target: 'es2022', sourcemap: process.env.CI !== 'true' },
   plugins: [devCsp()],
 });

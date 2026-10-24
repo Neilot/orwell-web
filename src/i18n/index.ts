@@ -1,5 +1,4 @@
-import { en } from './en';
-import { es, type Locale, type Messages } from './es';
+import type { Locale, Messages } from './es';
 
 export type { Locale, Messages };
 
@@ -7,8 +6,9 @@ export const LOCALES: readonly Locale[] = ['es', 'en'];
 
 const STORAGE_KEY = 'orwell-lang';
 
-export function messagesFor(locale: Locale): Messages {
-  return locale === 'en' ? en : es;
+/** The texts of a language. Each one is a separate download, fetched the first time it is needed. */
+export async function loadMessages(locale: Locale): Promise<Messages> {
+  return locale === 'en' ? (await import('./en')).en : (await import('./es')).es;
 }
 
 /** The language chosen before in this browser or, the first time, the browser's own. */

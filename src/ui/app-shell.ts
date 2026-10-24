@@ -50,6 +50,7 @@ export interface ShellOptions {
 }
 
 type TabKey = 'summary' | 'who' | 'when' | 'what';
+const TAB_KEYS: readonly TabKey[] = ['summary', 'who', 'when', 'what'];
 
 /** Builds the page: header with month picker and upload, then the dashboard sections. */
 export function renderAppShell(
@@ -181,13 +182,16 @@ export function renderAppShell(
   // One panel per tab; each is a two-column grid where wide sections take both columns.
   const panels = new Map<TabKey, HTMLElement>();
   const board = el('div');
+  let openTabKey: TabKey | null = null;
+  const stale = new Map<TabKey, Set<'month' | 'person'>>();
   const tabs = new TabBar<TabKey>(
     t.tabs.label,
-    (['summary', 'who', 'when', 'what'] as const).map((key) => ({ key, label: t.tabs[key] })),
+    TAB_KEYS.map((key) => ({ key, label: t.tabs[key] })),
     (key) => {
       for (const [k, panel] of panels) panel.hidden = k !== key;
-      // Names are fitted to the space they have, which is only known once a panel is shown.
-      if (view && selected) selectPerson(selected, false);
+      openTabKey = key;
+      // A tab is drawn once it shows: names and lists fit the space it really has.
+      drawTab(key);
     },
   );
   const layout: [TabKey, [HTMLElement, boolean][]][] = [
@@ -300,24 +304,65 @@ export function renderAppShell(
   function selectPerson(id: string, scroll: boolean): void {
     if (!view) return;
     selected = id;
-    const markedPerson: PersonView | null = marked
-      ? (view.people.find((p) => p.id === id) ?? null)
-      : null;
-    person.render(view, id);
-    ranking.render(view, id);
-    wheel.render(view, id, marked);
-    hours.render(view, id, marked);
-    weekdays.render(view, id, marked);
-    scatter.render(view, id);
-    wordCloud.render(view, id);
-    daily.render(view, markedPerson);
-    stickers.render(view, markedPerson);
-    emojis.render(view, markedPerson);
-    life.render(view, markedPerson);
-    stars.render(view, markedPerson);
-    links.render(view, markedPerson);
-    picker.render(view, markedPerson);
+    picker.render(view, markedPersonIn(view));
+    markStale('person');
     if (scroll) centerCard();
+  }
+
+  function markedPersonIn(shown: MonthView): PersonView | null {
+    return marked ? (shown.people.find((p) => p.id === selected) ?? null) : null;
+  }
+
+  /**
+   * What each tab still has to draw: `month` for the parts that only change with the period,
+   * `person` for those that follow the chosen person. Only the open tab is drawn right away; the
+   * others wait until they are opened, so a click does not redraw charts nobody sees.
+   */
+  function markStale(part: 'month' | 'person'): void {
+    for (const key of TAB_KEYS) {
+      const parts = stale.get(key) ?? new Set();
+      parts.add(part);
+      stale.set(key, parts);
+    }
+    if (openTabKey) drawTab(openTabKey);
+  }
+
+  function drawTab(key: TabKey): void {
+    const parts = stale.get(key);
+    if (!view || !selected || !parts?.size) return;
+    const month = parts.has('month');
+    const id = selected;
+    const markedPerson = markedPersonIn(view);
+    switch (key) {
+      case 'summary':
+        if (month) {
+          kpis.render(view);
+          awards.render(view);
+        }
+        daily.render(view, markedPerson);
+        life.render(view, markedPerson);
+        break;
+      case 'who':
+        person.render(view, id);
+        wheel.render(view, id, marked);
+        ranking.render(view, id);
+        scatter.render(view, id);
+        break;
+      case 'when':
+        if (month) rhythm.render(view);
+        hours.render(view, id, marked);
+        weekdays.render(view, id, marked);
+        break;
+      case 'what':
+        if (month) messageKinds.render(view);
+        wordCloud.render(view, id);
+        stars.render(view, markedPerson);
+        links.render(view, markedPerson);
+        stickers.render(view, markedPerson);
+        emojis.render(view, markedPerson);
+        break;
+    }
+    parts.clear();
   }
 
   function setDashboardVisible(visible: boolean): void {
@@ -352,11 +397,10 @@ export function renderAppShell(
       : t.header.subtitle(monthName, String(view.year), participants) +
         (view.partial ? t.header.partialMonth(String(view.lastDay)) : '');
     options.onShown?.(dashboard, month);
-    kpis.render(view);
-    rhythm.render(view);
-    messageKinds.render(view);
-    awards.render(view);
-    if (selected) selectPerson(selected, false);
+    if (selected) {
+      picker.render(view, markedPersonIn(view));
+      markStale('month');
+    }
   }
 
   /** Returns the number of months shown, or 0 when the file had no messages. */

@@ -9,7 +9,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 
 import { AnalysisClient, type Dashboard } from './app';
-import { messagesFor, preferredLocale, rememberLocale, type Locale } from './i18n';
+import { loadMessages, preferredLocale, rememberLocale, type Locale } from './i18n';
 import { renderAppShell } from './ui/app-shell';
 import { setNumberLocale } from './ui/format';
 import { resetPage } from './ui/page';
@@ -26,21 +26,22 @@ const client = new AnalysisClient(worker);
 let shown: { dashboard: Dashboard; month: string } | null = null;
 
 /** Builds the page in a language, showing the chat that was on screen, if any. */
-function start(locale: Locale): void {
+async function start(locale: Locale): Promise<void> {
   if (!root) return;
+  const t = await loadMessages(locale);
   resetPage();
   setNumberLocale(locale);
   document.documentElement.lang = locale;
-  renderAppShell(root, messagesFor(locale), (file) => client.analyze(file), {
+  renderAppShell(root, t, (file) => client.analyze(file), {
     restore: shown,
     onShown: (dashboard, month) => {
       shown = { dashboard, month };
     },
     onLocale: (next) => {
       rememberLocale(next);
-      start(next);
+      void start(next);
     },
   });
 }
 
-start(preferredLocale());
+void start(preferredLocale());
