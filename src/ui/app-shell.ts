@@ -13,8 +13,9 @@ import { FileDrop } from './components/file-drop';
 import { TabBar } from './components/tab-bar';
 import { Tooltip } from './components/tooltip';
 import { dayText } from './dates';
-import { el, svgEl } from './dom';
+import { el } from './dom';
 import { formatInt } from './format';
+import { eyeIcon } from './icons';
 import { ConnectionsWheelSection } from './sections/connections-wheel';
 import { DailyMessagesSection } from './sections/daily-messages';
 import { EmojisSection } from './sections/emojis';
@@ -49,20 +50,6 @@ export interface ShellOptions {
 }
 
 type TabKey = 'summary' | 'who' | 'when' | 'what';
-
-function eyeIcon(): SVGSVGElement {
-  const icon = svgEl('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' });
-  icon.append(
-    svgEl('path', {
-      d: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z',
-      fill: 'none',
-      stroke: 'currentColor',
-      'stroke-width': '2',
-    }),
-    svgEl('circle', { cx: '12', cy: '12', r: '3.2', fill: 'currentColor' }),
-  );
-  return icon;
-}
 
 /** Builds the page: header with month picker and upload, then the dashboard sections. */
 export function renderAppShell(

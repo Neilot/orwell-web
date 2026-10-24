@@ -391,6 +391,7 @@ export const es = {
     slower: '▼ Más lento',
     groupAverage: (value: string) => `Media del grupo: ${value}`,
     factsTitle: 'Datos',
+    creator: 'Creador de Orwell. Y no, no se dio más premios por eso.',
     hours: 'Horas en que escribe',
     weekdays: 'Días de la semana',
     kinds: 'Tipos de mensaje',

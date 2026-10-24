@@ -7,6 +7,7 @@ import type { Tooltip } from '../components/tooltip';
 import { el, svgEl } from '../dom';
 import { formatDecimal, formatInt, formatPercent, pad2 } from '../format';
 import { durationText } from '../duration';
+import { eyeIcon } from '../icons';
 import { dayText } from '../dates';
 import { membershipList, membershipPill } from '../membership';
 import { communityColor, initials, personName, styleAvatar } from '../people';
@@ -25,6 +26,8 @@ const LONGEST_PREVIEW = 280;
 const ONE_COLUMN = '(max-width:1000px)';
 const MAX_WORDS = 12;
 const MAX_CHIPS = 8;
+/** The Telegram account of whoever made Orwell; the id is the same in every group. */
+const CREATOR_ID = 'user671533711';
 
 function subHeading(text: string): HTMLDivElement {
   return el('div', 'sub-h', text);
@@ -209,6 +212,15 @@ export class PersonCardSection {
     const name = personName(person, t);
     this.avatar.textContent = initials(name);
     styleAvatar(this.avatar, person.community);
+    // A little easter egg on the creator's own card.
+    if (person.id === CREATOR_ID) {
+      const eye = el('span', 'cr-eye');
+      eye.setAttribute('role', 'img');
+      eye.title = t.person.creator;
+      eye.setAttribute('aria-label', t.person.creator);
+      eye.append(eyeIcon());
+      this.avatar.append(eye);
+    }
     this.title.textContent = name;
     const rank = [...view.people].sort((a, b) => b.messages - a.messages).indexOf(person) + 1;
     this.meta.textContent =

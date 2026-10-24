@@ -395,6 +395,7 @@ export const en: Messages = {
     slower: '▼ Slower',
     groupAverage: (value: string) => `Group average: ${value}`,
     factsTitle: 'Facts',
+    creator: "Orwell's creator. And no, he didn't give himself extra awards for it.",
     hours: 'Hours when they write',
     weekdays: 'Days of the week',
     kinds: 'Message types',
