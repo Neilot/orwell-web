@@ -47,13 +47,40 @@ function searchIcon(): SVGSVGElement {
   return icon;
 }
 
+/** Four dots, the "see all" sign, for the whole group. */
+function allIcon(): SVGSVGElement {
+  const icon = svgEl('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' });
+  for (const [cx, cy] of [
+    [8, 8],
+    [16, 8],
+    [8, 16],
+    [16, 16],
+  ]) {
+    icon.append(
+      svgEl('circle', { cx: String(cx), cy: String(cy), r: '2.6', fill: 'currentColor' }),
+    );
+  }
+  return icon;
+}
+
+/** The whole group's avatar: the people's circle, in blue, with four dots. */
+function groupAvatar(avatar: HTMLElement): void {
+  avatar.style.background = '';
+  avatar.style.boxShadow = '';
+  avatar.classList.add('gb');
+  avatar.replaceChildren(allIcon());
+}
+
 function keyHint(keys: readonly string[], text: string): HTMLSpanElement {
   const span = el('span');
   span.append(...keys.map((k) => el('kbd', undefined, k)), text);
   return span;
 }
 
-/** "Ver otra persona": a button that opens a searchable list, filterable by community. */
+/**
+ * "Persona" in the tab bar: whoever is chosen for the whole page, or the whole group. It opens a
+ * searchable list, filterable by community, with the whole group first; the ✕ goes back to it.
+ */
 export class PersonPicker {
   readonly element = el('div', 'picker');
   private readonly button = el('button', 'pk-btn');
@@ -64,7 +91,10 @@ export class PersonPicker {
   private readonly filters = el('div', 'pk-filters');
   private readonly list = el('ul', 'pk-list');
   private readonly empty = el('div', 'pk-empty');
+  private readonly clear = el('button', 'bp-x');
+  private readonly all = el('button', 'pk-all');
   private view: MonthView | null = null;
+  /** The chosen person, or `null` for the whole group. */
   private selected: PersonView | null = null;
   private order: PersonView[] = [];
   private items: PersonView[] = [];
@@ -74,6 +104,7 @@ export class PersonPicker {
   constructor(
     private readonly t: Messages,
     private readonly onSelect: (id: string) => void,
+    onClear: () => void,
   ) {
     const tp = t.person;
     this.element.id = 'picker';
@@ -117,8 +148,29 @@ export class PersonPicker {
       keyHint(['Enter'], tp.keyChoose),
       keyHint(['Esc'], tp.keyClose),
     );
-    this.popover.append(search, this.filters, this.list, this.empty, foot);
-    this.element.append(label, this.button, this.popover);
+    const allAvatar = el('span', 'pk-av');
+    groupAvatar(allAvatar);
+    this.all.type = 'button';
+    this.all.append(
+      allAvatar,
+      el('span', undefined, t.mark.wholeGroup),
+      el('small', undefined, t.mark.wholeGroupNote),
+    );
+    this.clear.type = 'button';
+    this.clear.textContent = t.mark.close;
+    this.clear.setAttribute('aria-label', t.mark.clear);
+    this.clear.hidden = true;
+    this.popover.append(search, this.filters, this.all, this.list, this.empty, foot);
+    this.element.append(label, this.button, this.clear, this.popover);
+
+    this.clear.addEventListener('click', () => {
+      onClear();
+      this.button.focus();
+    });
+    this.all.addEventListener('click', () => {
+      this.close(true);
+      onClear();
+    });
 
     this.button.addEventListener('click', () => {
       if (this.popover.hidden) this.open();
@@ -191,14 +243,24 @@ export class PersonPicker {
     });
   }
 
-  render(view: MonthView, selected: PersonView): void {
+  /** `selected`: the chosen person, or `null` for the whole group. */
+  render(view: MonthView, selected: PersonView | null): void {
     if (view !== this.view) {
       this.view = view;
       this.fill(view);
     }
     this.selected = selected;
+    this.element.classList.toggle('none', !selected);
+    this.clear.hidden = !selected;
+    this.all.setAttribute('aria-pressed', String(!selected));
+    if (!selected) {
+      this.buttonName.textContent = this.t.mark.wholeGroup;
+      groupAvatar(this.buttonAvatar);
+      return;
+    }
     const name = personName(selected, this.t);
     this.buttonName.textContent = name;
+    this.buttonAvatar.classList.remove('gb');
     this.buttonAvatar.textContent = initials(name);
     styleAvatar(this.buttonAvatar, selected.community);
   }

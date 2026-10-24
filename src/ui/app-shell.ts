@@ -10,7 +10,6 @@ import {
 } from '../app';
 import { LOCALES, type Locale, type Messages } from '../i18n';
 import { FileDrop } from './components/file-drop';
-import { HighlightLabel } from './components/highlight-label';
 import { TabBar } from './components/tab-bar';
 import { Tooltip } from './components/tooltip';
 import { dayText } from './dates';
@@ -33,6 +32,7 @@ import { MonthPicker } from './sections/month-picker';
 import { lockIcon, uploadIcon, WelcomeSection } from './sections/welcome';
 import { revealDashboard } from './reveal';
 import { PersonCardSection } from './sections/person-card';
+import { PersonPicker } from './sections/person-picker';
 import { RankingSection } from './sections/ranking';
 import { StarMessagesSection } from './sections/star-messages';
 import { WeekdayHeatmapSection } from './sections/weekday-heatmap';
@@ -153,26 +153,25 @@ export function renderAppShell(
       return true;
     },
   );
+  /** Choosing someone anywhere (the wheel, a ranking, an award) makes them the page's person. */
   const select = (id: string): void => {
-    selectPerson(id, true);
-  };
-  /** A click on a name in the wheel also marks that person in the other charts. */
-  const selectAndMark = (id: string): void => {
     marked = true;
     selectPerson(id, true);
   };
-  /** Choosing someone in the card's search marks them too, without scrolling away. */
-  const pickAndMark = (id: string): void => {
+  /** Choosing someone in the bar keeps the page where it is. */
+  const choose = (id: string): void => {
     marked = true;
     selectPerson(id, false);
   };
+  /** Back to the whole group: nobody highlighted, and the card shows the top writer. */
   const clearMark = (): void => {
     marked = false;
-    if (view && selected) selectPerson(selected, false);
+    if (view?.topWriter) selectPerson(view.topWriter, false);
   };
   const kpis = new KpisSection(t);
-  const wheel = new ConnectionsWheelSection(t, tooltip, selectAndMark);
-  const person = new PersonCardSection(t, tooltip, pickAndMark);
+  const wheel = new ConnectionsWheelSection(t, tooltip, select);
+  const person = new PersonCardSection(t, tooltip);
+  const picker = new PersonPicker(t, choose, clearMark);
   const daily = new DailyMessagesSection(t, tooltip);
   const ranking = new RankingSection(t, select);
   const hours = new HourHeatmapSection(t, tooltip, select);
@@ -255,14 +254,7 @@ export function renderAppShell(
     panels.set(key, panel);
     board.append(panel);
   }
-  const highlight = new HighlightLabel(
-    t,
-    () => {
-      if (selected) selectPerson(selected, true);
-    },
-    clearMark,
-  );
-  tabs.side.append(highlight.element, controls);
+  tabs.side.append(picker.element, controls);
   /** Switches tabs and, if the page was further down, goes back to the top of the new one. */
   const openTab = (key: TabKey): void => {
     tabs.show(key);
@@ -324,7 +316,7 @@ export function renderAppShell(
     const markedPerson: PersonView | null = marked
       ? (view.people.find((p) => p.id === id) ?? null)
       : null;
-    person.render(view, id);
+    person.render(view, id, marked);
     ranking.render(view, id);
     wheel.render(view, id, marked);
     hours.render(view, id, marked);
@@ -337,7 +329,7 @@ export function renderAppShell(
     life.render(view, markedPerson);
     stars.render(view, markedPerson);
     links.render(view, markedPerson);
-    highlight.render(markedPerson);
+    picker.render(view, markedPerson);
     if (scroll) centerCard();
   }
 

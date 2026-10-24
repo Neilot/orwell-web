@@ -318,10 +318,12 @@ export const es = {
     thatDay: (name: string, verb: string) => `${name}: ${verb.toLowerCase()} este día`,
   },
   mark: {
-    highlighting: 'Resaltando',
-    open: (name: string) => `Ver la ficha de ${name}`,
-    clear: (name: string) => `Quitar el resaltado de ${name}`,
+    wholeGroup: 'Todo el grupo',
+    wholeGroupNote: 'sin resaltar a nadie',
+    clear: 'Quitar a la persona elegida y ver todo el grupo',
     close: '✕',
+    cardHint:
+      'Muestra a quien más escribe. Elige a alguien en «Persona», arriba, para ver su ficha y resaltarlo en todas las gráficas.',
   },
   communities: {
     names: ['Comunidad A', 'Comunidad B', 'Comunidad C', 'Comunidad D', 'Comunidad E', 'Otros'],
@@ -357,7 +359,7 @@ export const es = {
   },
   person: {
     defaultTitle: 'Persona',
-    picker: 'Ver otra persona',
+    picker: 'Persona',
     searchPlaceholder: 'Buscar por nombre…',
     searchLabel: 'Buscar persona',
     filterLabel: 'Filtrar por comunidad',

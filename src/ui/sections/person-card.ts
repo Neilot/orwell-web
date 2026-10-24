@@ -11,7 +11,6 @@ import { dayText } from '../dates';
 import { membershipList, membershipPill } from '../membership';
 import { communityColor, initials, personName, styleAvatar } from '../people';
 import { kindsBar } from './kinds-bar';
-import { PersonPicker } from './person-picker';
 import { pageSignal } from '../page';
 
 /** Partners drawn at most; the list is then trimmed to the height of the left column. */
@@ -41,7 +40,7 @@ export class PersonCardSection {
   private readonly avatar = el('div', 'avatar');
   private readonly title = el('h2');
   private readonly meta = el('div', 'meta');
-  private readonly picker: PersonPicker;
+  private readonly hint = el('p', 'phint');
   private readonly tiles = el('div', 'tiles');
   private readonly hoursChart = svgEl('svg', { id: 'pHour', viewBox: '0 0 300 110' });
   private readonly weekdaysChart = svgEl('svg', { id: 'pWd', viewBox: '0 0 300 110' });
@@ -61,8 +60,6 @@ export class PersonCardSection {
   constructor(
     private readonly t: Messages,
     private readonly tooltip: Tooltip,
-    /** Called with whoever is chosen in the "Ver otra persona" search. */
-    onPick: (id: string) => void,
   ) {
     const tp = t.person;
     this.element.id = 'persona';
@@ -71,14 +68,14 @@ export class PersonCardSection {
     this.title.id = 'h-persona';
     this.title.textContent = tp.defaultTitle;
     this.meta.id = 'pMeta';
-    this.picker = new PersonPicker(t, onPick);
+    this.hint.textContent = t.mark.cardHint;
 
     const nameBlock = el('div');
     nameBlock.append(this.title, this.meta);
     const name = el('div', 'pname');
     name.append(this.avatar, nameBlock);
     const head = el('div', 'phead');
-    head.append(name, this.picker.element);
+    head.append(name, this.hint);
 
     this.tiles.id = 'pTiles';
     this.kinds.id = 'pKinds';
@@ -172,10 +169,11 @@ export class PersonCardSection {
     });
   }
 
-  render(view: MonthView, selectedId: string): void {
+  /** `chosen`: false while the card shows the top writer because nobody is chosen. */
+  render(view: MonthView, selectedId: string, chosen: boolean): void {
     const person = view.people.find((p) => p.id === selectedId);
     if (!person) return;
-    this.picker.render(view, person);
+    this.hint.hidden = chosen;
     this.drawHeader(view, person);
     this.drawTiles(view, person);
     this.drawBars(

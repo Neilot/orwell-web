@@ -322,10 +322,12 @@ export const en: Messages = {
     thatDay: (name: string, verb: string) => `${name}: ${verb.toLowerCase()} this day`,
   },
   mark: {
-    highlighting: 'Highlighting',
-    open: (name: string) => `Open ${name}'s card`,
-    clear: (name: string) => `Stop highlighting ${name}`,
+    wholeGroup: 'Whole group',
+    wholeGroupNote: 'nobody highlighted',
+    clear: 'Clear the chosen person and see the whole group',
     close: '✕',
+    cardHint:
+      'Showing whoever writes the most. Choose someone under “Person” at the top to see their card and highlight them in every chart.',
   },
   communities: {
     names: ['Community A', 'Community B', 'Community C', 'Community D', 'Community E', 'Others'],
@@ -361,7 +363,7 @@ export const en: Messages = {
   },
   person: {
     defaultTitle: 'Person',
-    picker: 'See someone else',
+    picker: 'Person',
     searchPlaceholder: 'Search by name…',
     searchLabel: 'Search person',
     filterLabel: 'Filter by community',
