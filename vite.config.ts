@@ -8,7 +8,7 @@ function devCsp(): Plugin {
     apply: 'serve',
     transformIndexHtml(html) {
       return html
-        .replace("connect-src 'none'", "connect-src 'self' ws: wss:")
+        .replace("connect-src 'self'", "connect-src 'self' ws: wss:")
         .replace("style-src 'self'", "style-src 'self' 'unsafe-inline'");
     },
   };

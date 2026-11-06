@@ -270,6 +270,8 @@ export const es = {
     privacy: 'Tu archivo no sale de tu equipo; nadie más lo ve',
     reading: (name: string) => `Leyendo ${name}…`,
     analysing: 'Analizando el chat…',
+    opening: 'Abriendo el grupo…',
+    openFailed: 'No se pudo abrir este enlace. Pide uno nuevo a quien te lo compartió.',
     noMessages: 'El archivo no tiene ningún mensaje que analizar.',
     skipped: (count: number, formatted: string) =>
       `Se omitieron ${formatted} ${count === 1 ? 'mensaje no válido' : 'mensajes no válidos'}.`,

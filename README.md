@@ -25,6 +25,16 @@ npm run dev
 | `npm run typecheck` | TypeScript only                                  |
 | `npm run format`    | Format everything with Prettier                  |
 
+## Sharing a chat by link
+
+To let people open a group without its export, run this with the export on your computer:
+
+```bash
+npm run share -- path/to/result.json
+```
+
+It analyses the chat, writes an encrypted file to `public/shared/` and prints a link. Commit that file to publish it. The file is unreadable without the key, and the key travels only in the part of the link after `#`, which browsers never send to a server. Anyone who has the link can see the group, so treat it like a password. Use `--month YYYY-MM` to choose the month it opens on (the latest by default) and `--link <link>` to update a chat without changing its link.
+
 ## Exporting a chat from Telegram
 
 In Telegram Desktop, open the group, choose **Export chat history**, pick **JSON** as the format and export. Load the resulting `result.json` (or a `.zip` of the export folder) in the page.

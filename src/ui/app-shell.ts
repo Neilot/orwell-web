@@ -5,6 +5,7 @@ import {
   monthView,
   WHOLE_FILE,
   type Dashboard,
+  type SharedChat,
   type MonthView,
   type PersonView,
 } from '../app';
@@ -45,6 +46,8 @@ export interface ShellOptions {
   readonly onLocale: (locale: Locale) => void;
   /** A chat already analysed, shown at once in the given period (after a change of language). */
   readonly restore?: { readonly dashboard: Dashboard; readonly month: string } | null;
+  /** Brings the chat of a shared link, shown as soon as it arrives. */
+  readonly open?: (() => Promise<SharedChat>) | null;
   /** Told every time the chat or the period on screen changes. */
   readonly onShown?: (dashboard: Dashboard, month: string) => void;
 }
@@ -485,6 +488,21 @@ export function renderAppShell(
     }
   }
 
+  async function openShared(open: () => Promise<SharedChat>): Promise<void> {
+    say(t.upload.opening);
+    welcome.setBusy(true);
+    try {
+      const chat = await open();
+      showDashboard(chat.dashboard, false, chat.month);
+      say('');
+    } catch (error) {
+      console.error(error);
+      say(t.upload.openFailed, true);
+    } finally {
+      welcome.setBusy(false);
+    }
+  }
+
   pick.addEventListener('click', () => {
     input.click();
   });
@@ -496,4 +514,5 @@ export function renderAppShell(
 
   showEmpty();
   if (options.restore) showDashboard(options.restore.dashboard, false, options.restore.month);
+  else if (options.open) void openShared(options.open);
 }

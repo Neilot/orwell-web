@@ -277,6 +277,8 @@ export const en: Messages = {
     privacy: 'Your file stays on your device; nobody else sees it',
     reading: (name: string) => `Reading ${name}…`,
     analysing: 'Analysing the chat…',
+    opening: 'Opening the group…',
+    openFailed: 'This link could not be opened. Ask whoever shared it for a new one.',
     noMessages: 'The file has no messages to analyse.',
     skipped: (count: number, formatted: string) =>
       `${formatted} invalid ${count === 1 ? 'message was' : 'messages were'} left out.`,
