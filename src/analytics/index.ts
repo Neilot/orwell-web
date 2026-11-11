@@ -1,6 +1,13 @@
 export { WHOLE_FILE } from './calendar';
 export { OTHER_COMMUNITY } from './communities';
 export {
+  Conversations,
+  DAY_START_HOUR,
+  type Conversation,
+  type ConversationsResult,
+  type MonthConversations,
+} from './conversations';
+export {
   CUSTOM_REACTION,
   Interactions,
   MAX_GRAPH_PEOPLE,
@@ -14,6 +21,12 @@ export {
 export { LinkSharing, type LinksResult, type MonthLinks, type SharedLink } from './links';
 export { Membership, type MembershipEvent, type MembershipResult } from './membership';
 export { MESSAGE_KINDS, type MessageKind } from './message-kind';
+export {
+  MessageLengths,
+  type LengthSpread,
+  type MessageLengthsResult,
+  type MonthMessageLengths,
+} from './message-lengths';
 export { MessagesPerDay, type MessagesPerDayResult } from './messages-per-day';
 export {
   PeopleActivity,
@@ -47,3 +60,9 @@ export {
   type StarMessagesResult,
 } from './star-messages';
 export { WeeklyRhythm, type WeeklyRhythmResult } from './weekly-rhythm';
+export {
+  WEEKS_PER_MONTH,
+  WeeklyWords,
+  type WeeklyWord,
+  type WeeklyWordsResult,
+} from './weekly-words';

@@ -76,3 +76,21 @@ export class Tooltip {
     this.element.hidden = true;
   }
 }
+
+/** Shows `tooltip` with the given content while the pointer is over `node` (or after a tap). */
+export function bindTooltip(
+  node: HTMLElement,
+  tooltip: Tooltip,
+  title: string,
+  rows: readonly TooltipRow[],
+  notes?: TooltipNotes,
+): void {
+  const show = (ev: PointerEvent): void => {
+    tooltip.show(ev, title, rows, notes);
+  };
+  node.addEventListener('pointerenter', show);
+  node.addEventListener('pointermove', show);
+  node.addEventListener('pointerleave', () => {
+    tooltip.hide();
+  });
+}

@@ -431,5 +431,50 @@ html{accent-color:var(--accent)}
 @media (pointer:coarse){.seg button{padding:10px 13px}.pk-filters button{padding:7px 12px}.rank-row{padding-block:9px}.pk-list li{padding-block:10px}.ctl input[type=range]{height:32px}select{padding:9px 10px}.btn{padding:12px 18px}#stkWho .row{padding-block:6px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
+.mrows{display:flex;flex-direction:column;gap:1px;border-top:1px solid var(--line);padding-top:6px}
+.mrow{display:grid;grid-template-columns:minmax(72px,132px) minmax(0,1fr) 54px;gap:8px;align-items:center;font-size:13px;padding:4px;border-radius:6px}
+.mrow:hover,.pair:hover,.ends-row:hover{background:var(--panel2)}
+.mrow .nm,.pair .nm,.ends-row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg)}
+.mrow .val,.pair .val,.ends-row .val{font:12px var(--mono);text-align:right;color:var(--fg2);white-space:nowrap}
+.mtrack{position:relative;display:block;height:12px;background:var(--grid);border-radius:2px}
+.mtrack i{position:absolute;top:0;bottom:0;left:0;border-radius:2px}
+.mtrack.rev i{left:auto;right:0}
+.mtrack i.tick{top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--fg);border-radius:1px}
+.mtrack i.tick.soft{background:var(--fg2)}
+.mtrack.rev i.tick{margin-left:0;margin-right:-1px}
+.mtrack i.rng{background:color-mix(in srgb,var(--accent) 38%,var(--grid))}
+.mtrack i.dot{top:50%;bottom:auto;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--panel)}
+.maxis{padding-block:0}
+.maxis:hover{background:none}
+.scale{display:flex;justify-content:space-between;font:11px var(--mono);color:var(--muted)}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;font-size:13px;padding:5px 4px;border-radius:6px}
+.pair .mtrack{grid-column:1/-1}
+.ends-row{display:grid;grid-template-columns:minmax(64px,124px) 22px minmax(0,1fr) minmax(0,1fr) 22px;gap:6px;align-items:center;font-size:13px;padding:4px;border-radius:6px}
+.ends-row .val:last-child{text-align:left}
+.ends-head{grid-template-columns:minmax(64px,124px) minmax(0,1fr) minmax(0,1fr);font:600 11px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.ends-head:hover{background:none}
+.ends-head .l{text-align:right}
+.conv{display:flex;flex-direction:column;gap:2px}
+.conv-row{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;align-items:center}
+.conv-row .d{font:11px var(--mono);color:var(--muted);text-align:right;white-space:nowrap}
+.conv-row.we .d{color:var(--fg);font-weight:600}
+.conv-track{position:relative;display:block;height:11px;border-radius:2px;background:linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/25% 100%,var(--grid)}
+.conv-track i{position:absolute;top:1px;bottom:1px;min-width:4px;border-radius:3px}
+.conv-axis{margin-bottom:2px}
+.wk-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.wk{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0;background:var(--panel2)}
+.wk b{font:600 16px var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk .n{font:12px var(--mono);color:var(--fg2);display:flex;flex-wrap:wrap;gap:2px 8px}
+.wk .dl{font-weight:600;color:var(--muted)}
+.wk .dl.up{color:var(--good-ink)}
+.wk .dl.down{color:var(--in-ink)}
+.wk .bars{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;align-items:end;height:52px;border-bottom:1px solid var(--line)}
+.wk .bars i{display:block;min-height:2px;border-radius:2px 2px 0 0;background:color-mix(in srgb,var(--accent) 38%,var(--grid))}
+.wk .bars i.top{background:var(--accent)}
+.wk .bars i.off{background:none}
+.wk .wl{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;font:10.5px var(--mono);color:var(--muted);text-align:center}
+@media (max-width:560px){.mrow{grid-template-columns:minmax(64px,104px) minmax(0,1fr) 50px}.ends-row{grid-template-columns:minmax(56px,92px) 20px minmax(0,1fr) minmax(0,1fr) 20px}.ends-head{grid-template-columns:minmax(56px,92px) minmax(0,1fr) minmax(0,1fr)}.wk-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (pointer:coarse){.conv-track{height:14px}.mrow,.pair,.ends-row{padding-block:7px}}
+
 /* Not in the prototype stylesheet (its page template adds it): `.btn` sets `display`, which would otherwise override `hidden`. */
 [hidden]{display:none!important}

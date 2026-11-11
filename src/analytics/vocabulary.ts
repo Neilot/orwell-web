@@ -9,6 +9,16 @@ export const STOP_WORDS: ReadonlySet<string> = new Set(
   ),
 );
 
+/** Whether a word says something: not a stop word, a number, a link or under three letters. */
+export function isMeaningful(word: string): boolean {
+  return !(
+    word.length < 3 ||
+    STOP_WORDS.has(word) ||
+    /^\d+$/.test(word) ||
+    word.startsWith('http')
+  );
+}
+
 /** How many of each person's top words and emojis are kept. */
 export const TOP_WORDS = 110;
 export const TOP_EMOJIS = 10;
@@ -81,14 +91,7 @@ export class Vocabulary implements Analyzer<VocabularyResult> {
       emojis: new Map<string, number>(),
     }));
     for (const word of words(event.text)) {
-      if (
-        word.length < 3 ||
-        STOP_WORDS.has(word) ||
-        /^\d+$/.test(word) ||
-        word.startsWith('http')
-      ) {
-        continue;
-      }
+      if (!isMeaningful(word)) continue;
       bump(p.words, word);
       bump(group.words, word);
     }

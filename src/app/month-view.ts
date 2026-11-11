@@ -11,6 +11,9 @@ import {
   type GroupVocabulary,
   type PersonVocabulary,
   type MembershipEvent,
+  type MonthConversations,
+  type MonthMessageLengths,
+  type WeeklyWord,
   type MonthLinks,
   type MonthStars,
   type MonthStickers,
@@ -75,6 +78,20 @@ export interface GraphView {
   readonly people: readonly PersonView[];
   readonly matrices: Readonly<Record<MatrixType, readonly (readonly number[])[]>>;
 }
+
+/** Two people and how often each replied to the other; `a` is the one who replied more. */
+export interface PairView {
+  readonly a: PersonView;
+  readonly b: PersonView;
+  readonly aToB: number;
+  readonly bToA: number;
+  readonly total: number;
+  /** Their replies in the previous month, or `null` when the export has none before. */
+  readonly previous: number | null;
+}
+
+/** How many pairs the dashboard shows. */
+export const TOP_PAIRS = 10;
 
 /** A calendar day shown in the per-day charts. */
 export interface CalendarDay {
@@ -144,6 +161,13 @@ export interface MonthView {
   readonly life: readonly LifeMonth[];
   /** Who joined the group each day, by the name the notice gives, keyed `YYYY-MM-DD`. */
   readonly joinsByDay: ReadonlyMap<string, readonly (string | null)[]>;
+  /** The pairs of people who replied to each other most, busiest first. */
+  readonly pairs: readonly PairView[];
+  /** `null` for a chat published before this statistic existed; the same for the next two. */
+  readonly conversations: MonthConversations | null;
+  readonly messageLengths: MonthMessageLengths | null;
+  /** The words that marked a week; `null` too for the whole export, which has no weeks. */
+  readonly weeklyWords: readonly WeeklyWord[] | null;
   details(id: string): PersonDetails;
   /** The previous month in the export, for comparisons, or `null` for the first one. */
   readonly previous: {
@@ -151,6 +175,8 @@ export interface MonthView {
     readonly monthIndex: number;
     readonly totals: MonthTotals;
     readonly people: readonly PersonView[];
+    readonly conversations: MonthConversations | null;
+    readonly messageLengths: MonthMessageLengths | null;
   } | null;
 }
 
@@ -284,6 +310,56 @@ function graphView(
     }),
     matrices,
   };
+}
+
+/** Replies between each two people of a month, keyed by both ids in order. */
+function replyPairs(
+  dashboard: Dashboard,
+  month: string,
+  everyone: readonly PersonView[],
+): Map<string, { a: PersonView; b: PersonView; aToB: number; bToA: number }> {
+  const graph = dashboard.interactionsPerMonth[month]?.graph;
+  const pairs = new Map<string, { a: PersonView; b: PersonView; aToB: number; bToA: number }>();
+  for (const [from, to, count] of graph?.edges.reply ?? []) {
+    const sender = everyone[graph?.nodes[from] ?? -1];
+    const receiver = everyone[graph?.nodes[to] ?? -1];
+    if (!sender || !receiver || sender.id === receiver.id) continue;
+    if (sender.kind !== 'person' || receiver.kind !== 'person') continue;
+    const forward = sender.id < receiver.id;
+    const key = forward ? `${sender.id}\n${receiver.id}` : `${receiver.id}\n${sender.id}`;
+    const pair = pairs.get(key) ?? {
+      a: forward ? sender : receiver,
+      b: forward ? receiver : sender,
+      aToB: 0,
+      bToA: 0,
+    };
+    if (forward) pair.aToB += count;
+    else pair.bToA += count;
+    pairs.set(key, pair);
+  }
+  return pairs;
+}
+
+function topPairs(
+  dashboard: Dashboard,
+  month: string,
+  everyone: readonly PersonView[],
+  previousMonth: string | undefined,
+  previousPeople: readonly PersonView[],
+): PairView[] {
+  const before = previousMonth ? replyPairs(dashboard, previousMonth, previousPeople) : null;
+  return [...replyPairs(dashboard, month, everyone)]
+    .map(([key, pair]) => {
+      const earlier = before?.get(key);
+      const previous = before ? (earlier ? earlier.aToB + earlier.bToA : 0) : null;
+      const total = pair.aToB + pair.bToA;
+      // The one who replied more goes first.
+      return pair.aToB >= pair.bToA
+        ? { ...pair, total, previous }
+        : { a: pair.b, b: pair.a, aToB: pair.bToA, bToA: pair.aToB, total, previous };
+    })
+    .sort((x, y) => y.total - x.total)
+    .slice(0, TOP_PAIRS);
 }
 
 const NO_LINKS: MonthLinks = { total: 0, distinctSites: 0, people: {}, sites: [], links: [] };
@@ -433,6 +509,10 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
       mostReacted: dashboard.starsPerMonth[month]?.mostReacted ?? [],
       mostReplied: dashboard.starsPerMonth[month]?.mostReplied ?? [],
     },
+    pairs: topPairs(dashboard, month, everyone, previousMonth, previousPeople),
+    conversations: dashboard.conversationsPerMonth?.[month] ?? null,
+    messageLengths: dashboard.messageLengthsPerMonth?.[month] ?? null,
+    weeklyWords: wholeFile ? null : (dashboard.weeklyWordsPerMonth?.[month] ?? null),
     life: lifeOf(dashboard),
     joinsByDay: joinsByDay(dashboard),
     details: (id) => ({
@@ -449,6 +529,8 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
           monthIndex: Number(previousMonth.slice(5, 7)) - 1,
           totals: totals(previousPeople),
           people: previousPeople,
+          conversations: dashboard.conversationsPerMonth?.[previousMonth] ?? null,
+          messageLengths: dashboard.messageLengthsPerMonth?.[previousMonth] ?? null,
         }
       : null,
   };

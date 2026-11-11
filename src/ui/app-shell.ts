@@ -18,6 +18,11 @@ import { el } from './dom';
 import { formatInt } from './format';
 import { eyeIcon } from './icons';
 import { ConnectionsWheelSection } from './sections/connections-wheel';
+import { ConversationsSection } from './sections/conversations';
+import { DayEndsSection } from './sections/day-ends';
+import { MessageLengthsSection } from './sections/message-lengths';
+import { PairsSection } from './sections/pairs';
+import { WeeklyWordsSection } from './sections/weekly-words';
 import { DailyMessagesSection } from './sections/daily-messages';
 import { EmojisSection } from './sections/emojis';
 import { AwardsSection } from './sections/awards';
@@ -176,6 +181,11 @@ export function renderAppShell(
   const emojis = new EmojisSection(t);
   const links = new LinksSection(t);
   const stars = new StarMessagesSection(t, select);
+  const pairs = new PairsSection(t, tooltip);
+  const lengths = new MessageLengthsSection(t, tooltip);
+  const conversations = new ConversationsSection(t, tooltip);
+  const dayEnds = new DayEndsSection(t, tooltip);
+  const weeklyWords = new WeeklyWordsSection(t, tooltip);
   const life = new GroupLifeSection(t, tooltip, (month) => {
     showMonth(month);
   });
@@ -212,6 +222,8 @@ export function renderAppShell(
       [
         [person.element, true],
         [wheel.element, true],
+        [pairs.element, false],
+        [lengths.element, false],
         [ranking.element, false],
         [scatter.element, false],
       ],
@@ -222,12 +234,15 @@ export function renderAppShell(
         [hours.element, true],
         [weekdays.element, false],
         [rhythm.element, false],
+        [conversations.element, false],
+        [dayEnds.element, false],
       ],
     ],
     [
       'what',
       [
         [wordCloud.element, true],
+        [weeklyWords.element, true],
         [stars.element, true],
         [messageKinds.element, true],
         [links.element, true],
@@ -346,18 +361,29 @@ export function renderAppShell(
         life.render(view, markedPerson);
         break;
       case 'who':
+        if (month) {
+          pairs.render(view);
+          lengths.render(view);
+        }
         person.render(view, id);
         wheel.render(view, id, marked);
         ranking.render(view, id);
         scatter.render(view, id);
         break;
       case 'when':
-        if (month) rhythm.render(view);
+        if (month) {
+          rhythm.render(view);
+          conversations.render(view);
+          dayEnds.render(view);
+        }
         hours.render(view, id, marked);
         weekdays.render(view, id, marked);
         break;
       case 'what':
-        if (month) messageKinds.render(view);
+        if (month) {
+          messageKinds.render(view);
+          weeklyWords.render(view);
+        }
         wordCloud.render(view, id);
         stars.render(view, markedPerson);
         links.render(view, markedPerson);

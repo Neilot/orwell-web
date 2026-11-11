@@ -1,8 +1,10 @@
 // The one place where sources and analyzers are wired together.
 import {
+  Conversations,
   Interactions,
   LinkSharing,
   Membership,
+  MessageLengths,
   MessagesPerDay,
   PeopleActivity,
   PersonHabitsAnalyzer,
@@ -11,6 +13,7 @@ import {
   StickerUsage,
   Vocabulary,
   WeeklyRhythm,
+  WeeklyWords,
 } from '../analytics';
 import type { Dashboard } from '../app';
 import { AnalysisPipeline, SourceRegistry, type Analyzer, type InputFile } from '../core';
@@ -54,6 +57,9 @@ async function analyze(file: InputFile): Promise<Dashboard> {
   const membership = new Membership();
   const links = new LinkSharing();
   const stars = new StarMessages();
+  const conversations = new Conversations();
+  const lengths = new MessageLengths();
+  const weeklyWords = new WeeklyWords();
   const report = await new AnalysisPipeline([
     perDay,
     people,
@@ -66,6 +72,9 @@ async function analyze(file: InputFile): Promise<Dashboard> {
     membership,
     links,
     stars,
+    conversations,
+    lengths,
+    weeklyWords,
   ]).run(source, file);
   // The pipeline stores each result under its analyzer's id; this reads it back typed.
   const resultOf = <T>(analyzer: Analyzer<T>): T => report.results[analyzer.id] as T;
@@ -84,6 +93,9 @@ async function analyze(file: InputFile): Promise<Dashboard> {
     membership: resultOf(membership),
     linksPerMonth: resultOf(links),
     starsPerMonth: resultOf(stars),
+    conversationsPerMonth: resultOf(conversations),
+    messageLengthsPerMonth: resultOf(lengths),
+    weeklyWordsPerMonth: resultOf(weeklyWords),
   };
 }
 

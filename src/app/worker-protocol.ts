@@ -229,6 +229,53 @@ export interface MembershipEvent {
   readonly removed?: boolean;
 }
 
+/**
+ * One conversation: when it started (`YYYY-MM-DDTHH:mm`, the export's wall clock), how many
+ * minutes it lasted, its messages and how many people wrote in it.
+ */
+export type Conversation = readonly [
+  start: string,
+  minutes: number,
+  messages: number,
+  people: number,
+];
+
+export interface MonthConversations {
+  /** In the order they happened. Empty for the whole export. */
+  readonly conversations: readonly Conversation[];
+  /** Days each person wrote the first message of. A day runs from 05:00 to 04:59. */
+  readonly opened: Readonly<Record<string, number>>;
+  /** Days each person wrote the last message of. */
+  readonly closed: Readonly<Record<string, number>>;
+}
+
+/** How long someone's messages usually are, in words. */
+export interface LengthSpread {
+  /** One message in ten is this short or shorter. */
+  readonly low: number;
+  /** Half the messages are this long or shorter. */
+  readonly median: number;
+  /** One message in ten is this long or longer. */
+  readonly high: number;
+  /** Messages with at least one word. */
+  readonly count: number;
+}
+
+export interface MonthMessageLengths {
+  readonly group: LengthSpread;
+  readonly people: Readonly<Record<string, LengthSpread>>;
+}
+
+/** A word that marked one week of a month. */
+export interface WeeklyWord {
+  readonly word: string;
+  /** Uses in each week of the month: days 1–7, 8–14, 15–21, 22–28 and 29 to the end. */
+  readonly weeks: readonly number[];
+  readonly total: number;
+  /** Uses in the previous month of the export, or `null` for its first month. */
+  readonly previous: number | null;
+}
+
 /** What the page needs to draw the dashboard. Plain data, so it survives `postMessage`. */
 export interface Dashboard {
   /** Group name from the export, or `null` when it has none. */
@@ -253,6 +300,14 @@ export interface Dashboard {
   readonly starsPerMonth: Readonly<Record<string, MonthStars>>;
   /** Per person, when they joined or left the group, over the whole export. */
   readonly membership: Readonly<Record<string, readonly MembershipEvent[]>>;
+  /**
+   * The next three are missing in chats published before these statistics existed, which
+   * store the analysed result rather than the export.
+   */
+  readonly conversationsPerMonth?: Readonly<Record<string, MonthConversations>>;
+  readonly messageLengthsPerMonth?: Readonly<Record<string, MonthMessageLengths>>;
+  /** Months only: the whole export has no weeks. */
+  readonly weeklyWordsPerMonth?: Readonly<Record<string, readonly WeeklyWord[]>>;
 }
 
 export type AnalysisErrorCode = OrwellErrorCode | 'unknown';

@@ -328,3 +328,47 @@ describe('joinsByDay', () => {
     expect([...days]).toEqual([['2026-03-20', ['Carla', 'Eva']]]);
   });
 });
+
+describe('pairs and the newer statistics', () => {
+  it('lists who replied to whom, with the one who replied more first', () => {
+    const view = monthView(
+      {
+        ...dashboard,
+        interactionsPerMonth: {
+          ...dashboard.interactionsPerMonth,
+          '2026-04': {
+            people: [participant('u2', 'Beto', 5), participant('u3', 'Carla', 12)],
+            reactions: 0,
+            reactionEmojis: [],
+            graph: {
+              nodes: [1, 0],
+              edges: {
+                reply: [
+                  [0, 1, 2],
+                  [1, 0, 5],
+                  [0, 0, 9],
+                ],
+                mention: [],
+                reaction: [],
+              },
+              communities: [0, 0],
+            },
+          },
+        },
+      },
+      '2026-04',
+    );
+    expect(view.pairs).toHaveLength(1);
+    expect(view.pairs[0]).toMatchObject({ aToB: 5, bToA: 2, total: 7, previous: 0 });
+    expect(view.pairs[0]?.a.id).toBe('u2');
+    expect(view.pairs[0]?.b.id).toBe('u3');
+  });
+
+  it('opens a chat analysed before conversations, lengths and weekly words existed', () => {
+    const view = monthView(dashboard, '2026-04');
+    expect(view.conversations).toBeNull();
+    expect(view.messageLengths).toBeNull();
+    expect(view.weeklyWords).toBeNull();
+    expect(view.previous?.conversations).toBeNull();
+  });
+});
