@@ -63,6 +63,7 @@ export { WeeklyRhythm, type WeeklyRhythmResult } from './weekly-rhythm';
 export {
   WEEKS_PER_MONTH,
   WeeklyWords,
-  type WeeklyWord,
+  type MonthWeeklyWords,
+  type WeekWord,
   type WeeklyWordsResult,
 } from './weekly-words';

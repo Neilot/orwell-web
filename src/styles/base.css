@@ -461,19 +461,33 @@ html{accent-color:var(--accent)}
 .conv-track{position:relative;display:block;height:11px;border-radius:2px;background:linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/25% 100%,var(--grid)}
 .conv-track i{position:absolute;top:1px;bottom:1px;min-width:4px;border-radius:3px}
 .conv-axis{margin-bottom:2px}
-.wk-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.wk{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0;background:var(--panel2)}
-.wk b{font:600 16px var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wk .n{font:12px var(--mono);color:var(--fg2);display:flex;flex-wrap:wrap;gap:2px 8px}
-.wk .dl{font-weight:600;color:var(--muted)}
-.wk .dl.up{color:var(--good-ink)}
-.wk .dl.down{color:var(--in-ink)}
-.wk .bars{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;align-items:end;height:52px;border-bottom:1px solid var(--line)}
-.wk .bars i{display:block;min-height:2px;border-radius:2px 2px 0 0;background:color-mix(in srgb,var(--accent) 38%,var(--grid))}
-.wk .bars i.top{background:var(--accent)}
-.wk .bars i.off{background:none}
-.wk .wl{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;font:10.5px var(--mono);color:var(--muted);text-align:center}
-@media (max-width:560px){.mrow{grid-template-columns:minmax(64px,104px) minmax(0,1fr) 50px}.ends-row{grid-template-columns:minmax(56px,92px) 20px minmax(0,1fr) minmax(0,1fr) 20px}.ends-head{grid-template-columns:minmax(56px,92px) minmax(0,1fr) minmax(0,1fr)}.wk-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.wk-line{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding-top:6px}
+.wk-stop{--rail:79px;position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;min-width:0;padding:0 6px}
+.wk-stop::before{content:"";position:absolute;left:0;right:0;top:var(--rail);height:2px;background:var(--line)}
+.wk-stop:first-child::before{left:50%}
+.wk-stop:last-child::before{right:50%}
+.wk-stop .top{height:60px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;max-width:100%}
+.wk-stop .top b{font:600 24px/1.15 var(--display);color:var(--fg);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk-stop .top small{font:12px var(--mono);color:var(--muted);white-space:nowrap}
+.wk-stop .none{font-size:13px;color:var(--muted)}
+.wk-stop .dot{position:relative;z-index:1;width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--panel);margin:12px 0 10px}
+.wk-stop.quiet .dot,.wk-stop.off .dot{background:var(--panel);border:2px solid var(--edge)}
+.wk-stop.off{opacity:.55}
+.wk-stop .when{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--fg2);display:flex;flex-direction:column;gap:1px}
+.wk-stop .when span{font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted)}
+.wk-stop .also{font-size:12.5px;color:var(--fg2);margin-top:6px;overflow-wrap:anywhere}
+@media (max-width:860px){.wk-line{grid-auto-flow:row;grid-auto-columns:auto;grid-template-columns:minmax(0,1fr)}
+.wk-stop{display:grid;grid-template-columns:22px minmax(0,1fr);align-items:start;text-align:left;gap:0 12px;padding:0 0 18px}
+.wk-stop:last-child{padding-bottom:0}
+.wk-stop::before{left:10px;right:auto;top:0;bottom:0;width:2px;height:auto}
+.wk-stop:first-child::before{left:10px;top:10px}
+.wk-stop:last-child::before{right:auto;bottom:auto;height:10px}
+.wk-stop .top{height:auto;align-items:flex-start;grid-column:2;grid-row:1}
+.wk-stop .dot{grid-column:1;grid-row:1;margin:7px 0 0 4px}
+.wk-stop .when,.wk-stop .also{grid-column:2}
+.wk-stop .when{flex-direction:row;gap:8px;margin-top:3px}
+.wk-stop .also{margin-top:2px}}
+@media (max-width:560px){.mrow{grid-template-columns:minmax(64px,104px) minmax(0,1fr) 50px}.ends-row{grid-template-columns:minmax(56px,92px) 20px minmax(0,1fr) minmax(0,1fr) 20px}.ends-head{grid-template-columns:minmax(56px,92px) minmax(0,1fr) minmax(0,1fr)}}
 @media (pointer:coarse){.conv-track{height:14px}.mrow,.pair,.ends-row{padding-block:7px}}
 
 /* Not in the prototype stylesheet (its page template adds it): `.btn` sets `display`, which would otherwise override `hidden`. */

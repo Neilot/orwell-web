@@ -371,4 +371,13 @@ describe('pairs and the newer statistics', () => {
     expect(view.weeklyWords).toBeNull();
     expect(view.previous?.conversations).toBeNull();
   });
+
+  it('ignores weekly words stored in the shape of an earlier version', () => {
+    const old = { word: 'viaje', weeks: [0, 9, 0, 0, 0], total: 9, previous: null };
+    const stored = { ...dashboard, weeklyWordsPerMonth: { '2026-04': [old] } };
+    expect(monthView(stored, '2026-04').weeklyWords).toBeNull();
+    const weeks = [[['viaje', 9, 9] as const], [], [], [], []];
+    const current = { ...dashboard, weeklyWordsPerMonth: { '2026-04': { weeks } } };
+    expect(monthView(current, '2026-04').weeklyWords).toEqual({ weeks });
+  });
 });

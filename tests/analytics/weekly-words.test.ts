@@ -19,26 +19,27 @@ describe('weekOfMonth', () => {
 });
 
 describe('WeeklyWords', () => {
-  it('keeps the words that gather in one week, with their total the month before', () => {
+  it('names the words that shot up each week, not the ones said every week', () => {
     const analyzer = new WeeklyWords();
-    say(analyzer, '2026-01-20', 'concierto', 3);
+    // Said the same every week: frequent, but it tells nothing about any of them.
+    for (const day of ['02', '09', '16', '23']) say(analyzer, `2026-02-${day}`, 'pizza', 20);
     say(analyzer, '2026-02-09', 'concierto', 9);
     say(analyzer, '2026-02-22', 'concierto', 1);
-    // Spread evenly, so it marks no week.
-    for (const day of ['02', '09', '16', '23']) say(analyzer, `2026-02-${day}`, 'pizza', 4);
-    // Too rare to count.
-    say(analyzer, '2026-02-03', 'eclipse', 7);
+    say(analyzer, '2026-02-10', 'boletas', 6);
+    say(analyzer, '2026-02-17', 'eclipse', 7);
+    // Too rare to stand for a week.
+    say(analyzer, '2026-02-24', 'mudanza', 4);
     const result = analyzer.result();
-    expect(result['2026-02']).toEqual([
-      { word: 'concierto', weeks: [0, 9, 0, 1, 0], total: 10, previous: 3 },
+    expect(result['2026-02']?.weeks).toEqual([
+      [],
+      [
+        ['concierto', 9, 10],
+        ['boletas', 6, 6],
+      ],
+      [['eclipse', 7, 7]],
+      [],
+      [],
     ]);
-    expect(result['2026-01']).toEqual([]);
     expect(result.all).toBeUndefined();
-  });
-
-  it('has no previous total in the first month', () => {
-    const analyzer = new WeeklyWords();
-    say(analyzer, '2026-01-05', 'mudanza', 8);
-    expect(analyzer.result()['2026-01']?.[0]?.previous).toBeNull();
   });
 });

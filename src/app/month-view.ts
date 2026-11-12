@@ -13,7 +13,7 @@ import {
   type MembershipEvent,
   type MonthConversations,
   type MonthMessageLengths,
-  type WeeklyWord,
+  type MonthWeeklyWords,
   type MonthLinks,
   type MonthStars,
   type MonthStickers,
@@ -166,8 +166,8 @@ export interface MonthView {
   /** `null` for a chat published before this statistic existed; the same for the next two. */
   readonly conversations: MonthConversations | null;
   readonly messageLengths: MonthMessageLengths | null;
-  /** The words that marked a week; `null` too for the whole export, which has no weeks. */
-  readonly weeklyWords: readonly WeeklyWord[] | null;
+  /** What each week was about; `null` too for the whole export, which has no weeks. */
+  readonly weeklyWords: MonthWeeklyWords | null;
   details(id: string): PersonDetails;
   /** The previous month in the export, for comparisons, or `null` for the first one. */
   readonly previous: {
@@ -362,6 +362,11 @@ function topPairs(
     .slice(0, TOP_PAIRS);
 }
 
+function weeklyWords(dashboard: Dashboard, month: string): MonthWeeklyWords | null {
+  const stored = dashboard.weeklyWordsPerMonth?.[month];
+  return stored && 'weeks' in stored ? stored : null;
+}
+
 const NO_LINKS: MonthLinks = { total: 0, distinctSites: 0, people: {}, sites: [], links: [] };
 
 /** The export month by month: messages, writers, newcomers, joins and leaves. */
@@ -512,7 +517,7 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
     pairs: topPairs(dashboard, month, everyone, previousMonth, previousPeople),
     conversations: dashboard.conversationsPerMonth?.[month] ?? null,
     messageLengths: dashboard.messageLengthsPerMonth?.[month] ?? null,
-    weeklyWords: wholeFile ? null : (dashboard.weeklyWordsPerMonth?.[month] ?? null),
+    weeklyWords: wholeFile ? null : weeklyWords(dashboard, month),
     life: lifeOf(dashboard),
     joinsByDay: joinsByDay(dashboard),
     details: (id) => ({

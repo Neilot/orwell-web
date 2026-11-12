@@ -266,14 +266,15 @@ export interface MonthMessageLengths {
   readonly people: Readonly<Record<string, LengthSpread>>;
 }
 
-/** A word that marked one week of a month. */
-export interface WeeklyWord {
-  readonly word: string;
-  /** Uses in each week of the month: days 1–7, 8–14, 15–21, 22–28 and 29 to the end. */
-  readonly weeks: readonly number[];
-  readonly total: number;
-  /** Uses in the previous month of the export, or `null` for its first month. */
-  readonly previous: number | null;
+/** A word that stood out one week: its uses that week and in the whole month. */
+export type WeekWord = readonly [word: string, uses: number, monthTotal: number];
+
+export interface MonthWeeklyWords {
+  /**
+   * Per week of the month (days 1–7, 8–14, 15–21, 22–28 and 29 to the end), the words that
+   * stood out most, the strongest first.
+   */
+  readonly weeks: readonly (readonly WeekWord[])[];
 }
 
 /** What the page needs to draw the dashboard. Plain data, so it survives `postMessage`. */
@@ -306,8 +307,11 @@ export interface Dashboard {
    */
   readonly conversationsPerMonth?: Readonly<Record<string, MonthConversations>>;
   readonly messageLengthsPerMonth?: Readonly<Record<string, MonthMessageLengths>>;
-  /** Months only: the whole export has no weeks. */
-  readonly weeklyWordsPerMonth?: Readonly<Record<string, readonly WeeklyWord[]>>;
+  /**
+   * Months only: the whole export has no weeks. Anything stored in another shape comes from a
+   * chat published with an earlier version of this statistic and is ignored.
+   */
+  readonly weeklyWordsPerMonth?: Readonly<Record<string, MonthWeeklyWords | readonly unknown[]>>;
 }
 
 export type AnalysisErrorCode = OrwellErrorCode | 'unknown';

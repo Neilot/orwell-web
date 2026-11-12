@@ -5,24 +5,23 @@ import { isMeaningful } from './vocabulary';
 
 /** Weeks a month is cut into: days 1–7, 8–14, 15–21, 22–28 and 29 to the end. */
 export const WEEKS_PER_MONTH = 5;
-/** How many words are kept per month. */
-export const WEEKLY_WORDS = 6;
-/** A word needs at least this many uses in the month to be considered. */
-export const MIN_WORD_USES = 8;
-/** And at least this share of them in its best week. */
-export const MIN_PEAK_SHARE = 0.4;
+/** How many words are kept per week. */
+export const WORDS_PER_WEEK = 3;
+/** A word needs at least this many uses in a week to stand for it. */
+export const MIN_WEEK_USES = 5;
+/** And its share of the month in that week must be this many times what an everyday word gets. */
+export const MIN_LIFT = 1.5;
 
-export interface WeeklyWord {
-  readonly word: string;
-  /** Uses in each week of the month. */
-  readonly weeks: readonly number[];
-  readonly total: number;
-  /** Uses in the previous month of the export, or `null` for its first month. */
-  readonly previous: number | null;
+/** A word that stood out one week: its uses that week and in the whole month. */
+export type WeekWord = readonly [word: string, uses: number, monthTotal: number];
+
+export interface MonthWeeklyWords {
+  /** Per week of the month, the words that stood out most, the strongest first. */
+  readonly weeks: readonly (readonly WeekWord[])[];
 }
 
 /** Per month (`YYYY-MM`); the whole export has no weeks. */
-export type WeeklyWordsResult = Record<string, readonly WeeklyWord[]>;
+export type WeeklyWordsResult = Record<string, MonthWeeklyWords>;
 
 /** 0–4: the week of the month a `YYYY-MM-DD…` day falls in. */
 export function weekOfMonth(localTime: string): number {
@@ -34,16 +33,10 @@ function sum(values: readonly number[]): number {
 }
 
 /**
- * How much a word belongs to one week: the share of its uses that fell in its best week, above
- * what an even spread would give, weighted so that frequent words win over rare ones.
- */
-function score(weeks: readonly number[], total: number): number {
-  return Math.sqrt(total) * (Math.max(...weeks) / total - 1 / WEEKS_PER_MONTH);
-}
-
-/**
- * The words that marked a week of each month: among the meaningful words written often enough,
- * the ones whose uses gather most in a single week.
+ * What each week of a month was about: the words written much more that week than the rest of
+ * the month would suggest. A word scores by its uses in the week times how far its share of the
+ * month goes beyond the week's share of all words, so everyday words, spread evenly, score
+ * around zero however frequent they are.
  */
 export class WeeklyWords implements Analyzer<WeeklyWordsResult> {
   readonly id = 'weekly-words';
@@ -66,19 +59,24 @@ export class WeeklyWords implements Analyzer<WeeklyWordsResult> {
   }
 
   result(): WeeklyWordsResult {
-    const months = [...this.months.keys()].sort();
     return Object.fromEntries(
-      months.map((month, i) => {
-        const before = i > 0 ? this.months.get(months[i - 1] ?? '') : undefined;
-        const chosen = [...(this.months.get(month) ?? [])]
-          .map(([word, weeks]) => ({ word, weeks, total: sum(weeks) }))
-          .filter(
-            (w) => w.total >= MIN_WORD_USES && Math.max(...w.weeks) / w.total >= MIN_PEAK_SHARE,
-          )
-          .sort((a, b) => score(b.weeks, b.total) - score(a.weeks, a.total))
-          .slice(0, WEEKLY_WORDS)
-          .map((w) => ({ ...w, previous: before ? sum(before.get(w.word) ?? []) : null }));
-        return [month, chosen];
+      [...this.months].map(([month, counts]) => {
+        const all = [...counts].map(([word, weeks]) => ({ word, weeks, total: sum(weeks) }));
+        const monthWords = sum(all.map((w) => w.total)) || 1;
+        const weeks = Array.from({ length: WEEKS_PER_MONTH }, (_, week) => {
+          // The share of the month's words written this week: what an everyday word would get.
+          const expected = sum(all.map((w) => w.weeks[week] ?? 0)) / monthWords;
+          return all
+            .map((w) => {
+              const uses = w.weeks[week] ?? 0;
+              return { ...w, uses, score: uses * (uses / w.total - expected) };
+            })
+            .filter((w) => w.uses >= MIN_WEEK_USES && w.uses / w.total >= MIN_LIFT * expected)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, WORDS_PER_WEEK)
+            .map((w): WeekWord => [w.word, w.uses, w.total]);
+        });
+        return [month, { weeks }];
       }),
     );
   }

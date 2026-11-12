@@ -3,7 +3,9 @@ import type { Messages } from '../../i18n';
 import { HelpButton } from '../components/help';
 import { bindTooltip, type Tooltip } from '../components/tooltip';
 import { el } from '../dom';
-import { formatInt, formatPercent } from '../format';
+import { formatInt } from '../format';
+
+const WEEKS = [0, 1, 2, 3, 4];
 
 /** First and last day of week `index` (0–4) in a month of `days` days. */
 function weekDays(index: number, days: number): [number, number] {
@@ -11,13 +13,12 @@ function weekDays(index: number, days: number): [number, number] {
 }
 
 /**
- * "Palabras por semana": the words that marked one week of the month, each with its uses week
- * by week.
+ * "¿De qué se habló cada semana?": the month as a line with one stop per week, and over each
+ * stop the word that shot up most in it.
  */
 export class WeeklyWordsSection {
   readonly element = el('section', 'card');
-  private readonly callout = el('p', 'callout');
-  private readonly tiles = el('div', 'wk-tiles');
+  private readonly list = el('div', 'wk-line');
 
   constructor(
     private readonly t: Messages,
@@ -30,66 +31,60 @@ export class WeeklyWordsSection {
     const heading = new HelpButton(title, tr.help.label, tr.help.title, tr.help.paragraphs);
     const head = el('div', 'head');
     head.append(heading.element);
-    this.tiles.setAttribute('role', 'list');
-    this.element.append(head, this.callout, this.tiles);
+    this.list.setAttribute('role', 'list');
+    this.element.append(head, el('p', 'callout', tr.intro), this.list);
   }
 
   render(view: MonthView): void {
     const { t, tooltip } = this;
     const tr = t.weeklyWords;
-    const words = view.weeklyWords;
+    const data = view.weeklyWords;
     // Weeks need a month; a chat published before this statistic existed has no data either.
-    this.element.hidden = !words;
-    if (!words) return;
-    const first = words[0];
-    if (!first) {
-      this.callout.textContent = tr.none;
-      this.tiles.replaceChildren();
-      return;
-    }
-    const peakOf = (weeks: readonly number[]): number => weeks.indexOf(Math.max(...weeks));
-    const previousMonth = view.previous ? (t.dates.months[view.previous.monthIndex] ?? '') : '';
-    this.callout.replaceChildren(
-      el('b', undefined, tr.quoted(first.word)),
-      tr.leadRest(
-        String(peakOf(first.weeks) + 1),
-        formatPercent((first.weeks[peakOf(first.weeks)] ?? 0) / first.total),
-      ),
-    );
-    this.tiles.replaceChildren(
-      ...words.map((w) => {
-        const tile = el('div', 'wk');
-        tile.setAttribute('role', 'listitem');
-        const peak = peakOf(w.weeks);
-        const top = Math.max(1, w.weeks[peak] ?? 0);
-        const bars = el('div', 'bars');
-        const labels = el('div', 'wl');
-        w.weeks.forEach((count, i) => {
-          const [from, to] = weekDays(i, view.daysInMonth);
-          // The month's last week can be empty: February has 28 days, and an export can end early.
-          const missing = from > view.lastDay;
-          const bar = el('i', i === peak ? 'top' : missing ? 'off' : undefined);
-          bar.style.height = `${String((count / top) * 100)}%`;
-          bindTooltip(bar, tooltip, tr.quoted(w.word), [
-            [tr.weekRange(String(i + 1), String(from), String(to)), formatInt(count)],
-          ]);
-          bars.append(bar);
-          labels.append(el('span', undefined, tr.week(String(i + 1))));
-        });
-        const total = el('span', 'n', tr.total(formatInt(w.total)));
-        if (w.previous !== null && previousMonth) {
-          const change = el(
-            'span',
-            w.total >= w.previous ? 'dl up' : 'dl down',
-            w.previous === 0
-              ? tr.fresh
-              : (w.total >= w.previous ? tr.up : tr.down)(formatInt(w.previous)),
+    this.element.hidden = !data;
+    if (!data) return;
+    const month = t.dates.months[view.monthIndex] ?? '';
+    this.list.replaceChildren(
+      ...WEEKS.flatMap((i) => {
+        const [from, to] = weekDays(i, view.daysInMonth);
+        // February can have no fifth week.
+        if (from > view.daysInMonth) return [];
+        const stop = el('div', 'wk-stop');
+        stop.setAttribute('role', 'listitem');
+        const top = el('div', 'top');
+        const [first, ...others] = data.weeks[i] ?? [];
+        if (from > view.lastDay) {
+          // The export ends before this week.
+          stop.classList.add('off');
+          top.append(el('span', 'none', tr.missing));
+        } else if (!first) {
+          stop.classList.add('quiet');
+          top.append(el('span', 'none', tr.quiet));
+        } else {
+          top.append(
+            el('b', undefined, first[0]),
+            el('small', undefined, tr.uses(formatInt(first[1]))),
           );
-          change.title = tr.previousTitle(formatInt(w.previous), previousMonth);
-          total.append(change);
+          bindTooltip(top, tooltip, tr.quoted(first[0]), [
+            [tr.tipWeek, formatInt(first[1])],
+            [tr.tipMonth, formatInt(first[2])],
+          ]);
         }
-        tile.append(el('b', undefined, w.word), total, bars, labels);
-        return tile;
+        const when = el('span', 'when', tr.week(String(i + 1)));
+        when.append(el('span', undefined, tr.days(String(from), String(to), month)));
+        stop.append(top, el('i', 'dot'), when);
+        if (others.length > 0) {
+          const also = el('span', 'also', tr.also);
+          others.forEach(([word, uses, total], k) => {
+            const item = el('span', undefined, word);
+            bindTooltip(item, tooltip, tr.quoted(word), [
+              [tr.tipWeek, formatInt(uses)],
+              [tr.tipMonth, formatInt(total)],
+            ]);
+            also.append(k === 0 ? ' ' : tr.and, item);
+          });
+          stop.append(also);
+        }
+        return [stop];
       }),
     );
   }
