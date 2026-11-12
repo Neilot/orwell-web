@@ -114,7 +114,7 @@ sup.repeat{font-size:10px;color:var(--muted)}
 .ego-note{font-size:12.5px;color:var(--muted);margin-top:6px}
 .showall{align-self:flex-start;font:600 13px var(--body);color:var(--fg2);background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
 .showall:hover{border-color:var(--accent);color:var(--fg)}
-#hour,#wd{overflow-anchor:none}
+#hour{overflow-anchor:none}
 .ttl{position:relative;display:inline-flex;align-items:center;gap:8px;min-width:0}
 .help{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--fg2);font:700 12px/1 var(--body);cursor:help;display:inline-grid;place-items:center;padding:0;flex:none}
 .help:hover,.help[aria-expanded="true"]{border-color:var(--accent);color:var(--fg)}
@@ -489,6 +489,55 @@ html{accent-color:var(--accent)}
 .wk-stop .also{margin-top:2px}}
 @media (max-width:560px){.mrow{grid-template-columns:minmax(64px,104px) minmax(0,1fr) 50px}.ends-row{grid-template-columns:minmax(56px,92px) 20px minmax(0,1fr) minmax(0,1fr) 20px}.ends-head{grid-template-columns:minmax(56px,92px) minmax(0,1fr) minmax(0,1fr)}}
 @media (pointer:coarse){.conv-track{height:14px}.mrow,.pair,.ends-row{padding-block:7px}}
+.wn-cols{display:grid;gap:3px;align-items:end;height:130px;border-bottom:1px solid var(--line)}
+.wn-cols .c{position:relative;height:100%;display:flex;align-items:flex-end}
+.wn-cols .g{position:absolute;left:0;right:0;bottom:0;background:var(--line);border-radius:3px 3px 0 0}
+.wn-cols .p{position:relative;display:block;width:100%;min-height:2px;border-radius:3px 3px 0 0}
+.wn-axis{display:grid;gap:3px;margin-top:4px;font:10.5px var(--mono);color:var(--muted);text-align:center}
+.wn-hours{grid-template-columns:repeat(24,minmax(0,1fr))}
+.wn-weekdays{grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
+.wn-axis.wn-weekdays{font-size:12px}
+.wn-big{font:700 40px/1 var(--display)}
+.wn-rows{display:flex;flex-direction:column;gap:9px}
+.wn-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;font-size:13.5px}
+.wn-row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wn-row .v{font:12.5px var(--mono);color:var(--fg2);white-space:nowrap}
+.wn-row .tr{position:relative;grid-column:1/-1;height:10px;background:var(--grid);border-radius:5px}
+.wn-row .tr i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.wn-row .tr i.tick{position:absolute;top:-3px;bottom:-3px;width:2px;height:auto;margin-left:-1px;background:var(--fg);border-radius:1px}
+.wn-row.me .nm{font-weight:700}
+.wn-row.me .tr{outline:2px solid var(--fg2);outline-offset:1px}
+.wn-ends{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px}
+.wn-col{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wn-hero{border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.wn-hero.w{background:color-mix(in srgb,var(--c3) 20%,var(--panel))}
+.wn-hero.a{background:color-mix(in srgb,var(--accent) 16%,var(--panel))}
+.wn-hero .sub-h{margin-bottom:2px;color:var(--fg2)}
+.wn-hero b{font:700 22px/1.15 var(--display);overflow-wrap:anywhere}
+.wn-hero .big{font:600 13px var(--mono);color:var(--fg2)}
+.wn-hero .then{font-size:12.5px;color:var(--fg2);margin-top:6px}
+.wn-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;max-width:420px}
+.wn-cal .dh{font:600 10.5px var(--mono);color:var(--muted);text-align:center}
+.wn-cal .d{aspect-ratio:1/1;border-radius:6px;display:grid;place-items:center;font:11.5px var(--mono);min-width:0}
+.wn-cal .l0{background:var(--grid);color:var(--muted)}
+.wn-cal .l1{background:var(--h1);color:var(--on-h-low)}
+.wn-cal .l2{background:var(--h2);color:var(--on-h-low)}
+.wn-cal .l3{background:var(--h3);color:var(--on-h-low)}
+.wn-cal .l4{background:var(--h4);color:var(--on-h-mid)}
+.wn-cal .l5{background:var(--h5);color:var(--on-h-high)}
+.wn-cal .l6{background:var(--h6);color:var(--on-h-high)}
+.wn-cal .off{opacity:.45}
+.wn-table{display:flex;flex-direction:column;overflow-anchor:none}
+.wn-table .th,.wn-table button{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(4,minmax(0,1fr));gap:8px;padding:9px 8px;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;color:var(--fg);font:13.5px var(--body);width:100%}
+.wn-table .th{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.wn-table button{cursor:pointer;border-radius:6px}
+.wn-table button:hover{background:var(--panel2)}
+.wn-table button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 16%,var(--panel));font-weight:600}
+.wn-table button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wn-table span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wn-table .m{font-family:var(--mono);color:var(--fg2)}
+@media (max-width:860px){.wn-hours{gap:2px}.wn-axis.wn-hours{font-size:9.5px}.wn-axis.wn-hours span:nth-child(even){visibility:hidden}}
+@media (max-width:560px){.wn-ends{grid-template-columns:minmax(0,1fr)}.wn-table .th,.wn-table button{grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr))}.wn-table .x{display:none}.wn-big{font-size:34px}}
 
 /* Not in the prototype stylesheet (its page template adds it): `.btn` sets `display`, which would otherwise override `hidden`. */
 [hidden]{display:none!important}

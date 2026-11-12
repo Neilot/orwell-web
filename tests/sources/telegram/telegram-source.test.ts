@@ -53,6 +53,36 @@ describe('TelegramSource', () => {
     expect(chat.info).toEqual({ title: 'Club de Ajedrez Ficticio', skippedEntries: 0 });
   });
 
+  it('reads a group with topics: their notices are skipped and the messages kept', async () => {
+    const topic = {
+      id: 100,
+      type: 'service',
+      date: '2026-11-02T10:00:00',
+      date_unixtime: '1793613600',
+      actor: 'Ana',
+      actor_id: 'user1',
+      action: 'topic_created',
+      title: 'Eventos',
+    };
+    const inTopic = {
+      id: 101,
+      type: 'message',
+      date: '2026-11-02T10:01:00',
+      date_unixtime: '1793613660',
+      from: 'Beto',
+      from_id: 'user2',
+      // A message in a topic points at the notice that created the topic.
+      reply_to_message_id: 100,
+      text: 'hola',
+      text_entities: [{ type: 'plain', text: 'hola' }],
+    };
+    const edited = { ...topic, id: 102, action: 'topic_edit', new_title: 'Eventos y meets' };
+    const content = exportWith({ messages: [...fixture.messages, topic, inTopic, edited] });
+    const events = await collect((await source.open(inputFile('result.json', content))).events);
+    expect(events.map((e) => e.id)).toEqual(['2', '3', '4', '5', '6', '101']);
+    expect(events.at(-1)?.replyTo).toEqual({ eventId: '100' });
+  });
+
   it('maps messages and skips service entries', async () => {
     const events = await collect((await source.open(exportFile)).events);
     expect(events.map((e) => e.id)).toEqual(['2', '3', '4', '5', '6']);

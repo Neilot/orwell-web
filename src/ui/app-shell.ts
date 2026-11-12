@@ -30,7 +30,10 @@ import { StickersSection } from './sections/stickers';
 import { WordCloudSection } from './sections/word-cloud';
 import { WordsScatterSection } from './sections/words-scatter';
 import { GroupLifeSection } from './sections/group-life';
-import { GroupRhythmSection } from './sections/group-rhythm';
+import { HabitBarsSection } from './sections/habit-bars';
+import { BusyDaysSection } from './sections/busy-days';
+import { PeopleTimesSection } from './sections/people-times';
+import { ReplySpeedSection } from './sections/reply-speed';
 import { HourHeatmapSection } from './sections/hour-heatmap';
 import { KpisSection } from './sections/kpis';
 import { LinksSection } from './sections/links';
@@ -42,7 +45,6 @@ import { PersonCardSection } from './sections/person-card';
 import { PersonPicker } from './sections/person-picker';
 import { RankingSection } from './sections/ranking';
 import { StarMessagesSection } from './sections/star-messages';
-import { WeekdayHeatmapSection } from './sections/weekday-heatmap';
 
 export type Analyze = (file: File) => Promise<Dashboard>;
 
@@ -170,9 +172,17 @@ export function renderAppShell(
   const picker = new PersonPicker(t, choose, clearMark);
   const daily = new DailyMessagesSection(t, tooltip);
   const ranking = new RankingSection(t, select);
-  const hours = new HourHeatmapSection(t, tooltip, select);
-  const weekdays = new WeekdayHeatmapSection(t, tooltip, select);
-  const rhythm = new GroupRhythmSection(t, tooltip);
+  /** Choosing someone in the "when" tab shows them right there; choosing them again goes back. */
+  const toggle = (id: string): void => {
+    if (marked && selected === id) clearMark();
+    else choose(id);
+  };
+  const hourBars = new HabitBarsSection(t, tooltip, 'hours');
+  const dayBars = new HabitBarsSection(t, tooltip, 'weekdays');
+  const replySpeed = new ReplySpeedSection(t);
+  const busyDays = new BusyDaysSection(t, tooltip);
+  const hours = new HourHeatmapSection(t, tooltip, toggle);
+  const peopleTimes = new PeopleTimesSection(t, toggle);
   const messageKinds = new MessageKindsSection(t, tooltip);
   const scatter = new WordsScatterSection(t, tooltip, select);
   const wordCloud = new WordCloudSection(t, tooltip);
@@ -231,11 +241,14 @@ export function renderAppShell(
     [
       'when',
       [
-        [hours.element, true],
-        [weekdays.element, false],
-        [rhythm.element, false],
-        [conversations.element, false],
+        [hourBars.element, true],
+        [dayBars.element, false],
+        [replySpeed.element, false],
+        [busyDays.element, false],
         [dayEnds.element, false],
+        [hours.element, true],
+        [peopleTimes.element, true],
+        [conversations.element, true],
       ],
     ],
     [
@@ -371,13 +384,14 @@ export function renderAppShell(
         scatter.render(view, id);
         break;
       case 'when':
-        if (month) {
-          rhythm.render(view);
-          conversations.render(view);
-          dayEnds.render(view);
-        }
+        if (month) conversations.render(view);
+        hourBars.render(view, markedPerson);
+        dayBars.render(view, markedPerson);
+        replySpeed.render(view, markedPerson);
+        busyDays.render(view, markedPerson);
+        dayEnds.render(view, markedPerson);
         hours.render(view, id, marked);
-        weekdays.render(view, id, marked);
+        peopleTimes.render(view, markedPerson);
         break;
       case 'what':
         if (month) {

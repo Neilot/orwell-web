@@ -17,6 +17,7 @@ export {
   type PersonDetails,
   type PersonView,
 } from './month-view';
+export { dayEdges, type DayEdges } from './day-edges';
 export { loadSharedChat, parseSharedLink, type SharedChat, type ChatLink } from './shared-link';
 export { MESSAGE_KINDS, UNKNOWN_STICKER, WHOLE_FILE } from './worker-protocol';
 export type * from './worker-protocol';

@@ -1,7 +1,7 @@
 import { max, range } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 import { select } from 'd3-selection';
-import type { MonthView, PersonView } from '../../app';
+import { maxIndex, type MonthView, type PersonView } from '../../app';
 import type { Messages } from '../../i18n';
 import { fitNames } from '../charts/fit-names';
 import { addMarkedRow, highlightMarkedRow } from '../charts/marked-row';
@@ -25,7 +25,7 @@ const CELL = (W - LEFT - 60) / 24;
 
 /**
  * Centre of a person's busiest three-hour stretch (the hour counts double), so one stray
- * message does not decide it. It orders the rows and is what the "pico" column shows.
+ * message does not decide it. It orders the rows.
  */
 function peakHour(hours: readonly number[]): number {
   let best = 0;
@@ -223,7 +223,7 @@ export class HourHeatmapSection {
         .attr('font-size', 11)
         .style('font-family', 'var(--mono)')
         .style('fill', 'var(--muted)')
-        .text(th.peakHour(pad2(peakHour(person.hours))));
+        .text(th.peakHour(pad2(maxIndex(person.hours))));
     });
     highlightMarkedRow(rows, markedId, {
       width: W,
