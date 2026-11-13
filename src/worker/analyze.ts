@@ -11,6 +11,7 @@ import {
   ResponseTimes,
   StarMessages,
   StickerUsage,
+  Topics,
   Vocabulary,
   WeeklyRhythm,
   WeeklyWords,
@@ -60,6 +61,7 @@ async function analyze(file: InputFile): Promise<Dashboard> {
   const conversations = new Conversations();
   const lengths = new MessageLengths();
   const weeklyWords = new WeeklyWords();
+  const topics = new Topics();
   const report = await new AnalysisPipeline([
     perDay,
     people,
@@ -75,6 +77,7 @@ async function analyze(file: InputFile): Promise<Dashboard> {
     conversations,
     lengths,
     weeklyWords,
+    topics,
   ]).run(source, file);
   // The pipeline stores each result under its analyzer's id; this reads it back typed.
   const resultOf = <T>(analyzer: Analyzer<T>): T => report.results[analyzer.id] as T;
@@ -96,6 +99,7 @@ async function analyze(file: InputFile): Promise<Dashboard> {
     conversationsPerMonth: resultOf(conversations),
     messageLengthsPerMonth: resultOf(lengths),
     weeklyWordsPerMonth: resultOf(weeklyWords),
+    topicsPerMonth: resultOf(topics),
   };
 }
 

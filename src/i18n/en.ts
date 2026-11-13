@@ -454,6 +454,33 @@ export const en: Messages = {
     tipWeek: 'That week',
     tipMonth: 'In the whole month',
   },
+  topics: {
+    general: 'General (no topic)',
+    others: 'Other topics',
+    shareTitle: 'How are the messages split between topics?',
+    help: {
+      label: 'How to read the topics',
+      title: 'How to read this section',
+      paragraphs: [
+        'The bar is everything written in the period, split by topic. Each card says what share that topic takes, how many people wrote there and who wrote most.',
+        '“General” is the messages outside any topic, including those from before the group had topics.',
+        'Topics show the name they were created with: Telegram’s export does not say which topic a rename belongs to. If there are many, the quietest are added up as “Other topics”.',
+      ],
+    },
+    shareLead: (topic: string, messages: string, share: string): [string, string, string] => [
+      'The busiest topic is ',
+      topic,
+      `, with ${messages} messages. All topics together hold ${share} of the messages.`,
+    ],
+    messages: (count: number, n: string) => (count === 1 ? `${n} message` : `${n} messages`),
+    people: (count: number, n: string) => (count === 1 ? `${n} person` : `${n} people`),
+    hoursTitle: 'What time is each topic busiest?',
+    hoursLead: (topic: string, hour: string, messages: string): [string, string, string] => [
+      'Each bar is an hour of the day, split by topic. ',
+      topic,
+      ` is busiest at ${hour}, with ${messages} messages.`,
+    ],
+  },
   tabs: {
     label: 'Dashboard sections',
     summary: 'Summary',

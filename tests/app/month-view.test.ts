@@ -380,4 +380,31 @@ describe('pairs and the newer statistics', () => {
     const current = { ...dashboard, weeklyWordsPerMonth: { '2026-04': { weeks } } };
     expect(monthView(current, '2026-04').weeklyWords).toEqual({ weeks });
   });
+
+  it('shows the busiest topics one by one and adds up the rest', () => {
+    expect(monthView(dashboard, '2026-04').topics).toBeNull();
+    const hours = new Array<number>(24).fill(0);
+    const topic = (title: string | null, messages: number) => ({
+      title,
+      messages,
+      writers: 2,
+      top: [['u2', messages] as const],
+      hours,
+    });
+    const topics = [
+      topic(null, 50),
+      ...Array.from({ length: 9 }, (_, i) => topic(`T${String(i)}`, 20 - i)),
+    ];
+    const stored = { ...dashboard, topicsPerMonth: { '2026-04': { topics } } };
+    const views = monthView(stored, '2026-04').topics ?? [];
+    expect(views.map((v) => v.kind)).toEqual([
+      'general',
+      'others',
+      ...new Array<string>(7).fill('topic'),
+    ]);
+    // The two quietest topics, with 12 and 13 messages, are shown together.
+    expect(views[1]).toMatchObject({ messages: 25, writers: 0, top: [] });
+    expect(views[2]?.top[0]?.person.id).toBe('u2');
+    expect(views.reduce((sum, v) => sum + v.share, 0)).toBeCloseTo(1);
+  });
 });

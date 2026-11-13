@@ -53,7 +53,7 @@ describe('TelegramSource', () => {
     expect(chat.info).toEqual({ title: 'Club de Ajedrez Ficticio', skippedEntries: 0 });
   });
 
-  it('reads a group with topics: their notices are skipped and the messages kept', async () => {
+  it('reads a group with topics: notices are skipped and each message knows its topic', async () => {
     const topic = {
       id: 100,
       type: 'service',
@@ -77,10 +77,21 @@ describe('TelegramSource', () => {
       text_entities: [{ type: 'plain', text: 'hola' }],
     };
     const edited = { ...topic, id: 102, action: 'topic_edit', new_title: 'Eventos y meets' };
-    const content = exportWith({ messages: [...fixture.messages, topic, inTopic, edited] });
+    // A reply inside the topic points at the message it answers, not at the topic.
+    const reply = { ...inTopic, id: 103, reply_to_message_id: 101 };
+    const content = exportWith({ messages: [...fixture.messages, topic, inTopic, edited, reply] });
     const events = await collect((await source.open(inputFile('result.json', content))).events);
-    expect(events.map((e) => e.id)).toEqual(['2', '3', '4', '5', '6', '101']);
-    expect(events.at(-1)?.replyTo).toEqual({ eventId: '100' });
+    expect(events.map((e) => e.id)).toEqual(['2', '3', '4', '5', '6', '101', '103']);
+    expect(events.at(-2)?.replyTo).toEqual({ eventId: '100' });
+    expect(events.map((e) => e.topic)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'Eventos',
+      'Eventos',
+    ]);
   });
 
   it('maps messages and skips service entries', async () => {

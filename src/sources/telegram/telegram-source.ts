@@ -15,6 +15,7 @@ import {
   MEMBERSHIP_ACTIONS,
   MembershipServiceSchema,
   MessageSchema,
+  TopicCreatedSchema,
   type TelegramMembershipService,
   type TelegramMessage,
 } from './export-schema';
@@ -91,6 +92,11 @@ function readExport(root: unknown): OpenedChat {
   }
 
   const valid: (TelegramMessage | TelegramMembershipService)[] = [];
+  // The export does not say which topic a message is in. A message written in a topic points
+  // at the notice that opened it, and a reply inside the topic points at one of those
+  // messages, so the topic is found by following what each message replies to.
+  const topicTitles = new Map<number, string>();
+  const topics = new Map<number, string>();
   let candidates = 0;
   for (const entry of messages) {
     // Service entries are kept only when they record people joining or leaving; the rest
@@ -109,12 +115,20 @@ function readExport(root: unknown): OpenedChat {
       ) {
         const notice = v.safeParse(MembershipServiceSchema, entry);
         if (notice.success) valid.push(notice.output);
+      } else {
+        const topic = v.safeParse(TopicCreatedSchema, entry);
+        if (topic.success) topicTitles.set(topic.output.id, topic.output.title);
       }
       continue;
     }
     candidates++;
     const message = v.safeParse(MessageSchema, entry);
-    if (message.success) valid.push(message.output);
+    if (!message.success) continue;
+    valid.push(message.output);
+    const repliedTo = message.output.reply_to_message_id;
+    if (repliedTo === undefined) continue;
+    const topic = topicTitles.get(repliedTo) ?? topics.get(repliedTo);
+    if (topic !== undefined) topics.set(message.output.id, topic);
   }
   if (candidates === 0) throw new OrwellError('empty-chat', 'The chat has no messages');
   if (!valid.some((entry) => entry.type === 'message')) {
@@ -126,16 +140,17 @@ function readExport(root: unknown): OpenedChat {
       title: name,
       skippedEntries: candidates - valid.filter((entry) => entry.type === 'message').length,
     },
-    events: mapAll(valid),
+    events: mapAll(valid, topics),
   };
 }
 
 /** Maps lazily, so only one neutral event per message exists at a time. */
 function* mapAll(
   entries: readonly (TelegramMessage | TelegramMembershipService)[],
+  topics: ReadonlyMap<number, string>,
 ): Generator<ChatEvent> {
   for (const entry of entries) {
-    if (entry.type === 'message') yield mapMessage(entry);
+    if (entry.type === 'message') yield mapMessage(entry, topics.get(entry.id));
     else {
       const event = mapMembershipService(entry);
       if (event) yield event;

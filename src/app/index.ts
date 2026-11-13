@@ -1,6 +1,7 @@
 export { AnalysisClient, AnalysisFailure } from './analysis-client';
 export { computeAwards, type Award, type AwardKey, type AwardMessage, type Placed } from './awards';
 export {
+  MAX_TOPICS,
   maxIndex,
   messagesPerPeriod,
   monthsOf,
@@ -16,6 +17,7 @@ export {
   type PairView,
   type PersonDetails,
   type PersonView,
+  type TopicView,
 } from './month-view';
 export { dayEdges, type DayEdges } from './day-edges';
 export { loadSharedChat, parseSharedLink, type SharedChat, type ChatLink } from './shared-link';

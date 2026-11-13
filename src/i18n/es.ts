@@ -447,6 +447,33 @@ export const es = {
     tipWeek: 'Esa semana',
     tipMonth: 'En todo el mes',
   },
+  topics: {
+    general: 'General (sin tópico)',
+    others: 'Otros tópicos',
+    shareTitle: '¿Cómo se reparten los mensajes entre los tópicos?',
+    help: {
+      label: 'Cómo leer los tópicos',
+      title: 'Cómo leer esta sección',
+      paragraphs: [
+        'La barra es todo lo que se escribió en el periodo, partida por tópico. Cada ficha dice qué parte se lleva ese tópico, cuánta gente escribió ahí y quiénes más.',
+        '«General» son los mensajes fuera de cualquier tópico, incluidos los de antes de que el grupo tuviera tópicos.',
+        'Los tópicos salen con el nombre con el que se crearon: la exportación de Telegram no dice a cuál pertenece un cambio de nombre. Si hay muchos, los más callados se juntan en «Otros tópicos».',
+      ],
+    },
+    shareLead: (topic: string, messages: string, share: string): [string, string, string] => [
+      'El tópico con más mensajes es ',
+      topic,
+      `, con ${messages}. Entre todos los tópicos se llevan el ${share} de los mensajes.`,
+    ],
+    messages: (count: number, n: string) => (count === 1 ? `${n} mensaje` : `${n} mensajes`),
+    people: (count: number, n: string) => (count === 1 ? `${n} persona` : `${n} personas`),
+    hoursTitle: '¿A qué hora se mueve cada tópico?',
+    hoursLead: (topic: string, hour: string, messages: string): [string, string, string] => [
+      'Cada barra es una hora del día, partida por tópico. ',
+      topic,
+      ` se mueve más a las ${hour}, con ${messages} mensajes.`,
+    ],
+  },
   tabs: {
     label: 'Partes del tablero',
     summary: 'Resumen',

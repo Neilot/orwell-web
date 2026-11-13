@@ -277,6 +277,24 @@ export interface MonthWeeklyWords {
   readonly weeks: readonly (readonly WeekWord[])[];
 }
 
+/** What was written in one topic of the group, or outside every topic. */
+export interface TopicActivity {
+  /** The topic's name, or `null` for the messages outside any topic. */
+  readonly title: string | null;
+  readonly messages: number;
+  /** People who wrote in it. */
+  readonly writers: number;
+  /** Who wrote most in it and how many messages, the busiest first. */
+  readonly top: readonly (readonly [id: string, messages: number])[];
+  /** Messages per hour of the day, 0–23. */
+  readonly hours: readonly number[];
+}
+
+export interface MonthTopics {
+  /** The busiest first. */
+  readonly topics: readonly TopicActivity[];
+}
+
 /** What the page needs to draw the dashboard. Plain data, so it survives `postMessage`. */
 export interface Dashboard {
   /** Group name from the export, or `null` when it has none. */
@@ -312,6 +330,8 @@ export interface Dashboard {
    * chat published with an earlier version of this statistic and is ignored.
    */
   readonly weeklyWordsPerMonth?: Readonly<Record<string, MonthWeeklyWords | readonly unknown[]>>;
+  /** Only for the periods in which someone wrote in a topic; absent in older published chats. */
+  readonly topicsPerMonth?: Readonly<Record<string, MonthTopics>>;
 }
 
 export type AnalysisErrorCode = OrwellErrorCode | 'unknown';

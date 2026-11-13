@@ -65,6 +65,8 @@ export interface ChatEvent {
   /** Plain text of the event, empty when there is none. Never leaves the browser. */
   readonly text: string;
   readonly replyTo?: ReplyRef;
+  /** Name of the topic (a sub-chat of the group) the event was written in, when it has one. */
+  readonly topic?: string;
   /** People mentioned by a link to their account, named as the text shows them. */
   readonly mentions: readonly Participant[];
   readonly reactions: readonly Reaction[];

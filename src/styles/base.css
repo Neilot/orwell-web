@@ -538,6 +538,21 @@ html{accent-color:var(--accent)}
 .wn-table .m{font-family:var(--mono);color:var(--fg2)}
 @media (max-width:860px){.wn-hours{gap:2px}.wn-axis.wn-hours{font-size:9.5px}.wn-axis.wn-hours span:nth-child(even){visibility:hidden}}
 @media (max-width:560px){.wn-ends{grid-template-columns:minmax(0,1fr)}.wn-table .th,.wn-table button{grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr))}.wn-table .x{display:none}.wn-big{font-size:34px}}
+.tp-stack{display:flex;height:30px;gap:2px;border-radius:8px;overflow:hidden}
+.tp-stack i{display:block;flex-basis:0;min-width:3px}
+.tp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.tp-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tp-card b{font:600 15px/1.25 var(--display);overflow-wrap:anywhere}
+.tp-card b i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:7px}
+.tp-card .pct{font:700 26px/1.15 var(--display);margin-top:4px}
+.tp-card .n{font:12px var(--mono);color:var(--muted)}
+.tp-card ol{margin:8px 0 0;padding:8px 0 0 20px;border-top:1px solid var(--line);font-size:13.5px;color:var(--fg2)}
+.tp-card li span{font:12px var(--mono);color:var(--muted);margin-left:6px}
+.tp-cols{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:3px;height:190px;border-bottom:1px solid var(--line)}
+.tp-cols .c{display:flex;flex-direction:column-reverse;height:100%;gap:1px}
+.tp-cols .c i{display:block;flex:none}
+.tp-cols .c i:last-child{border-radius:3px 3px 0 0}
+@media (max-width:860px){.tp-cols{gap:2px;height:150px}}
 
 /* Not in the prototype stylesheet (its page template adds it): `.btn` sets `display`, which would otherwise override `hidden`. */
 [hidden]{display:none!important}

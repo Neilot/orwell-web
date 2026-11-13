@@ -14,6 +14,7 @@ import {
   type MonthConversations,
   type MonthMessageLengths,
   type MonthWeeklyWords,
+  type TopicActivity,
   type MonthLinks,
   type MonthStars,
   type MonthStickers,
@@ -93,6 +94,18 @@ export interface PairView {
 /** How many pairs the dashboard shows. */
 export const TOP_PAIRS = 10;
 
+/** Named topics shown one by one; the quieter ones are added up as "other topics". */
+export const MAX_TOPICS = 7;
+
+/** One slice of the messages: a topic, the chat outside topics, or the quieter topics together. */
+export interface TopicView extends Omit<TopicActivity, 'top'> {
+  readonly kind: 'topic' | 'general' | 'others';
+  /** Share of the period's messages, 0–1. */
+  readonly share: number;
+  /** Who wrote most in it; empty for the quieter topics together. */
+  readonly top: readonly { readonly person: PersonView; readonly messages: number }[];
+}
+
 /** A calendar day shown in the per-day charts. */
 export interface CalendarDay {
   /** `YYYY-MM-DD`. */
@@ -168,6 +181,8 @@ export interface MonthView {
   readonly messageLengths: MonthMessageLengths | null;
   /** What each week was about; `null` too for the whole export, which has no weeks. */
   readonly weeklyWords: MonthWeeklyWords | null;
+  /** The group's topics, busiest first, or `null` when nobody wrote in a topic in the period. */
+  readonly topics: readonly TopicView[] | null;
   details(id: string): PersonDetails;
   /** The previous month in the export, for comparisons, or `null` for the first one. */
   readonly previous: {
@@ -367,6 +382,51 @@ function weeklyWords(dashboard: Dashboard, month: string): MonthWeeklyWords | nu
   return stored && 'weeks' in stored ? stored : null;
 }
 
+function topicViews(
+  dashboard: Dashboard,
+  month: string,
+  everyone: readonly PersonView[],
+): TopicView[] | null {
+  const stored = dashboard.topicsPerMonth?.[month]?.topics;
+  if (!stored?.length) return null;
+  const byId = new Map(everyone.map((p) => [p.id, p]));
+  const total = sumBy(stored, (topic) => topic.messages) || 1;
+  const view = (topic: TopicActivity, kind: TopicView['kind']): TopicView => ({
+    ...topic,
+    kind,
+    share: topic.messages / total,
+    top: topic.top.flatMap(([id, messages]) => {
+      const person = byId.get(id);
+      return person ? [{ person, messages }] : [];
+    }),
+  });
+  const named = stored.filter((topic) => topic.title !== null);
+  const views = stored
+    .filter((topic) => topic.title === null)
+    .map((topic) => view(topic, 'general'))
+    .concat(named.slice(0, MAX_TOPICS).map((topic) => view(topic, 'topic')));
+  const rest = named.slice(MAX_TOPICS);
+  if (rest.length > 0) {
+    views.push(
+      view(
+        {
+          title: null,
+          messages: sumBy(rest, (topic) => topic.messages),
+          // People can write in several of them, so their writers cannot simply be added up.
+          writers: 0,
+          top: [],
+          hours: sumColumns(
+            rest.map((topic) => topic.hours),
+            24,
+          ),
+        },
+        'others',
+      ),
+    );
+  }
+  return views.sort((a, b) => b.messages - a.messages);
+}
+
 const NO_LINKS: MonthLinks = { total: 0, distinctSites: 0, people: {}, sites: [], links: [] };
 
 /** The export month by month: messages, writers, newcomers, joins and leaves. */
@@ -518,6 +578,7 @@ export function monthView(dashboard: Dashboard, month: string): MonthView {
     conversations: dashboard.conversationsPerMonth?.[month] ?? null,
     messageLengths: dashboard.messageLengthsPerMonth?.[month] ?? null,
     weeklyWords: wholeFile ? null : weeklyWords(dashboard, month),
+    topics: topicViews(dashboard, month, everyone),
     life: lifeOf(dashboard),
     joinsByDay: joinsByDay(dashboard),
     details: (id) => ({

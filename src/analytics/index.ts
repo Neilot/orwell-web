@@ -67,3 +67,10 @@ export {
   type WeekWord,
   type WeeklyWordsResult,
 } from './weekly-words';
+export {
+  TOPIC_TOP_WRITERS,
+  Topics,
+  type MonthTopics,
+  type TopicActivity,
+  type TopicsResult,
+} from './topics';

@@ -23,6 +23,8 @@ import { DayEndsSection } from './sections/day-ends';
 import { MessageLengthsSection } from './sections/message-lengths';
 import { PairsSection } from './sections/pairs';
 import { WeeklyWordsSection } from './sections/weekly-words';
+import { TopicHoursSection } from './sections/topic-hours';
+import { TopicShareSection } from './sections/topic-share';
 import { DailyMessagesSection } from './sections/daily-messages';
 import { EmojisSection } from './sections/emojis';
 import { AwardsSection } from './sections/awards';
@@ -196,6 +198,8 @@ export function renderAppShell(
   const conversations = new ConversationsSection(t, tooltip);
   const dayEnds = new DayEndsSection(t, tooltip);
   const weeklyWords = new WeeklyWordsSection(t, tooltip);
+  const topicShare = new TopicShareSection(t, tooltip);
+  const topicHours = new TopicHoursSection(t, tooltip);
   const life = new GroupLifeSection(t, tooltip, (month) => {
     showMonth(month);
   });
@@ -256,6 +260,8 @@ export function renderAppShell(
       [
         [wordCloud.element, true],
         [weeklyWords.element, true],
+        [topicShare.element, true],
+        [topicHours.element, true],
         [stars.element, true],
         [messageKinds.element, true],
         [links.element, true],
@@ -397,6 +403,8 @@ export function renderAppShell(
         if (month) {
           messageKinds.render(view);
           weeklyWords.render(view);
+          topicShare.render(view);
+          topicHours.render(view);
         }
         wordCloud.render(view, id);
         stars.render(view, markedPerson);

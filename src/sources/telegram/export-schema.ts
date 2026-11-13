@@ -102,3 +102,11 @@ export type TelegramMembershipService = v.InferOutput<typeof MembershipServiceSc
 
 /** Chat types that are broadcast channels rather than conversations. */
 export const CHANNEL_TYPES: ReadonlySet<string> = new Set(['public_channel', 'private_channel']);
+
+/** One entry of `messages` with `type: "service"` that opens a topic in the group. */
+export const TopicCreatedSchema = v.looseObject({
+  id: v.number(),
+  type: v.literal('service'),
+  action: v.literal('topic_created'),
+  title: v.string(),
+});

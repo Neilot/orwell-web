@@ -62,8 +62,8 @@ function editedAt(m: TelegramMessage): number | undefined {
   return m.edited ? Number(m.date_unixtime) * 1000 : undefined;
 }
 
-/** Maps one validated Telegram message to a neutral event. */
-export function mapMessage(m: TelegramMessage): ChatEvent {
+/** Maps one validated Telegram message to a neutral event; `topic` names the topic it is in. */
+export function mapMessage(m: TelegramMessage, topic?: string): ChatEvent {
   const event: ChatEvent = {
     id: String(m.id),
     author: {
@@ -91,6 +91,7 @@ export function mapMessage(m: TelegramMessage): ChatEvent {
     ...(sticker !== undefined && { stickerId: sticker }),
     ...(edited !== undefined && { editedAt: edited }),
     ...(m.duration_seconds !== undefined && { durationSeconds: m.duration_seconds }),
+    ...(topic !== undefined && { topic }),
   };
 }
 
