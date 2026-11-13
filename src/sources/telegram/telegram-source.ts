@@ -7,29 +7,31 @@ import {
   type InputFile,
   type OpenedChat,
 } from '../../core';
-import { mapMembershipService, mapMessage } from './event-mapper';
-import {
-  AccountExportSchema,
-  CHANNEL_TYPES,
-  ChatExportSchema,
-  MEMBERSHIP_ACTIONS,
-  MembershipServiceSchema,
-  MessageSchema,
-  TopicCreatedSchema,
-  type TelegramMembershipService,
-  type TelegramMessage,
-} from './export-schema';
+import { EntryReader } from './entry-reader';
+import { AccountExportSchema, CHANNEL_TYPES, ChatExportSchema } from './export-schema';
 import { detectKind } from './file-kind';
+import { streamExportEntries } from './json-stream';
 import { readExportFromZip } from './zip-reader';
 
 /**
- * Largest `result.json` this source will read, plain or inflated from a zip. Parsing needs the
- * whole text in memory, so this keeps a huge file or a zip bomb from exhausting the tab.
+ * Largest `result.json` this source will read inflated from a zip. It is parsed with the whole
+ * text in memory, so this keeps a huge file or a zip bomb from exhausting the tab.
  */
 export const MAX_EXPORT_BYTES = 300 * 1024 * 1024;
 
+/**
+ * Largest plain `result.json` this source will read. Big files are read piece by piece, so
+ * the limit is what the statistics of that many messages take, not the size of the text.
+ */
+export const MAX_JSON_BYTES = 2 * 1024 * 1024 * 1024;
+
+/** A plain JSON file from this size on is read piece by piece instead of parsed whole. */
+export const STREAM_FROM_BYTES = 32 * 1024 * 1024;
+
 export interface TelegramSourceOptions {
+  /** Cap for a zip's inflated export and, when given, for a plain JSON file too. */
   readonly maxExportBytes?: number;
+  readonly streamFromBytes?: number;
 }
 
 /**
@@ -40,9 +42,13 @@ export interface TelegramSourceOptions {
 export class TelegramSource implements ChatSource {
   readonly id = 'telegram';
   private readonly maxBytes: number;
+  private readonly maxJsonBytes: number;
+  private readonly streamFromBytes: number;
 
   constructor(options: TelegramSourceOptions = {}) {
     this.maxBytes = options.maxExportBytes ?? MAX_EXPORT_BYTES;
+    this.maxJsonBytes = options.maxExportBytes ?? MAX_JSON_BYTES;
+    this.streamFromBytes = options.streamFromBytes ?? STREAM_FROM_BYTES;
   }
 
   async canHandle(file: InputFile): Promise<boolean> {
@@ -58,12 +64,13 @@ export class TelegramSource implements ChatSource {
     if (kind === 'zip') {
       bytes = await readExportFromZip(file, this.maxBytes);
     } else {
-      if (file.size > this.maxBytes) {
+      if (file.size > this.maxJsonBytes) {
         throw new OrwellError(
           'too-large',
-          `${file.name} is larger than ${String(this.maxBytes)} bytes`,
+          `${file.name} is larger than ${String(this.maxJsonBytes)} bytes`,
         );
       }
+      if (file.size >= this.streamFromBytes) return streamExport(file);
       bytes = await file.bytes();
     }
     return readExport(parseJson(bytes));
@@ -78,7 +85,8 @@ function parseJson(bytes: Uint8Array): unknown {
   }
 }
 
-function readExport(root: unknown): OpenedChat {
+/** Checks the fields around `messages` and gives the chat's name. */
+function readHead(root: unknown): { name: string | null; messages: readonly unknown[] } {
   const chat = v.safeParse(ChatExportSchema, root);
   if (!chat.success) {
     if (v.is(AccountExportSchema, root)) {
@@ -90,70 +98,39 @@ function readExport(root: unknown): OpenedChat {
   if (CHANNEL_TYPES.has(type)) {
     throw new OrwellError('unsupported-chat-type', `Chats of type ${type} are not supported`);
   }
-
-  const valid: (TelegramMessage | TelegramMembershipService)[] = [];
-  // The export does not say which topic a message is in. A message written in a topic points
-  // at the notice that opened it, and a reply inside the topic points at one of those
-  // messages, so the topic is found by following what each message replies to.
-  const topicTitles = new Map<number, string>();
-  const topics = new Map<number, string>();
-  let candidates = 0;
-  for (const entry of messages) {
-    // Service entries are kept only when they record people joining or leaving; the rest
-    // (pins, title changes…) and unknown entry types are not messages.
-    if (
-      typeof entry === 'object' &&
-      entry !== null &&
-      'type' in entry &&
-      entry.type !== 'message'
-    ) {
-      if (
-        entry.type === 'service' &&
-        'action' in entry &&
-        typeof entry.action === 'string' &&
-        MEMBERSHIP_ACTIONS.has(entry.action)
-      ) {
-        const notice = v.safeParse(MembershipServiceSchema, entry);
-        if (notice.success) valid.push(notice.output);
-      } else {
-        const topic = v.safeParse(TopicCreatedSchema, entry);
-        if (topic.success) topicTitles.set(topic.output.id, topic.output.title);
-      }
-      continue;
-    }
-    candidates++;
-    const message = v.safeParse(MessageSchema, entry);
-    if (!message.success) continue;
-    valid.push(message.output);
-    const repliedTo = message.output.reply_to_message_id;
-    if (repliedTo === undefined) continue;
-    const topic = topicTitles.get(repliedTo) ?? topics.get(repliedTo);
-    if (topic !== undefined) topics.set(message.output.id, topic);
-  }
-  if (candidates === 0) throw new OrwellError('empty-chat', 'The chat has no messages');
-  if (!valid.some((entry) => entry.type === 'message')) {
-    throw new InvalidExportError('No message in the export could be read');
-  }
-
-  return {
-    info: {
-      title: name,
-      skippedEntries: candidates - valid.filter((entry) => entry.type === 'message').length,
-    },
-    events: mapAll(valid, topics),
-  };
+  return { name, messages };
 }
 
-/** Maps lazily, so only one neutral event per message exists at a time. */
-function* mapAll(
-  entries: readonly (TelegramMessage | TelegramMembershipService)[],
-  topics: ReadonlyMap<number, string>,
-): Generator<ChatEvent> {
-  for (const entry of entries) {
-    if (entry.type === 'message') yield mapMessage(entry, topics.get(entry.id));
-    else {
-      const event = mapMembershipService(entry);
+function readExport(root: unknown): OpenedChat {
+  const { name, messages } = readHead(root);
+  const reader = new EntryReader();
+  const events: ChatEvent[] = [];
+  for (const entry of messages) {
+    const event = reader.read(entry);
+    if (event) events.push(event);
+  }
+  reader.finish();
+  return { info: { title: name, skippedEntries: reader.skipped }, events };
+}
+
+/**
+ * Opens a large export without loading it: events come out as the file is read, and the
+ * chat's name and the count of unreadable entries are complete once the events run out. A
+ * problem with the file surfaces while the events are read rather than on opening.
+ */
+function streamExport(file: InputFile): OpenedChat {
+  const info = { title: null as string | null, skippedEntries: 0 };
+  async function* events(): AsyncGenerator<ChatEvent> {
+    const reader = new EntryReader();
+    const entries = streamExportEntries(file.chunks(), (head) => {
+      info.title = readHead(head).name;
+    });
+    for await (const entry of entries) {
+      const event = reader.read(entry);
       if (event) yield event;
     }
+    reader.finish();
+    info.skippedEntries = reader.skipped;
   }
+  return { info, events: events() };
 }
