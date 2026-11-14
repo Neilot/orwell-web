@@ -1,5 +1,5 @@
 import { max, median, min } from 'd3-array';
-import { scaleLinear, scaleLog } from 'd3-scale';
+import { scaleLinear, scaleLog, scaleSqrt } from 'd3-scale';
 import { select } from 'd3-selection';
 import type { MonthView, PersonView } from '../../app';
 import type { Messages } from '../../i18n';
@@ -16,6 +16,11 @@ const H = 470;
 const M = { t: 14, r: 16, b: 42, l: 46 };
 /** People need at least this many messages with text to be placed. */
 const MIN_TEXT_MESSAGES = 5;
+/** Radius of the busiest writer's bubble; the others scale by area from it. */
+const MAX_RADIUS = 22;
+const MIN_RADIUS = 2.5;
+/** Room for an x tick label, so a wide range shows fewer ticks instead of overlapping ones. */
+const TICK_WIDTH = 46;
 /** Rough width of a 12px label character, to keep labels from overlapping. */
 const CHAR_WIDTH = 6.6;
 
@@ -137,24 +142,41 @@ export class WordsScatterSection {
               : ts.words(formatInt(p.words)),
       })),
     );
-    const points: Point[] = candidates
-      .filter((p) => !this.hide.hidden.has(p.id))
-      .map((p) => ({
-        person: p,
-        x: p.words,
-        y: p.words / p.textMessages,
-        r: 2.5 + Math.sqrt(p.messages) * 0.32,
-      }));
-    if (points.length === 0) return;
+    const shown = candidates.filter((p) => !this.hide.hidden.has(p.id));
+    if (shown.length === 0) return;
+    // Bubble areas follow messages, relative to the busiest writer, so a whole year of a big
+    // group fits as well as one quiet month.
+    const radius = scaleSqrt()
+      .domain([0, max(shown, (p) => p.messages) ?? 1])
+      .range([0, MAX_RADIUS]);
+    const points: Point[] = shown.map((p) => ({
+      person: p,
+      x: p.words,
+      y: p.words / p.textMessages,
+      r: Math.max(MIN_RADIUS, radius(p.messages)),
+    }));
 
+    // The plot leaves room for the largest bubble on every side, and clips whatever still
+    // sticks out, so nothing is drawn over the card's border.
     const x = scaleLog()
       .domain([(min(points, (d) => d.x) ?? 1) * 0.8, (max(points, (d) => d.x) ?? 1) * 1.25])
-      .range([M.l, W - M.r]);
+      .range([M.l + MAX_RADIUS, W - M.r - MAX_RADIUS]);
     const y = scaleLinear()
       .domain([0, (max(points, (d) => d.y) ?? 1) * 1.12])
       .nice()
-      .range([H - M.b, M.t]);
-    const xTicks = x.ticks().filter((tick) => /^[125]/.test(String(tick)));
+      .range([H - M.b, M.t + MAX_RADIUS]);
+    const allTicks = x.ticks().filter((tick) => /^[125]/.test(String(tick)));
+    const roomy = allTicks.length * TICK_WIDTH <= W - M.l - M.r;
+    const xTicks = roomy ? allTicks : allTicks.filter((tick) => String(tick).startsWith('1'));
+    const clipId = 'wscat-clip';
+    s.append('defs')
+      .append('clipPath')
+      .attr('id', clipId)
+      .append('rect')
+      .attr('x', M.l)
+      .attr('y', M.t)
+      .attr('width', W - M.l - M.r)
+      .attr('height', H - M.b - M.t);
     const yTicks = y.ticks(5);
 
     s.append('g')
@@ -213,6 +235,7 @@ export class WordsScatterSection {
     points.sort((a, b) => b.r - a.r);
     const isSelected = (d: Point): boolean => d.person.id === selected;
     s.append('g')
+      .attr('clip-path', `url(#${clipId})`)
       .selectAll('circle')
       .data(points)
       .join('circle')
